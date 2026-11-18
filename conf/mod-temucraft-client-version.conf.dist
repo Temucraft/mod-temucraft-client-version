@@ -1,0 +1,35 @@
+[worldserver]
+
+########################################
+# mod-temucraft-client-version
+########################################
+#
+#    Temucraft.ClientVersion.Enable
+#        Description: Check the Temucraft client version players run (sent by the client interface patch).
+#        Default:     1
+
+Temucraft.ClientVersion.Enable = 1
+
+#
+#    Temucraft.ClientVersion.Required
+#        Description: Oldest client version allowed. Keep it the same as client/VERSION, the launcher's
+#                     client-version.txt and the patch you hand out.
+#        Default:     "1.2.0"
+
+Temucraft.ClientVersion.Required = "1.2.0"
+
+#
+#    Temucraft.ClientVersion.RequirePatch
+#        Description: Also warn (or disconnect, with Action = 1) players whose client never sends a version (no
+#                     Temucraft patch installed), GraceSeconds after login. 1 = only our client is welcome.
+#        Default:     1
+
+Temucraft.ClientVersion.RequirePatch = 1
+Temucraft.ClientVersion.GraceSeconds = 60
+
+#
+#    Temucraft.ClientVersion.Action
+#        Description: 0 = tell the player to update; 1 = also disconnect them 30 seconds later (never GMs).
+#        Default:     1
+
+Temucraft.ClientVersion.Action = 1

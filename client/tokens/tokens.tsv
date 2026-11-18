@@ -1,0 +1,1377 @@
+token	tname	item	iname	cls	ilvl	q	sett
+29753	Chestguard of the Fallen Defender	24544	Gladiator's Plate Chestpiece	1	123	4	567
+29753	Chestguard of the Fallen Defender	27711	Gladiator's Satin Robe	16	123	4	581
+29753	Chestguard of the Fallen Defender	28130	Gladiator's Dragonhide Tunic	1024	123	4	584
+29753	Chestguard of the Fallen Defender	28140	Gladiator's Wyrmhide Tunic	1024	123	4	585
+29753	Chestguard of the Fallen Defender	29012	Warbringer Chestguard	1	120	4	654
+29753	Chestguard of the Fallen Defender	29019	Warbringer Breastplate	1	120	4	655
+29753	Chestguard of the Fallen Defender	29050	Robes of the Incarnate	16	120	4	663
+29753	Chestguard of the Fallen Defender	29056	Shroud of the Incarnate	16	120	4	664
+29753	Chestguard of the Fallen Defender	29087	Chestguard of Malorne	1024	120	4	638
+29753	Chestguard of the Fallen Defender	29091	Chestpiece of Malorne	1024	120	4	639
+29753	Chestguard of the Fallen Defender	29096	Breastplate of Malorne	1024	120	4	640
+29753	Chestguard of the Fallen Defender	31379	Gladiator's Kodohide Tunic	1024	123	4	685
+29753	Chestguard of the Fallen Defender	31413	Gladiator's Mooncloth Robe	16	123	4	687
+29754	Chestguard of the Fallen Champion	25831	Gladiator's Leather Tunic	8	123	4	577
+29754	Chestguard of the Fallen Champion	25997	Gladiator's Linked Armor	64	123	4	578
+29754	Chestguard of the Fallen Champion	27469	Gladiator's Mail Armor	64	123	4	580
+29754	Chestguard of the Fallen Champion	27702	Gladiator's Lamellar Chestpiece	2	123	4	582
+29754	Chestguard of the Fallen Champion	27879	Gladiator's Scaled Chestpiece	2	123	4	583
+29754	Chestguard of the Fallen Champion	29029	Cyclone Hauberk	64	120	4	631
+29754	Chestguard of the Fallen Champion	29033	Cyclone Chestguard	64	120	4	632
+29754	Chestguard of the Fallen Champion	29038	Cyclone Breastplate	64	120	4	633
+29754	Chestguard of the Fallen Champion	29045	Netherblade Chestpiece	8	120	4	621
+29754	Chestguard of the Fallen Champion	29062	Justicar Chestpiece	2	120	4	624
+29754	Chestguard of the Fallen Champion	29066	Justicar Chestguard	2	120	4	625
+29754	Chestguard of the Fallen Champion	29071	Justicar Breastplate	2	120	4	626
+29754	Chestguard of the Fallen Champion	31396	Gladiator's Ringmail Armor	64	123	4	686
+29754	Chestguard of the Fallen Champion	31613	Gladiator's Ornamented Chestguard	2	123	4	690
+29755	Chestguard of the Fallen Hero	24552	Gladiator's Dreadweave Robe	256	123	4	568
+29755	Chestguard of the Fallen Hero	25856	Gladiator's Silk Raiment	128	123	4	579
+29755	Chestguard of the Fallen Hero	28334	Gladiator's Chain Armor	4	123	4	586
+29755	Chestguard of the Fallen Hero	28964	Voidheart Robe	256	120	4	645
+29755	Chestguard of the Fallen Hero	29077	Vestments of the Aldor	128	120	4	648
+29755	Chestguard of the Fallen Hero	29082	Demon Stalker Harness	4	120	4	651
+29755	Chestguard of the Fallen Hero	30200	Gladiator's Felweave Raiment	256	123	4	615
+29756	Gloves of the Fallen Hero	24556	Gladiator's Dreadweave Gloves	256	123	4	568
+29756	Gloves of the Fallen Hero	25857	Gladiator's Silk Handguards	128	123	4	579
+29756	Gloves of the Fallen Hero	28335	Gladiator's Chain Gauntlets	4	123	4	586
+29756	Gloves of the Fallen Hero	28968	Voidheart Gloves	256	120	4	645
+29756	Gloves of the Fallen Hero	29080	Gloves of the Aldor	128	120	4	648
+29756	Gloves of the Fallen Hero	29085	Demon Stalker Gauntlets	4	120	4	651
+29756	Gloves of the Fallen Hero	30188	Gladiator's Felweave Handguards	256	123	4	615
+29757	Gloves of the Fallen Champion	25834	Gladiator's Leather Gloves	8	123	4	577
+29757	Gloves of the Fallen Champion	26000	Gladiator's Linked Gauntlets	64	123	4	578
+29757	Gloves of the Fallen Champion	27470	Gladiator's Mail Gauntlets	64	123	4	580
+29757	Gloves of the Fallen Champion	27703	Gladiator's Lamellar Gauntlets	2	123	4	582
+29757	Gloves of the Fallen Champion	27880	Gladiator's Scaled Gauntlets	2	123	4	583
+29757	Gloves of the Fallen Champion	29032	Cyclone Gloves	64	120	4	631
+29757	Gloves of the Fallen Champion	29034	Cyclone Handguards	64	120	4	632
+29757	Gloves of the Fallen Champion	29039	Cyclone Gauntlets	64	120	4	633
+29757	Gloves of the Fallen Champion	29048	Netherblade Gloves	8	120	4	621
+29757	Gloves of the Fallen Champion	29065	Justicar Gloves	2	120	4	624
+29757	Gloves of the Fallen Champion	29067	Justicar Handguards	2	120	4	625
+29757	Gloves of the Fallen Champion	29072	Justicar Gauntlets	2	120	4	626
+29757	Gloves of the Fallen Champion	31397	Gladiator's Ringmail Gauntlets	64	123	4	686
+29757	Gloves of the Fallen Champion	31614	Gladiator's Ornamented Gloves	2	123	4	690
+29758	Gloves of the Fallen Defender	24549	Gladiator's Plate Gauntlets	1	123	4	567
+29758	Gloves of the Fallen Defender	27707	Gladiator's Satin Gloves	16	123	4	581
+29758	Gloves of the Fallen Defender	28126	Gladiator's Dragonhide Gloves	1024	123	4	584
+29758	Gloves of the Fallen Defender	28136	Gladiator's Wyrmhide Gloves	1024	123	4	585
+29758	Gloves of the Fallen Defender	29017	Warbringer Handguards	1	120	4	654
+29758	Gloves of the Fallen Defender	29020	Warbringer Gauntlets	1	120	4	655
+29758	Gloves of the Fallen Defender	29055	Handwraps of the Incarnate	16	120	4	663
+29758	Gloves of the Fallen Defender	29057	Gloves of the Incarnate	16	120	4	664
+29758	Gloves of the Fallen Defender	29090	Handguards of Malorne	1024	120	4	638
+29758	Gloves of the Fallen Defender	29092	Gloves of Malorne	1024	120	4	639
+29758	Gloves of the Fallen Defender	29097	Gauntlets of Malorne	1024	120	4	640
+29758	Gloves of the Fallen Defender	31375	Gladiator's Kodohide Gloves	1024	123	4	685
+29758	Gloves of the Fallen Defender	31409	Gladiator's Mooncloth Gloves	16	123	4	687
+29759	Helm of the Fallen Hero	24553	Gladiator's Dreadweave Hood	256	123	4	568
+29759	Helm of the Fallen Hero	25855	Gladiator's Silk Cowl	128	123	4	579
+29759	Helm of the Fallen Hero	28331	Gladiator's Chain Helm	4	123	4	586
+29759	Helm of the Fallen Hero	28963	Voidheart Crown	256	120	4	645
+29759	Helm of the Fallen Hero	29076	Collar of the Aldor	128	120	4	648
+29759	Helm of the Fallen Hero	29081	Demon Stalker Greathelm	4	120	4	651
+29759	Helm of the Fallen Hero	30187	Gladiator's Felweave Cowl	256	123	4	615
+29760	Helm of the Fallen Champion	25830	Gladiator's Leather Helm	8	123	4	577
+29760	Helm of the Fallen Champion	25998	Gladiator's Linked Helm	64	123	4	578
+29760	Helm of the Fallen Champion	27471	Gladiator's Mail Helm	64	123	4	580
+29760	Helm of the Fallen Champion	27704	Gladiator's Lamellar Helm	2	123	4	582
+29760	Helm of the Fallen Champion	27881	Gladiator's Scaled Helm	2	123	4	583
+29760	Helm of the Fallen Champion	29028	Cyclone Headdress	64	120	4	631
+29760	Helm of the Fallen Champion	29035	Cyclone Faceguard	64	120	4	632
+29760	Helm of the Fallen Champion	29040	Cyclone Helm	64	120	4	633
+29760	Helm of the Fallen Champion	29044	Netherblade Facemask	8	120	4	621
+29760	Helm of the Fallen Champion	29061	Justicar Diadem	2	120	4	624
+29760	Helm of the Fallen Champion	29068	Justicar Faceguard	2	120	4	625
+29760	Helm of the Fallen Champion	29073	Justicar Crown	2	120	4	626
+29760	Helm of the Fallen Champion	31400	Gladiator's Ringmail Helm	64	123	4	686
+29760	Helm of the Fallen Champion	31616	Gladiator's Ornamented Headcover	2	123	4	690
+29761	Helm of the Fallen Defender	24545	Gladiator's Plate Helm	1	123	4	567
+29761	Helm of the Fallen Defender	27708	Gladiator's Satin Hood	16	123	4	581
+29761	Helm of the Fallen Defender	28127	Gladiator's Dragonhide Helm	1024	123	4	584
+29761	Helm of the Fallen Defender	28137	Gladiator's Wyrmhide Helm	1024	123	4	585
+29761	Helm of the Fallen Defender	29011	Warbringer Greathelm	1	120	4	654
+29761	Helm of the Fallen Defender	29021	Warbringer Battle-Helm	1	120	4	655
+29761	Helm of the Fallen Defender	29049	Light-Collar of the Incarnate	16	120	4	663
+29761	Helm of the Fallen Defender	29058	Soul-Collar of the Incarnate	16	120	4	664
+29761	Helm of the Fallen Defender	29086	Crown of Malorne	1024	120	4	638
+29761	Helm of the Fallen Defender	29093	Antlers of Malorne	1024	120	4	639
+29761	Helm of the Fallen Defender	29098	Stag-Helm of Malorne	1024	120	4	640
+29761	Helm of the Fallen Defender	31376	Gladiator's Kodohide Helm	1024	123	4	685
+29761	Helm of the Fallen Defender	31410	Gladiator's Mooncloth Hood	16	123	4	687
+29762	Pauldrons of the Fallen Hero	24554	Gladiator's Dreadweave Mantle	256	123	4	568
+29762	Pauldrons of the Fallen Hero	25854	Gladiator's Silk Amice	128	123	4	579
+29762	Pauldrons of the Fallen Hero	28333	Gladiator's Chain Spaulders	4	123	4	586
+29762	Pauldrons of the Fallen Hero	28967	Voidheart Mantle	256	120	4	645
+29762	Pauldrons of the Fallen Hero	29079	Pauldrons of the Aldor	128	120	4	648
+29762	Pauldrons of the Fallen Hero	29084	Demon Stalker Shoulderguards	4	120	4	651
+29762	Pauldrons of the Fallen Hero	30186	Gladiator's Felweave Amice	256	123	4	615
+29763	Pauldrons of the Fallen Champion	25832	Gladiator's Leather Spaulders	8	123	4	577
+29763	Pauldrons of the Fallen Champion	25999	Gladiator's Linked Spaulders	64	123	4	578
+29763	Pauldrons of the Fallen Champion	27473	Gladiator's Mail Spaulders	64	123	4	580
+29763	Pauldrons of the Fallen Champion	27706	Gladiator's Lamellar Shoulders	2	123	4	582
+29763	Pauldrons of the Fallen Champion	27883	Gladiator's Scaled Shoulders	2	123	4	583
+29763	Pauldrons of the Fallen Champion	29031	Cyclone Shoulderpads	64	120	4	631
+29763	Pauldrons of the Fallen Champion	29037	Cyclone Shoulderguards	64	120	4	632
+29763	Pauldrons of the Fallen Champion	29043	Cyclone Shoulderplates	64	120	4	633
+29763	Pauldrons of the Fallen Champion	29047	Netherblade Shoulderpads	8	120	4	621
+29763	Pauldrons of the Fallen Champion	29064	Justicar Pauldrons	2	120	4	624
+29763	Pauldrons of the Fallen Champion	29070	Justicar Shoulderguards	2	120	4	625
+29763	Pauldrons of the Fallen Champion	29075	Justicar Shoulderplates	2	120	4	626
+29763	Pauldrons of the Fallen Champion	31407	Gladiator's Ringmail Spaulders	64	123	4	686
+29763	Pauldrons of the Fallen Champion	31619	Gladiator's Ornamented Spaulders	2	123	4	690
+29764	Pauldrons of the Fallen Defender	24546	Gladiator's Plate Shoulders	1	123	4	567
+29764	Pauldrons of the Fallen Defender	27710	Gladiator's Satin Mantle	16	123	4	581
+29764	Pauldrons of the Fallen Defender	28129	Gladiator's Dragonhide Spaulders	1024	123	4	584
+29764	Pauldrons of the Fallen Defender	28139	Gladiator's Wyrmhide Spaulders	1024	123	4	585
+29764	Pauldrons of the Fallen Defender	29016	Warbringer Shoulderguards	1	120	4	654
+29764	Pauldrons of the Fallen Defender	29023	Warbringer Shoulderplates	1	120	4	655
+29764	Pauldrons of the Fallen Defender	29054	Light-Mantle of the Incarnate	16	120	4	663
+29764	Pauldrons of the Fallen Defender	29060	Soul-Mantle of the Incarnate	16	120	4	664
+29764	Pauldrons of the Fallen Defender	29089	Shoulderguards of Malorne	1024	120	4	638
+29764	Pauldrons of the Fallen Defender	29095	Pauldrons of Malorne	1024	120	4	639
+29764	Pauldrons of the Fallen Defender	29100	Mantle of Malorne	1024	120	4	640
+29764	Pauldrons of the Fallen Defender	31378	Gladiator's Kodohide Spaulders	1024	123	4	685
+29764	Pauldrons of the Fallen Defender	31412	Gladiator's Mooncloth Mantle	16	123	4	687
+29765	Leggings of the Fallen Hero	24555	Gladiator's Dreadweave Leggings	256	123	4	568
+29765	Leggings of the Fallen Hero	25858	Gladiator's Silk Trousers	128	123	4	579
+29765	Leggings of the Fallen Hero	28332	Gladiator's Chain Leggings	4	123	4	586
+29765	Leggings of the Fallen Hero	28966	Voidheart Leggings	256	120	4	645
+29765	Leggings of the Fallen Hero	29078	Legwraps of the Aldor	128	120	4	648
+29765	Leggings of the Fallen Hero	29083	Demon Stalker Greaves	4	120	4	651
+29765	Leggings of the Fallen Hero	30201	Gladiator's Felweave Trousers	256	123	4	615
+29766	Leggings of the Fallen Champion	25833	Gladiator's Leather Legguards	8	123	4	577
+29766	Leggings of the Fallen Champion	26001	Gladiator's Linked Leggings	64	123	4	578
+29766	Leggings of the Fallen Champion	27472	Gladiator's Mail Leggings	64	123	4	580
+29766	Leggings of the Fallen Champion	27705	Gladiator's Lamellar Legguards	2	123	4	582
+29766	Leggings of the Fallen Champion	27882	Gladiator's Scaled Legguards	2	123	4	583
+29766	Leggings of the Fallen Champion	29030	Cyclone Kilt	64	120	4	631
+29766	Leggings of the Fallen Champion	29036	Cyclone Legguards	64	120	4	632
+29766	Leggings of the Fallen Champion	29042	Cyclone War-Kilt	64	120	4	633
+29766	Leggings of the Fallen Champion	29046	Netherblade Breeches	8	120	4	621
+29766	Leggings of the Fallen Champion	29063	Justicar Leggings	2	120	4	624
+29766	Leggings of the Fallen Champion	29069	Justicar Legguards	2	120	4	625
+29766	Leggings of the Fallen Champion	29074	Justicar Greaves	2	120	4	626
+29766	Leggings of the Fallen Champion	31406	Gladiator's Ringmail Leggings	64	123	4	686
+29766	Leggings of the Fallen Champion	31618	Gladiator's Ornamented Legplates	2	123	4	690
+29767	Leggings of the Fallen Defender	24547	Gladiator's Plate Legguards	1	123	4	567
+29767	Leggings of the Fallen Defender	27709	Gladiator's Satin Leggings	16	123	4	581
+29767	Leggings of the Fallen Defender	28128	Gladiator's Dragonhide Legguards	1024	123	4	584
+29767	Leggings of the Fallen Defender	28138	Gladiator's Wyrmhide Legguards	1024	123	4	585
+29767	Leggings of the Fallen Defender	29015	Warbringer Legguards	1	120	4	654
+29767	Leggings of the Fallen Defender	29022	Warbringer Greaves	1	120	4	655
+29767	Leggings of the Fallen Defender	29053	Trousers of the Incarnate	16	120	4	663
+29767	Leggings of the Fallen Defender	29059	Leggings of the Incarnate	16	120	4	664
+29767	Leggings of the Fallen Defender	29088	Legguards of Malorne	1024	120	4	638
+29767	Leggings of the Fallen Defender	29094	Britches of Malorne	1024	120	4	639
+29767	Leggings of the Fallen Defender	29099	Greaves of Malorne	1024	120	4	640
+29767	Leggings of the Fallen Defender	31377	Gladiator's Kodohide Legguards	1024	123	4	685
+29767	Leggings of the Fallen Defender	31411	Gladiator's Mooncloth Leggings	16	123	4	687
+30236	Chestguard of the Vanquished Champion	30123	Crystalforge Chestguard	2	133	4	628
+30236	Chestguard of the Vanquished Champion	30129	Crystalforge Breastplate	2	133	4	629
+30236	Chestguard of the Vanquished Champion	30134	Crystalforge Chestpiece	2	133	4	627
+30236	Chestguard of the Vanquished Champion	30144	Deathmantle Chestguard	8	133	4	622
+30236	Chestguard of the Vanquished Champion	30164	Cataclysm Chestguard	64	133	4	634
+30236	Chestguard of the Vanquished Champion	30169	Cataclysm Chestpiece	64	133	4	635
+30236	Chestguard of the Vanquished Champion	30185	Cataclysm Chestplate	64	133	4	636
+30236	Chestguard of the Vanquished Champion	31992	Merciless Gladiator's Lamellar Chestpiece	2	136	4	582
+30236	Chestguard of the Vanquished Champion	32002	Merciless Gladiator's Leather Tunic	8	136	4	577
+30236	Chestguard of the Vanquished Champion	32004	Merciless Gladiator's Linked Armor	64	136	4	578
+30236	Chestguard of the Vanquished Champion	32009	Merciless Gladiator's Mail Armor	64	136	4	580
+30236	Chestguard of the Vanquished Champion	32020	Merciless Gladiator's Ornamented Chestguard	2	136	4	690
+30236	Chestguard of the Vanquished Champion	32029	Merciless Gladiator's Ringmail Armor	64	136	4	686
+30236	Chestguard of the Vanquished Champion	32039	Merciless Gladiator's Scaled Chestpiece	2	136	4	583
+30237	Chestguard of the Vanquished Defender	30113	Destroyer Chestguard	1	133	4	656
+30237	Chestguard of the Vanquished Defender	30118	Destroyer Breastplate	1	133	4	657
+30237	Chestguard of the Vanquished Defender	30150	Vestments of the Avatar	16	133	4	665
+30237	Chestguard of the Vanquished Defender	30159	Shroud of the Avatar	16	133	4	666
+30237	Chestguard of the Vanquished Defender	30216	Nordrassil Chestguard	1024	133	4	642
+30237	Chestguard of the Vanquished Defender	30222	Nordrassil Chestplate	1024	133	4	641
+30237	Chestguard of the Vanquished Defender	30231	Nordrassil Chestpiece	1024	133	4	643
+30237	Chestguard of the Vanquished Defender	30486	Merciless Gladiator's Plate Chestpiece	1	136	4	567
+30237	Chestguard of the Vanquished Defender	31972	Merciless Gladiator's Dragonhide Tunic	1024	136	4	584
+30237	Chestguard of the Vanquished Defender	31991	Merciless Gladiator's Kodohide Tunic	1024	136	4	685
+30237	Chestguard of the Vanquished Defender	32019	Merciless Gladiator's Mooncloth Robe	16	136	4	687
+30237	Chestguard of the Vanquished Defender	32038	Merciless Gladiator's Satin Robe	16	136	4	581
+30237	Chestguard of the Vanquished Defender	32060	Merciless Gladiator's Wyrmhide Tunic	1024	136	4	585
+30238	Chestguard of the Vanquished Hero	30139	Rift Stalker Hauberk	4	133	4	652
+30238	Chestguard of the Vanquished Hero	30196	Robes of Tirisfal	128	133	4	649
+30238	Chestguard of the Vanquished Hero	30214	Robe of the Corruptor	256	133	4	646
+30238	Chestguard of the Vanquished Hero	31960	Merciless Gladiator's Chain Armor	4	136	4	586
+30238	Chestguard of the Vanquished Hero	31977	Merciless Gladiator's Dreadweave Robe	256	136	4	568
+30238	Chestguard of the Vanquished Hero	31982	Merciless Gladiator's Felweave Raiment	256	136	4	615
+30238	Chestguard of the Vanquished Hero	32050	Merciless Gladiator's Silk Raiment	128	136	4	579
+30239	Gloves of the Vanquished Champion	30124	Crystalforge Handguards	2	133	4	628
+30239	Gloves of the Vanquished Champion	30130	Crystalforge Gauntlets	2	133	4	629
+30239	Gloves of the Vanquished Champion	30135	Crystalforge Gloves	2	133	4	627
+30239	Gloves of the Vanquished Champion	30145	Deathmantle Handguards	8	133	4	622
+30239	Gloves of the Vanquished Champion	30165	Cataclysm Gloves	64	133	4	634
+30239	Gloves of the Vanquished Champion	30170	Cataclysm Handgrips	64	133	4	635
+30239	Gloves of the Vanquished Champion	30189	Cataclysm Gauntlets	64	133	4	636
+30239	Gloves of the Vanquished Champion	31993	Merciless Gladiator's Lamellar Gauntlets	2	136	4	582
+30239	Gloves of the Vanquished Champion	31998	Merciless Gladiator's Leather Gloves	8	136	4	577
+30239	Gloves of the Vanquished Champion	32005	Merciless Gladiator's Linked Gauntlets	64	136	4	578
+30239	Gloves of the Vanquished Champion	32010	Merciless Gladiator's Mail Gauntlets	64	136	4	580
+30239	Gloves of the Vanquished Champion	32021	Merciless Gladiator's Ornamented Gloves	2	136	4	690
+30239	Gloves of the Vanquished Champion	32030	Merciless Gladiator's Ringmail Gauntlets	64	136	4	686
+30239	Gloves of the Vanquished Champion	32040	Merciless Gladiator's Scaled Gauntlets	2	136	4	583
+30240	Gloves of the Vanquished Defender	30114	Destroyer Handguards	1	133	4	656
+30240	Gloves of the Vanquished Defender	30119	Destroyer Gauntlets	1	133	4	657
+30240	Gloves of the Vanquished Defender	30151	Gloves of the Avatar	16	133	4	665
+30240	Gloves of the Vanquished Defender	30160	Handguards of the Avatar	16	133	4	666
+30240	Gloves of the Vanquished Defender	30217	Nordrassil Gloves	1024	133	4	642
+30240	Gloves of the Vanquished Defender	30223	Nordrassil Handgrips	1024	133	4	641
+30240	Gloves of the Vanquished Defender	30232	Nordrassil Gauntlets	1024	133	4	643
+30240	Gloves of the Vanquished Defender	30487	Merciless Gladiator's Plate Gauntlets	1	136	4	567
+30240	Gloves of the Vanquished Defender	31967	Merciless Gladiator's Dragonhide Gloves	1024	136	4	584
+30240	Gloves of the Vanquished Defender	31987	Merciless Gladiator's Kodohide Gloves	1024	136	4	685
+30240	Gloves of the Vanquished Defender	32015	Merciless Gladiator's Mooncloth Gloves	16	136	4	687
+30240	Gloves of the Vanquished Defender	32034	Merciless Gladiator's Satin Gloves	16	136	4	581
+30240	Gloves of the Vanquished Defender	32056	Merciless Gladiator's Wyrmhide Gloves	1024	136	4	585
+30241	Gloves of the Vanquished Hero	30140	Rift Stalker Gauntlets	4	133	4	652
+30241	Gloves of the Vanquished Hero	30205	Gloves of Tirisfal	128	133	4	649
+30241	Gloves of the Vanquished Hero	30211	Gloves of the Corruptor	256	133	4	646
+30241	Gloves of the Vanquished Hero	31961	Merciless Gladiator's Chain Gauntlets	4	136	4	586
+30241	Gloves of the Vanquished Hero	31973	Merciless Gladiator's Dreadweave Gloves	256	136	4	568
+30241	Gloves of the Vanquished Hero	31981	Merciless Gladiator's Felweave Handguards	256	136	4	615
+30241	Gloves of the Vanquished Hero	32049	Merciless Gladiator's Silk Handguards	128	136	4	579
+30242	Helm of the Vanquished Champion	30125	Crystalforge Faceguard	2	133	4	628
+30242	Helm of the Vanquished Champion	30131	Crystalforge War-Helm	2	133	4	629
+30242	Helm of the Vanquished Champion	30136	Crystalforge Greathelm	2	133	4	627
+30242	Helm of the Vanquished Champion	30146	Deathmantle Helm	8	133	4	622
+30242	Helm of the Vanquished Champion	30166	Cataclysm Headguard	64	133	4	634
+30242	Helm of the Vanquished Champion	30171	Cataclysm Headpiece	64	133	4	635
+30242	Helm of the Vanquished Champion	30190	Cataclysm Helm	64	133	4	636
+30242	Helm of the Vanquished Champion	31997	Merciless Gladiator's Lamellar Helm	2	136	4	582
+30242	Helm of the Vanquished Champion	31999	Merciless Gladiator's Leather Helm	8	136	4	577
+30242	Helm of the Vanquished Champion	32006	Merciless Gladiator's Linked Helm	64	136	4	578
+30242	Helm of the Vanquished Champion	32011	Merciless Gladiator's Mail Helm	64	136	4	580
+30242	Helm of the Vanquished Champion	32022	Merciless Gladiator's Ornamented Headcover	2	136	4	690
+30242	Helm of the Vanquished Champion	32031	Merciless Gladiator's Ringmail Helm	64	136	4	686
+30242	Helm of the Vanquished Champion	32041	Merciless Gladiator's Scaled Helm	2	136	4	583
+30243	Helm of the Vanquished Defender	30115	Destroyer Greathelm	1	133	4	656
+30243	Helm of the Vanquished Defender	30120	Destroyer Battle-Helm	1	133	4	657
+30243	Helm of the Vanquished Defender	30152	Cowl of the Avatar	16	133	4	665
+30243	Helm of the Vanquished Defender	30161	Hood of the Avatar	16	133	4	666
+30243	Helm of the Vanquished Defender	30219	Nordrassil Headguard	1024	133	4	642
+30243	Helm of the Vanquished Defender	30228	Nordrassil Headdress	1024	133	4	641
+30243	Helm of the Vanquished Defender	30233	Nordrassil Headpiece	1024	133	4	643
+30243	Helm of the Vanquished Defender	30488	Merciless Gladiator's Plate Helm	1	136	4	567
+30243	Helm of the Vanquished Defender	31968	Merciless Gladiator's Dragonhide Helm	1024	136	4	584
+30243	Helm of the Vanquished Defender	31988	Merciless Gladiator's Kodohide Helm	1024	136	4	685
+30243	Helm of the Vanquished Defender	32016	Merciless Gladiator's Mooncloth Hood	16	136	4	687
+30243	Helm of the Vanquished Defender	32035	Merciless Gladiator's Satin Hood	16	136	4	581
+30243	Helm of the Vanquished Defender	32057	Merciless Gladiator's Wyrmhide Helm	1024	136	4	585
+30244	Helm of the Vanquished Hero	30141	Rift Stalker Helm	4	133	4	652
+30244	Helm of the Vanquished Hero	30206	Cowl of Tirisfal	128	133	4	649
+30244	Helm of the Vanquished Hero	30212	Hood of the Corruptor	256	133	4	646
+30244	Helm of the Vanquished Hero	31962	Merciless Gladiator's Chain Helm	4	136	4	586
+30244	Helm of the Vanquished Hero	31974	Merciless Gladiator's Dreadweave Hood	256	136	4	568
+30244	Helm of the Vanquished Hero	31980	Merciless Gladiator's Felweave Cowl	256	136	4	615
+30244	Helm of the Vanquished Hero	32048	Merciless Gladiator's Silk Cowl	128	136	4	579
+30245	Leggings of the Vanquished Champion	30126	Crystalforge Legguards	2	133	4	628
+30245	Leggings of the Vanquished Champion	30132	Crystalforge Greaves	2	133	4	629
+30245	Leggings of the Vanquished Champion	30137	Crystalforge Leggings	2	133	4	627
+30245	Leggings of the Vanquished Champion	30148	Deathmantle Legguards	8	133	4	622
+30245	Leggings of the Vanquished Champion	30167	Cataclysm Legguards	64	133	4	634
+30245	Leggings of the Vanquished Champion	30172	Cataclysm Leggings	64	133	4	635
+30245	Leggings of the Vanquished Champion	30192	Cataclysm Legplates	64	133	4	636
+30245	Leggings of the Vanquished Champion	31995	Merciless Gladiator's Lamellar Legguards	2	136	4	582
+30245	Leggings of the Vanquished Champion	32000	Merciless Gladiator's Leather Legguards	8	136	4	577
+30245	Leggings of the Vanquished Champion	32007	Merciless Gladiator's Linked Leggings	64	136	4	578
+30245	Leggings of the Vanquished Champion	32012	Merciless Gladiator's Mail Leggings	64	136	4	580
+30245	Leggings of the Vanquished Champion	32023	Merciless Gladiator's Ornamented Legplates	2	136	4	690
+30245	Leggings of the Vanquished Champion	32032	Merciless Gladiator's Ringmail Leggings	64	136	4	686
+30245	Leggings of the Vanquished Champion	32042	Merciless Gladiator's Scaled Legguards	2	136	4	583
+30246	Leggings of the Vanquished Defender	30116	Destroyer Legguards	1	133	4	656
+30246	Leggings of the Vanquished Defender	30121	Destroyer Greaves	1	133	4	657
+30246	Leggings of the Vanquished Defender	30153	Breeches of the Avatar	16	133	4	665
+30246	Leggings of the Vanquished Defender	30162	Leggings of the Avatar	16	133	4	666
+30246	Leggings of the Vanquished Defender	30220	Nordrassil Life-Kilt	1024	133	4	642
+30246	Leggings of the Vanquished Defender	30229	Nordrassil Feral-Kilt	1024	133	4	641
+30246	Leggings of the Vanquished Defender	30234	Nordrassil Wrath-Kilt	1024	133	4	643
+30246	Leggings of the Vanquished Defender	30489	Merciless Gladiator's Plate Legguards	1	136	4	567
+30246	Leggings of the Vanquished Defender	31969	Merciless Gladiator's Dragonhide Legguards	1024	136	4	584
+30246	Leggings of the Vanquished Defender	31989	Merciless Gladiator's Kodohide Legguards	1024	136	4	685
+30246	Leggings of the Vanquished Defender	32017	Merciless Gladiator's Mooncloth Leggings	16	136	4	687
+30246	Leggings of the Vanquished Defender	32036	Merciless Gladiator's Satin Leggings	16	136	4	581
+30246	Leggings of the Vanquished Defender	32058	Merciless Gladiator's Wyrmhide Legguards	1024	136	4	585
+30247	Leggings of the Vanquished Hero	30142	Rift Stalker Leggings	4	133	4	652
+30247	Leggings of the Vanquished Hero	30207	Leggings of Tirisfal	128	133	4	649
+30247	Leggings of the Vanquished Hero	30213	Leggings of the Corruptor	256	133	4	646
+30247	Leggings of the Vanquished Hero	31963	Merciless Gladiator's Chain Leggings	4	136	4	586
+30247	Leggings of the Vanquished Hero	31975	Merciless Gladiator's Dreadweave Leggings	256	136	4	568
+30247	Leggings of the Vanquished Hero	31983	Merciless Gladiator's Felweave Trousers	256	136	4	615
+30247	Leggings of the Vanquished Hero	32051	Merciless Gladiator's Silk Trousers	128	136	4	579
+30248	Pauldrons of the Vanquished Champion	30127	Crystalforge Shoulderguards	2	133	4	628
+30248	Pauldrons of the Vanquished Champion	30133	Crystalforge Shoulderbraces	2	133	4	629
+30248	Pauldrons of the Vanquished Champion	30138	Crystalforge Pauldrons	2	133	4	627
+30248	Pauldrons of the Vanquished Champion	30149	Deathmantle Shoulderpads	8	133	4	622
+30248	Pauldrons of the Vanquished Champion	30168	Cataclysm Shoulderguards	64	133	4	634
+30248	Pauldrons of the Vanquished Champion	30173	Cataclysm Shoulderpads	64	133	4	635
+30248	Pauldrons of the Vanquished Champion	30194	Cataclysm Shoulderplates	64	133	4	636
+30248	Pauldrons of the Vanquished Champion	31996	Merciless Gladiator's Lamellar Shoulders	2	136	4	582
+30248	Pauldrons of the Vanquished Champion	32001	Merciless Gladiator's Leather Spaulders	8	136	4	577
+30248	Pauldrons of the Vanquished Champion	32008	Merciless Gladiator's Linked Spaulders	64	136	4	578
+30248	Pauldrons of the Vanquished Champion	32013	Merciless Gladiator's Mail Spaulders	64	136	4	580
+30248	Pauldrons of the Vanquished Champion	32024	Merciless Gladiator's Ornamented Spaulders	2	136	4	690
+30248	Pauldrons of the Vanquished Champion	32033	Merciless Gladiator's Ringmail Spaulders	64	136	4	686
+30248	Pauldrons of the Vanquished Champion	32043	Merciless Gladiator's Scaled Shoulders	2	136	4	583
+30249	Pauldrons of the Vanquished Defender	30117	Destroyer Shoulderguards	1	133	4	656
+30249	Pauldrons of the Vanquished Defender	30122	Destroyer Shoulderblades	1	133	4	657
+30249	Pauldrons of the Vanquished Defender	30154	Mantle of the Avatar	16	133	4	665
+30249	Pauldrons of the Vanquished Defender	30163	Wings of the Avatar	16	133	4	666
+30249	Pauldrons of the Vanquished Defender	30221	Nordrassil Life-Mantle	1024	133	4	642
+30249	Pauldrons of the Vanquished Defender	30230	Nordrassil Feral-Mantle	1024	133	4	641
+30249	Pauldrons of the Vanquished Defender	30235	Nordrassil Wrath-Mantle	1024	133	4	643
+30249	Pauldrons of the Vanquished Defender	30490	Merciless Gladiator's Plate Shoulders	1	136	4	567
+30249	Pauldrons of the Vanquished Defender	31971	Merciless Gladiator's Dragonhide Spaulders	1024	136	4	584
+30249	Pauldrons of the Vanquished Defender	31990	Merciless Gladiator's Kodohide Spaulders	1024	136	4	685
+30249	Pauldrons of the Vanquished Defender	32018	Merciless Gladiator's Mooncloth Mantle	16	136	4	687
+30249	Pauldrons of the Vanquished Defender	32037	Merciless Gladiator's Satin Mantle	16	136	4	581
+30249	Pauldrons of the Vanquished Defender	32059	Merciless Gladiator's Wyrmhide Spaulders	1024	136	4	585
+30250	Pauldrons of the Vanquished Hero	30143	Rift Stalker Mantle	4	133	4	652
+30250	Pauldrons of the Vanquished Hero	30210	Mantle of Tirisfal	128	133	4	649
+30250	Pauldrons of the Vanquished Hero	30215	Mantle of the Corruptor	256	133	4	646
+30250	Pauldrons of the Vanquished Hero	31964	Merciless Gladiator's Chain Spaulders	4	136	4	586
+30250	Pauldrons of the Vanquished Hero	31976	Merciless Gladiator's Dreadweave Mantle	256	136	4	568
+30250	Pauldrons of the Vanquished Hero	31979	Merciless Gladiator's Felweave Amice	256	136	4	615
+30250	Pauldrons of the Vanquished Hero	32047	Merciless Gladiator's Silk Amice	128	136	4	579
+31089	Chestguard of the Forgotten Conqueror	30990	Lightbringer Breastplate	2	146	4	680
+31089	Chestguard of the Forgotten Conqueror	30991	Lightbringer Chestguard	2	146	4	679
+31089	Chestguard of the Forgotten Conqueror	30992	Lightbringer Chestpiece	2	146	4	681
+31089	Chestguard of the Forgotten Conqueror	31052	Robe of the Malefic	256	146	4	670
+31089	Chestguard of the Forgotten Conqueror	31065	Shroud of Absolution	16	146	4	674
+31089	Chestguard of the Forgotten Conqueror	31066	Vestments of Absolution	16	146	4	675
+31089	Chestguard of the Forgotten Conqueror	31977	Merciless Gladiator's Dreadweave Robe	256	136	4	568
+31089	Chestguard of the Forgotten Conqueror	31982	Merciless Gladiator's Felweave Raiment	256	136	4	615
+31089	Chestguard of the Forgotten Conqueror	31992	Merciless Gladiator's Lamellar Chestpiece	2	136	4	582
+31089	Chestguard of the Forgotten Conqueror	32019	Merciless Gladiator's Mooncloth Robe	16	136	4	687
+31089	Chestguard of the Forgotten Conqueror	32020	Merciless Gladiator's Ornamented Chestguard	2	136	4	690
+31089	Chestguard of the Forgotten Conqueror	32038	Merciless Gladiator's Satin Robe	16	136	4	581
+31089	Chestguard of the Forgotten Conqueror	32039	Merciless Gladiator's Scaled Chestpiece	2	136	4	583
+31090	Chestguard of the Forgotten Vanquisher	31028	Slayer's Chestguard	8	146	4	668
+31090	Chestguard of the Forgotten Vanquisher	31041	Thunderheart Tunic	1024	146	4	678
+31090	Chestguard of the Forgotten Vanquisher	31042	Thunderheart Chestguard	1024	146	4	676
+31090	Chestguard of the Forgotten Vanquisher	31043	Thunderheart Vest	1024	146	4	677
+31090	Chestguard of the Forgotten Vanquisher	31057	Robes of the Tempest	128	146	4	671
+31090	Chestguard of the Forgotten Vanquisher	31972	Merciless Gladiator's Dragonhide Tunic	1024	136	4	584
+31090	Chestguard of the Forgotten Vanquisher	31991	Merciless Gladiator's Kodohide Tunic	1024	136	4	685
+31090	Chestguard of the Forgotten Vanquisher	32002	Merciless Gladiator's Leather Tunic	8	136	4	577
+31090	Chestguard of the Forgotten Vanquisher	32050	Merciless Gladiator's Silk Raiment	128	136	4	579
+31090	Chestguard of the Forgotten Vanquisher	32060	Merciless Gladiator's Wyrmhide Tunic	1024	136	4	585
+31091	Chestguard of the Forgotten Protector	30486	Merciless Gladiator's Plate Chestpiece	1	136	4	567
+31091	Chestguard of the Forgotten Protector	30975	Onslaught Breastplate	1	146	4	672
+31091	Chestguard of the Forgotten Protector	30976	Onslaught Chestguard	1	146	4	673
+31091	Chestguard of the Forgotten Protector	31004	Gronnstalker's Chestguard	4	146	4	669
+31091	Chestguard of the Forgotten Protector	31016	Skyshatter Chestguard	64	146	4	683
+31091	Chestguard of the Forgotten Protector	31017	Skyshatter Breastplate	64	146	4	684
+31091	Chestguard of the Forgotten Protector	31018	Skyshatter Tunic	64	146	4	682
+31091	Chestguard of the Forgotten Protector	31960	Merciless Gladiator's Chain Armor	4	136	4	586
+31091	Chestguard of the Forgotten Protector	32004	Merciless Gladiator's Linked Armor	64	136	4	578
+31091	Chestguard of the Forgotten Protector	32009	Merciless Gladiator's Mail Armor	64	136	4	580
+31091	Chestguard of the Forgotten Protector	32029	Merciless Gladiator's Ringmail Armor	64	136	4	686
+31092	Gloves of the Forgotten Conqueror	30982	Lightbringer Gauntlets	2	146	4	680
+31092	Gloves of the Forgotten Conqueror	30983	Lightbringer Gloves	2	146	4	681
+31092	Gloves of the Forgotten Conqueror	30985	Lightbringer Handguards	2	146	4	679
+31092	Gloves of the Forgotten Conqueror	31050	Gloves of the Malefic	256	146	4	670
+31092	Gloves of the Forgotten Conqueror	31060	Gloves of Absolution	16	146	4	675
+31092	Gloves of the Forgotten Conqueror	31061	Handguards of Absolution	16	146	4	674
+31092	Gloves of the Forgotten Conqueror	31973	Merciless Gladiator's Dreadweave Gloves	256	136	4	568
+31092	Gloves of the Forgotten Conqueror	31981	Merciless Gladiator's Felweave Handguards	256	136	4	615
+31092	Gloves of the Forgotten Conqueror	31993	Merciless Gladiator's Lamellar Gauntlets	2	136	4	582
+31092	Gloves of the Forgotten Conqueror	32015	Merciless Gladiator's Mooncloth Gloves	16	136	4	687
+31092	Gloves of the Forgotten Conqueror	32021	Merciless Gladiator's Ornamented Gloves	2	136	4	690
+31092	Gloves of the Forgotten Conqueror	32034	Merciless Gladiator's Satin Gloves	16	136	4	581
+31092	Gloves of the Forgotten Conqueror	32040	Merciless Gladiator's Scaled Gauntlets	2	136	4	583
+31093	Gloves of the Forgotten Vanquisher	31026	Slayer's Handguards	8	146	4	668
+31093	Gloves of the Forgotten Vanquisher	31032	Thunderheart Gloves	1024	146	4	678
+31093	Gloves of the Forgotten Vanquisher	31034	Thunderheart Gauntlets	1024	146	4	676
+31093	Gloves of the Forgotten Vanquisher	31035	Thunderheart Handguards	1024	146	4	677
+31093	Gloves of the Forgotten Vanquisher	31055	Gloves of the Tempest	128	146	4	671
+31093	Gloves of the Forgotten Vanquisher	31967	Merciless Gladiator's Dragonhide Gloves	1024	136	4	584
+31093	Gloves of the Forgotten Vanquisher	31987	Merciless Gladiator's Kodohide Gloves	1024	136	4	685
+31093	Gloves of the Forgotten Vanquisher	31998	Merciless Gladiator's Leather Gloves	8	136	4	577
+31093	Gloves of the Forgotten Vanquisher	32049	Merciless Gladiator's Silk Handguards	128	136	4	579
+31093	Gloves of the Forgotten Vanquisher	32056	Merciless Gladiator's Wyrmhide Gloves	1024	136	4	585
+31094	Gloves of the Forgotten Protector	30487	Merciless Gladiator's Plate Gauntlets	1	136	4	567
+31094	Gloves of the Forgotten Protector	30969	Onslaught Gauntlets	1	146	4	672
+31094	Gloves of the Forgotten Protector	30970	Onslaught Handguards	1	146	4	673
+31094	Gloves of the Forgotten Protector	31001	Gronnstalker's Gloves	4	146	4	669
+31094	Gloves of the Forgotten Protector	31007	Skyshatter Gloves	64	146	4	683
+31094	Gloves of the Forgotten Protector	31008	Skyshatter Gauntlets	64	146	4	684
+31094	Gloves of the Forgotten Protector	31011	Skyshatter Grips	64	146	4	682
+31094	Gloves of the Forgotten Protector	31961	Merciless Gladiator's Chain Gauntlets	4	136	4	586
+31094	Gloves of the Forgotten Protector	32005	Merciless Gladiator's Linked Gauntlets	64	136	4	578
+31094	Gloves of the Forgotten Protector	32010	Merciless Gladiator's Mail Gauntlets	64	136	4	580
+31094	Gloves of the Forgotten Protector	32030	Merciless Gladiator's Ringmail Gauntlets	64	136	4	686
+31095	Helm of the Forgotten Protector	30488	Merciless Gladiator's Plate Helm	1	136	4	567
+31095	Helm of the Forgotten Protector	30972	Onslaught Battle-Helm	1	146	4	672
+31095	Helm of the Forgotten Protector	30974	Onslaught Greathelm	1	146	4	673
+31095	Helm of the Forgotten Protector	31003	Gronnstalker's Helmet	4	146	4	669
+31095	Helm of the Forgotten Protector	31012	Skyshatter Helmet	64	146	4	683
+31095	Helm of the Forgotten Protector	31014	Skyshatter Headguard	64	146	4	684
+31095	Helm of the Forgotten Protector	31015	Skyshatter Cover	64	146	4	682
+31095	Helm of the Forgotten Protector	31962	Merciless Gladiator's Chain Helm	4	136	4	586
+31095	Helm of the Forgotten Protector	32006	Merciless Gladiator's Linked Helm	64	136	4	578
+31095	Helm of the Forgotten Protector	32011	Merciless Gladiator's Mail Helm	64	136	4	580
+31095	Helm of the Forgotten Protector	32031	Merciless Gladiator's Ringmail Helm	64	136	4	686
+31096	Helm of the Forgotten Vanquisher	31027	Slayer's Helm	8	146	4	668
+31096	Helm of the Forgotten Vanquisher	31037	Thunderheart Helmet	1024	146	4	678
+31096	Helm of the Forgotten Vanquisher	31039	Thunderheart Cover	1024	146	4	676
+31096	Helm of the Forgotten Vanquisher	31040	Thunderheart Headguard	1024	146	4	677
+31096	Helm of the Forgotten Vanquisher	31056	Cowl of the Tempest	128	146	4	671
+31096	Helm of the Forgotten Vanquisher	31968	Merciless Gladiator's Dragonhide Helm	1024	136	4	584
+31096	Helm of the Forgotten Vanquisher	31988	Merciless Gladiator's Kodohide Helm	1024	136	4	685
+31096	Helm of the Forgotten Vanquisher	31999	Merciless Gladiator's Leather Helm	8	136	4	577
+31096	Helm of the Forgotten Vanquisher	32048	Merciless Gladiator's Silk Cowl	128	136	4	579
+31096	Helm of the Forgotten Vanquisher	32057	Merciless Gladiator's Wyrmhide Helm	1024	136	4	585
+31097	Helm of the Forgotten Conqueror	30987	Lightbringer Faceguard	2	146	4	679
+31097	Helm of the Forgotten Conqueror	30988	Lightbringer Greathelm	2	146	4	681
+31097	Helm of the Forgotten Conqueror	30989	Lightbringer War-Helm	2	146	4	680
+31097	Helm of the Forgotten Conqueror	31051	Hood of the Malefic	256	146	4	670
+31097	Helm of the Forgotten Conqueror	31063	Cowl of Absolution	16	146	4	675
+31097	Helm of the Forgotten Conqueror	31064	Hood of Absolution	16	146	4	674
+31097	Helm of the Forgotten Conqueror	31974	Merciless Gladiator's Dreadweave Hood	256	136	4	568
+31097	Helm of the Forgotten Conqueror	31980	Merciless Gladiator's Felweave Cowl	256	136	4	615
+31097	Helm of the Forgotten Conqueror	31997	Merciless Gladiator's Lamellar Helm	2	136	4	582
+31097	Helm of the Forgotten Conqueror	32016	Merciless Gladiator's Mooncloth Hood	16	136	4	687
+31097	Helm of the Forgotten Conqueror	32022	Merciless Gladiator's Ornamented Headcover	2	136	4	690
+31097	Helm of the Forgotten Conqueror	32035	Merciless Gladiator's Satin Hood	16	136	4	581
+31097	Helm of the Forgotten Conqueror	32041	Merciless Gladiator's Scaled Helm	2	136	4	583
+31098	Leggings of the Forgotten Conqueror	30993	Lightbringer Greaves	2	146	4	680
+31098	Leggings of the Forgotten Conqueror	30994	Lightbringer Leggings	2	146	4	681
+31098	Leggings of the Forgotten Conqueror	30995	Lightbringer Legguards	2	146	4	679
+31098	Leggings of the Forgotten Conqueror	31053	Leggings of the Malefic	256	146	4	670
+31098	Leggings of the Forgotten Conqueror	31067	Leggings of Absolution	16	146	4	674
+31098	Leggings of the Forgotten Conqueror	31068	Breeches of Absolution	16	146	4	675
+31098	Leggings of the Forgotten Conqueror	31975	Merciless Gladiator's Dreadweave Leggings	256	136	4	568
+31098	Leggings of the Forgotten Conqueror	31983	Merciless Gladiator's Felweave Trousers	256	136	4	615
+31098	Leggings of the Forgotten Conqueror	31995	Merciless Gladiator's Lamellar Legguards	2	136	4	582
+31098	Leggings of the Forgotten Conqueror	32017	Merciless Gladiator's Mooncloth Leggings	16	136	4	687
+31098	Leggings of the Forgotten Conqueror	32023	Merciless Gladiator's Ornamented Legplates	2	136	4	690
+31098	Leggings of the Forgotten Conqueror	32036	Merciless Gladiator's Satin Leggings	16	136	4	581
+31098	Leggings of the Forgotten Conqueror	32042	Merciless Gladiator's Scaled Legguards	2	136	4	583
+31099	Leggings of the Forgotten Vanquisher	31029	Slayer's Legguards	8	146	4	668
+31099	Leggings of the Forgotten Vanquisher	31044	Thunderheart Leggings	1024	146	4	676
+31099	Leggings of the Forgotten Vanquisher	31045	Thunderheart Legguards	1024	146	4	678
+31099	Leggings of the Forgotten Vanquisher	31046	Thunderheart Pants	1024	146	4	677
+31099	Leggings of the Forgotten Vanquisher	31058	Leggings of the Tempest	128	146	4	671
+31099	Leggings of the Forgotten Vanquisher	31969	Merciless Gladiator's Dragonhide Legguards	1024	136	4	584
+31099	Leggings of the Forgotten Vanquisher	31989	Merciless Gladiator's Kodohide Legguards	1024	136	4	685
+31099	Leggings of the Forgotten Vanquisher	32000	Merciless Gladiator's Leather Legguards	8	136	4	577
+31099	Leggings of the Forgotten Vanquisher	32051	Merciless Gladiator's Silk Trousers	128	136	4	579
+31099	Leggings of the Forgotten Vanquisher	32058	Merciless Gladiator's Wyrmhide Legguards	1024	136	4	585
+31100	Leggings of the Forgotten Protector	30489	Merciless Gladiator's Plate Legguards	1	136	4	567
+31100	Leggings of the Forgotten Protector	30977	Onslaught Greaves	1	146	4	672
+31100	Leggings of the Forgotten Protector	30978	Onslaught Legguards	1	146	4	673
+31100	Leggings of the Forgotten Protector	31005	Gronnstalker's Leggings	4	146	4	669
+31100	Leggings of the Forgotten Protector	31019	Skyshatter Leggings	64	146	4	683
+31100	Leggings of the Forgotten Protector	31020	Skyshatter Legguards	64	146	4	684
+31100	Leggings of the Forgotten Protector	31021	Skyshatter Pants	64	146	4	682
+31100	Leggings of the Forgotten Protector	31963	Merciless Gladiator's Chain Leggings	4	136	4	586
+31100	Leggings of the Forgotten Protector	32007	Merciless Gladiator's Linked Leggings	64	136	4	578
+31100	Leggings of the Forgotten Protector	32012	Merciless Gladiator's Mail Leggings	64	136	4	580
+31100	Leggings of the Forgotten Protector	32032	Merciless Gladiator's Ringmail Leggings	64	136	4	686
+31101	Pauldrons of the Forgotten Conqueror	30996	Lightbringer Pauldrons	2	146	4	681
+31101	Pauldrons of the Forgotten Conqueror	30997	Lightbringer Shoulderbraces	2	146	4	680
+31101	Pauldrons of the Forgotten Conqueror	30998	Lightbringer Shoulderguards	2	146	4	679
+31101	Pauldrons of the Forgotten Conqueror	31054	Mantle of the Malefic	256	146	4	670
+31101	Pauldrons of the Forgotten Conqueror	31069	Mantle of Absolution	16	146	4	675
+31101	Pauldrons of the Forgotten Conqueror	31070	Shoulderpads of Absolution	16	146	4	674
+31101	Pauldrons of the Forgotten Conqueror	31976	Merciless Gladiator's Dreadweave Mantle	256	136	4	568
+31101	Pauldrons of the Forgotten Conqueror	31979	Merciless Gladiator's Felweave Amice	256	136	4	615
+31101	Pauldrons of the Forgotten Conqueror	31996	Merciless Gladiator's Lamellar Shoulders	2	136	4	582
+31101	Pauldrons of the Forgotten Conqueror	32018	Merciless Gladiator's Mooncloth Mantle	16	136	4	687
+31101	Pauldrons of the Forgotten Conqueror	32024	Merciless Gladiator's Ornamented Spaulders	2	136	4	690
+31101	Pauldrons of the Forgotten Conqueror	32037	Merciless Gladiator's Satin Mantle	16	136	4	581
+31101	Pauldrons of the Forgotten Conqueror	32043	Merciless Gladiator's Scaled Shoulders	2	136	4	583
+31102	Pauldrons of the Forgotten Vanquisher	31030	Slayer's Shoulderpads	8	146	4	668
+31102	Pauldrons of the Forgotten Vanquisher	31047	Thunderheart Spaulders	1024	146	4	678
+31102	Pauldrons of the Forgotten Vanquisher	31048	Thunderheart Pauldrons	1024	146	4	676
+31102	Pauldrons of the Forgotten Vanquisher	31049	Thunderheart Shoulderpads	1024	146	4	677
+31102	Pauldrons of the Forgotten Vanquisher	31059	Mantle of the Tempest	128	146	4	671
+31102	Pauldrons of the Forgotten Vanquisher	31971	Merciless Gladiator's Dragonhide Spaulders	1024	136	4	584
+31102	Pauldrons of the Forgotten Vanquisher	31990	Merciless Gladiator's Kodohide Spaulders	1024	136	4	685
+31102	Pauldrons of the Forgotten Vanquisher	32001	Merciless Gladiator's Leather Spaulders	8	136	4	577
+31102	Pauldrons of the Forgotten Vanquisher	32047	Merciless Gladiator's Silk Amice	128	136	4	579
+31102	Pauldrons of the Forgotten Vanquisher	32059	Merciless Gladiator's Wyrmhide Spaulders	1024	136	4	585
+31103	Pauldrons of the Forgotten Protector	30490	Merciless Gladiator's Plate Shoulders	1	136	4	567
+31103	Pauldrons of the Forgotten Protector	30979	Onslaught Shoulderblades	1	146	4	672
+31103	Pauldrons of the Forgotten Protector	30980	Onslaught Shoulderguards	1	146	4	673
+31103	Pauldrons of the Forgotten Protector	31006	Gronnstalker's Spaulders	4	146	4	669
+31103	Pauldrons of the Forgotten Protector	31022	Skyshatter Shoulderpads	64	146	4	683
+31103	Pauldrons of the Forgotten Protector	31023	Skyshatter Mantle	64	146	4	684
+31103	Pauldrons of the Forgotten Protector	31024	Skyshatter Pauldrons	64	146	4	682
+31103	Pauldrons of the Forgotten Protector	31964	Merciless Gladiator's Chain Spaulders	4	136	4	586
+31103	Pauldrons of the Forgotten Protector	32008	Merciless Gladiator's Linked Spaulders	64	136	4	578
+31103	Pauldrons of the Forgotten Protector	32013	Merciless Gladiator's Mail Spaulders	64	136	4	580
+31103	Pauldrons of the Forgotten Protector	32033	Merciless Gladiator's Ringmail Spaulders	64	136	4	686
+34848	Bracers of the Forgotten Conqueror	33883	Vindicator's Dreadweave Cuffs	400	141	4	0
+34848	Bracers of the Forgotten Conqueror	33889	Vindicator's Lamellar Bracers	3	141	4	0
+34848	Bracers of the Forgotten Conqueror	33901	Vindicator's Mooncloth Cuffs	400	141	4	0
+34848	Bracers of the Forgotten Conqueror	33904	Vindicator's Ornamented Bracers	3	141	4	0
+34848	Bracers of the Forgotten Conqueror	33910	Vindicator's Scaled Bracers	3	141	4	0
+34848	Bracers of the Forgotten Conqueror	34431	Lightbringer Bands	2	154	4	680
+34848	Bracers of the Forgotten Conqueror	34432	Lightbringer Bracers	2	154	4	681
+34848	Bracers of the Forgotten Conqueror	34433	Lightbringer Wristguards	2	154	4	679
+34848	Bracers of the Forgotten Conqueror	34434	Bracers of Absolution	16	154	4	674
+34848	Bracers of the Forgotten Conqueror	34435	Cuffs of Absolution	16	154	4	675
+34848	Bracers of the Forgotten Conqueror	34436	Bracers of the Malefic	256	154	4	670
+34851	Bracers of the Forgotten Protector	33813	Vindicator's Plate Bracers	3	141	4	0
+34851	Bracers of the Forgotten Protector	33876	Vindicator's Chain Bracers	260708	141	4	0
+34851	Bracers of the Forgotten Protector	33894	Vindicator's Linked Bracers	68	141	4	0
+34851	Bracers of the Forgotten Protector	33897	Vindicator's Mail Bracers	68	141	4	0
+34851	Bracers of the Forgotten Protector	33906	Vindicator's Ringmail Bracers	68	141	4	0
+34851	Bracers of the Forgotten Protector	34437	Skyshatter Bands	64	154	4	684
+34851	Bracers of the Forgotten Protector	34438	Skyshatter Bracers	64	154	4	683
+34851	Bracers of the Forgotten Protector	34439	Skyshatter Wristguards	64	154	4	682
+34851	Bracers of the Forgotten Protector	34441	Onslaught Bracers	1	154	4	672
+34851	Bracers of the Forgotten Protector	34442	Onslaught Wristguards	1	154	4	673
+34851	Bracers of the Forgotten Protector	34443	Gronnstalker's Bracers	4	154	4	669
+34852	Bracers of the Forgotten Vanquisher	33881	Vindicator's Dragonhide Bracers	1032	141	4	0
+34852	Bracers of the Forgotten Vanquisher	33887	Vindicator's Kodohide Bracers	1032	141	4	0
+34852	Bracers of the Forgotten Vanquisher	33893	Vindicator's Leather Bracers	1032	141	4	0
+34852	Bracers of the Forgotten Vanquisher	33913	Vindicator's Silk Cuffs	400	141	4	0
+34852	Bracers of the Forgotten Vanquisher	33917	Vindicator's Wyrmhide Bracers	1032	141	4	0
+34852	Bracers of the Forgotten Vanquisher	34444	Thunderheart Wristguards	1024	154	4	676
+34852	Bracers of the Forgotten Vanquisher	34445	Thunderheart Bracers	1024	154	4	678
+34852	Bracers of the Forgotten Vanquisher	34446	Thunderheart Bands	1024	154	4	677
+34852	Bracers of the Forgotten Vanquisher	34447	Bracers of the Tempest	128	154	4	671
+34852	Bracers of the Forgotten Vanquisher	34448	Slayer's Bracers	8	154	4	668
+34853	Belt of the Forgotten Conqueror	33882	Vindicator's Dreadweave Belt	400	146	4	0
+34853	Belt of the Forgotten Conqueror	33888	Vindicator's Lamellar Belt	3	146	4	0
+34853	Belt of the Forgotten Conqueror	33900	Vindicator's Mooncloth Belt	400	146	4	0
+34853	Belt of the Forgotten Conqueror	33903	Vindicator's Ornamented Belt	3	146	4	0
+34853	Belt of the Forgotten Conqueror	33909	Vindicator's Scaled Belt	3	146	4	0
+34853	Belt of the Forgotten Conqueror	34485	Lightbringer Girdle	2	154	4	680
+34853	Belt of the Forgotten Conqueror	34487	Lightbringer Belt	2	154	4	681
+34853	Belt of the Forgotten Conqueror	34488	Lightbringer Waistguard	2	154	4	679
+34853	Belt of the Forgotten Conqueror	34527	Belt of Absolution	16	154	4	675
+34853	Belt of the Forgotten Conqueror	34528	Cord of Absolution	16	154	4	674
+34853	Belt of the Forgotten Conqueror	34541	Belt of the Malefic	256	154	4	670
+34854	Belt of the Forgotten Protector	33811	Vindicator's Plate Belt	3	146	4	0
+34854	Belt of the Forgotten Protector	33877	Vindicator's Chain Girdle	68	146	4	0
+34854	Belt of the Forgotten Protector	33895	Vindicator's Linked Girdle	68	146	4	0
+34854	Belt of the Forgotten Protector	33898	Vindicator's Mail Girdle	68	146	4	0
+34854	Belt of the Forgotten Protector	33907	Vindicator's Ringmail Girdle	68	146	4	0
+34854	Belt of the Forgotten Protector	34542	Skyshatter Cord	64	154	4	684
+34854	Belt of the Forgotten Protector	34543	Skyshatter Belt	64	154	4	683
+34854	Belt of the Forgotten Protector	34545	Skyshatter Girdle	64	154	4	682
+34854	Belt of the Forgotten Protector	34546	Onslaught Belt	1	154	4	672
+34854	Belt of the Forgotten Protector	34547	Onslaught Waistguard	1	154	4	673
+34854	Belt of the Forgotten Protector	34549	Gronnstalker's Belt	4	154	4	669
+34855	Belt of the Forgotten Vanquisher	33879	Vindicator's Dragonhide Belt	1032	146	4	0
+34855	Belt of the Forgotten Vanquisher	33885	Vindicator's Kodohide Belt	1032	146	4	0
+34855	Belt of the Forgotten Vanquisher	33891	Vindicator's Leather Belt	1032	146	4	0
+34855	Belt of the Forgotten Vanquisher	33912	Vindicator's Silk Belt	400	146	4	0
+34855	Belt of the Forgotten Vanquisher	33915	Vindicator's Wyrmhide Belt	1032	146	4	0
+34855	Belt of the Forgotten Vanquisher	34554	Thunderheart Belt	1024	154	4	678
+34855	Belt of the Forgotten Vanquisher	34555	Thunderheart Cord	1024	154	4	677
+34855	Belt of the Forgotten Vanquisher	34556	Thunderheart Waistguard	1024	154	4	676
+34855	Belt of the Forgotten Vanquisher	34557	Belt of the Tempest	128	154	4	671
+34855	Belt of the Forgotten Vanquisher	34558	Slayer's Belt	8	154	4	668
+34856	Boots of the Forgotten Conqueror	33884	Vindicator's Dreadweave Stalkers	400	146	4	0
+34856	Boots of the Forgotten Conqueror	33890	Vindicator's Lamellar Greaves	3	146	4	0
+34856	Boots of the Forgotten Conqueror	33902	Vindicator's Mooncloth Slippers	400	146	4	0
+34856	Boots of the Forgotten Conqueror	33905	Vindicator's Ornamented Greaves	3	146	4	0
+34856	Boots of the Forgotten Conqueror	33911	Vindicator's Scaled Greaves	3	146	4	0
+34856	Boots of the Forgotten Conqueror	34559	Lightbringer Treads	2	154	4	681
+34856	Boots of the Forgotten Conqueror	34560	Lightbringer Stompers	2	154	4	679
+34856	Boots of the Forgotten Conqueror	34561	Lightbringer Boots	2	154	4	680
+34856	Boots of the Forgotten Conqueror	34562	Boots of Absolution	16	154	4	675
+34856	Boots of the Forgotten Conqueror	34563	Treads of Absolution	16	154	4	674
+34856	Boots of the Forgotten Conqueror	34564	Boots of the Malefic	256	154	4	670
+34857	Boots of the Forgotten Protector	33812	Vindicator's Plate Greaves	3	146	4	0
+34857	Boots of the Forgotten Protector	33878	Vindicator's Chain Sabatons	68	146	4	0
+34857	Boots of the Forgotten Protector	33896	Vindicator's Linked Sabatons	68	146	4	0
+34857	Boots of the Forgotten Protector	33899	Vindicator's Mail Sabatons	68	146	4	0
+34857	Boots of the Forgotten Protector	33908	Vindicator's Ringmail Sabatons	68	146	4	0
+34857	Boots of the Forgotten Protector	34565	Skyshatter Boots	64	154	4	683
+34857	Boots of the Forgotten Protector	34566	Skyshatter Treads	64	154	4	684
+34857	Boots of the Forgotten Protector	34567	Skyshatter Greaves	64	154	4	682
+34857	Boots of the Forgotten Protector	34568	Onslaught Boots	1	154	4	673
+34857	Boots of the Forgotten Protector	34569	Onslaught Treads	1	154	4	672
+34857	Boots of the Forgotten Protector	34570	Gronnstalker's Boots	4	154	4	669
+34858	Boots of the Forgotten Vanquisher	33880	Vindicator's Dragonhide Boots	1032	146	4	0
+34858	Boots of the Forgotten Vanquisher	33886	Vindicator's Kodohide Boots	1032	146	4	0
+34858	Boots of the Forgotten Vanquisher	33892	Vindicator's Leather Boots	1032	146	4	0
+34858	Boots of the Forgotten Vanquisher	33914	Vindicator's Silk Footguards	400	146	4	0
+34858	Boots of the Forgotten Vanquisher	33916	Vindicator's Wyrmhide Boots	1032	146	4	0
+34858	Boots of the Forgotten Vanquisher	34571	Thunderheart Boots	1024	154	4	678
+34858	Boots of the Forgotten Vanquisher	34572	Thunderheart Footwraps	1024	154	4	677
+34858	Boots of the Forgotten Vanquisher	34573	Thunderheart Treads	1024	154	4	676
+34858	Boots of the Forgotten Vanquisher	34574	Boots of the Tempest	128	154	4	671
+34858	Boots of the Forgotten Vanquisher	34575	Slayer's Boots	8	154	4	668
+40610	Chestguard of the Lost Conqueror	39497	Heroes' Plagueheart Robe	256	200	4	802
+40610	Chestguard of the Lost Conqueror	39515	Heroes' Robe of Faith	16	200	4	804
+40610	Chestguard of the Lost Conqueror	39523	Heroes' Raiments of Faith	16	200	4	805
+40610	Chestguard of the Lost Conqueror	39629	Heroes' Redemption Tunic	2	200	4	790
+40610	Chestguard of the Lost Conqueror	39633	Heroes' Redemption Chestpiece	2	200	4	789
+40610	Chestguard of the Lost Conqueror	39638	Heroes' Redemption Breastplate	2	200	4	791
+40611	Chestguard of the Lost Protector	39579	Heroes' Cryptstalker Tunic	4	200	4	794
+40611	Chestguard of the Lost Protector	39588	Heroes' Earthshatter Tunic	64	200	4	797
+40611	Chestguard of the Lost Protector	39592	Heroes' Earthshatter Hauberk	64	200	4	796
+40611	Chestguard of the Lost Protector	39597	Heroes' Earthshatter Chestguard	64	200	4	795
+40611	Chestguard of the Lost Protector	39606	Heroes' Dreadnaught Battleplate	1	200	4	788
+40611	Chestguard of the Lost Protector	39611	Heroes' Dreadnaught Breastplate	1	200	4	787
+40612	Chestguard of the Lost Vanquisher	39492	Heroes' Frostfire Robe	128	200	4	803
+40612	Chestguard of the Lost Vanquisher	39538	Heroes' Dreamwalker Robe	1024	200	4	799
+40612	Chestguard of the Lost Vanquisher	39547	Heroes' Dreamwalker Vestments	1024	200	4	800
+40612	Chestguard of the Lost Vanquisher	39554	Heroes' Dreamwalker Raiments	1024	200	4	798
+40612	Chestguard of the Lost Vanquisher	39558	Heroes' Bonescythe Breastplate	8	200	4	801
+40612	Chestguard of the Lost Vanquisher	39617	Heroes' Scourgeborne Battleplate	32	200	4	792
+40612	Chestguard of the Lost Vanquisher	39623	Heroes' Scourgeborne Chestguard	32	200	4	793
+40613	Gloves of the Lost Conqueror	39500	Heroes' Plagueheart Gloves	256	200	4	802
+40613	Gloves of the Lost Conqueror	39519	Heroes' Gloves of Faith	16	200	4	804
+40613	Gloves of the Lost Conqueror	39530	Heroes' Handwraps of Faith	16	200	4	805
+40613	Gloves of the Lost Conqueror	39632	Heroes' Redemption Gloves	2	200	4	790
+40613	Gloves of the Lost Conqueror	39634	Heroes' Redemption Gauntlets	2	200	4	789
+40613	Gloves of the Lost Conqueror	39639	Heroes' Redemption Handguards	2	200	4	791
+40614	Gloves of the Lost Protector	39582	Heroes' Cryptstalker Handguards	4	200	4	794
+40614	Gloves of the Lost Protector	39591	Heroes' Earthshatter Handguards	64	200	4	797
+40614	Gloves of the Lost Protector	39593	Heroes' Earthshatter Gloves	64	200	4	796
+40614	Gloves of the Lost Protector	39601	Heroes' Earthshatter Grips	64	200	4	795
+40614	Gloves of the Lost Protector	39609	Heroes' Dreadnaught Gauntlets	1	200	4	788
+40614	Gloves of the Lost Protector	39622	Heroes' Dreadnaught Handguards	1	200	4	787
+40615	Gloves of the Lost Vanquisher	39495	Heroes' Frostfire Gloves	128	200	4	803
+40615	Gloves of the Lost Vanquisher	39543	Heroes' Dreamwalker Handguards	1024	200	4	799
+40615	Gloves of the Lost Vanquisher	39544	Heroes' Dreamwalker Gloves	1024	200	4	800
+40615	Gloves of the Lost Vanquisher	39557	Heroes' Dreamwalker Handgrips	1024	200	4	798
+40615	Gloves of the Lost Vanquisher	39560	Heroes' Bonescythe Gauntlets	8	200	4	801
+40615	Gloves of the Lost Vanquisher	39618	Heroes' Scourgeborne Gauntlets	32	200	4	792
+40615	Gloves of the Lost Vanquisher	39624	Heroes' Scourgeborne Handguards	32	200	4	793
+40616	Helm of the Lost Conqueror	39496	Heroes' Plagueheart Circlet	256	200	4	802
+40616	Helm of the Lost Conqueror	39514	Heroes' Crown of Faith	16	200	4	804
+40616	Helm of the Lost Conqueror	39521	Heroes' Circlet of Faith	16	200	4	805
+40616	Helm of the Lost Conqueror	39628	Heroes' Redemption Headpiece	2	200	4	790
+40616	Helm of the Lost Conqueror	39635	Heroes' Redemption Helm	2	200	4	789
+40616	Helm of the Lost Conqueror	39640	Heroes' Redemption Faceguard	2	200	4	791
+40617	Helm of the Lost Protector	39578	Heroes' Cryptstalker Headpiece	4	200	4	794
+40617	Helm of the Lost Protector	39583	Heroes' Earthshatter Headpiece	64	200	4	797
+40617	Helm of the Lost Protector	39594	Heroes' Earthshatter Helm	64	200	4	796
+40617	Helm of the Lost Protector	39602	Heroes' Earthshatter Faceguard	64	200	4	795
+40617	Helm of the Lost Protector	39605	Heroes' Dreadnaught Helmet	1	200	4	788
+40617	Helm of the Lost Protector	39610	Heroes' Dreadnaught Greathelm	1	200	4	787
+40618	Helm of the Lost Vanquisher	39491	Heroes' Frostfire Circlet	128	200	4	803
+40618	Helm of the Lost Vanquisher	39531	Heroes' Dreamwalker Headpiece	1024	200	4	799
+40618	Helm of the Lost Vanquisher	39545	Heroes' Dreamwalker Cover	1024	200	4	800
+40618	Helm of the Lost Vanquisher	39553	Heroes' Dreamwalker Headguard	1024	200	4	798
+40618	Helm of the Lost Vanquisher	39561	Heroes' Bonescythe Helmet	8	200	4	801
+40618	Helm of the Lost Vanquisher	39619	Heroes' Scourgeborne Helmet	32	200	4	792
+40618	Helm of the Lost Vanquisher	39625	Heroes' Scourgeborne Faceguard	32	200	4	793
+40619	Leggings of the Lost Conqueror	39498	Heroes' Plagueheart Leggings	256	200	4	802
+40619	Leggings of the Lost Conqueror	39517	Heroes' Leggings of Faith	16	200	4	804
+40619	Leggings of the Lost Conqueror	39528	Heroes' Pants of Faith	16	200	4	805
+40619	Leggings of the Lost Conqueror	39630	Heroes' Redemption Greaves	2	200	4	790
+40619	Leggings of the Lost Conqueror	39636	Heroes' Redemption Legplates	2	200	4	789
+40619	Leggings of the Lost Conqueror	39641	Heroes' Redemption Legguards	2	200	4	791
+40620	Leggings of the Lost Protector	39580	Heroes' Cryptstalker Legguards	4	200	4	794
+40620	Leggings of the Lost Protector	39589	Heroes' Earthshatter Legguards	64	200	4	797
+40620	Leggings of the Lost Protector	39595	Heroes' Earthshatter Kilt	64	200	4	796
+40620	Leggings of the Lost Protector	39603	Heroes' Earthshatter War-Kilt	64	200	4	795
+40620	Leggings of the Lost Protector	39607	Heroes' Dreadnaught Legplates	1	200	4	788
+40620	Leggings of the Lost Protector	39612	Heroes' Dreadnaught Legguards	1	200	4	787
+40621	Leggings of the Lost Vanquisher	39493	Heroes' Frostfire Leggings	128	200	4	803
+40621	Leggings of the Lost Vanquisher	39539	Heroes' Dreamwalker Leggings	1024	200	4	799
+40621	Leggings of the Lost Vanquisher	39546	Heroes' Dreamwalker Trousers	1024	200	4	800
+40621	Leggings of the Lost Vanquisher	39555	Heroes' Dreamwalker Legguards	1024	200	4	798
+40621	Leggings of the Lost Vanquisher	39564	Heroes' Bonescythe Legplates	8	200	4	801
+40621	Leggings of the Lost Vanquisher	39620	Heroes' Scourgeborne Legplates	32	200	4	792
+40621	Leggings of the Lost Vanquisher	39626	Heroes' Scourgeborne Legguards	32	200	4	793
+40622	Spaulders of the Lost Conqueror	39499	Heroes' Plagueheart Shoulderpads	256	200	4	802
+40622	Spaulders of the Lost Conqueror	39518	Heroes' Shoulderpads of Faith	16	200	4	804
+40622	Spaulders of the Lost Conqueror	39529	Heroes' Mantle of Faith	16	200	4	805
+40622	Spaulders of the Lost Conqueror	39631	Heroes' Redemption Spaulders	2	200	4	790
+40622	Spaulders of the Lost Conqueror	39637	Heroes' Redemption Shoulderplates	2	200	4	789
+40622	Spaulders of the Lost Conqueror	39642	Heroes' Redemption Shoulderguards	2	200	4	791
+40623	Spaulders of the Lost Protector	39581	Heroes' Cryptstalker Spaulders	4	200	4	794
+40623	Spaulders of the Lost Protector	39590	Heroes' Earthshatter Spaulders	64	200	4	797
+40623	Spaulders of the Lost Protector	39596	Heroes' Earthshatter Shoulderpads	64	200	4	796
+40623	Spaulders of the Lost Protector	39604	Heroes' Earthshatter Shoulderguards	64	200	4	795
+40623	Spaulders of the Lost Protector	39608	Heroes' Dreadnaught Shoulderplates	1	200	4	788
+40623	Spaulders of the Lost Protector	39613	Heroes' Dreadnaught Pauldrons	1	200	4	787
+40624	Spaulders of the Lost Vanquisher	39494	Heroes' Frostfire Shoulderpads	128	200	4	803
+40624	Spaulders of the Lost Vanquisher	39542	Heroes' Dreamwalker Spaulders	1024	200	4	799
+40624	Spaulders of the Lost Vanquisher	39548	Heroes' Dreamwalker Mantle	1024	200	4	800
+40624	Spaulders of the Lost Vanquisher	39556	Heroes' Dreamwalker Shoulderpads	1024	200	4	798
+40624	Spaulders of the Lost Vanquisher	39565	Heroes' Bonescythe Pauldrons	8	200	4	801
+40624	Spaulders of the Lost Vanquisher	39621	Heroes' Scourgeborne Shoulderplates	32	200	4	792
+40624	Spaulders of the Lost Vanquisher	39627	Heroes' Scourgeborne Pauldrons	32	200	4	793
+40625	Breastplate of the Lost Conqueror	40423	Valorous Plagueheart Robe	256	213	4	802
+40625	Breastplate of the Lost Conqueror	40449	Valorous Robe of Faith	16	213	4	804
+40625	Breastplate of the Lost Conqueror	40458	Valorous Raiments of Faith	16	213	4	805
+40625	Breastplate of the Lost Conqueror	40569	Valorous Redemption Tunic	2	213	4	790
+40625	Breastplate of the Lost Conqueror	40574	Valorous Redemption Chestpiece	2	213	4	789
+40625	Breastplate of the Lost Conqueror	40579	Valorous Redemption Breastplate	2	213	4	791
+40626	Breastplate of the Lost Protector	40503	Valorous Cryptstalker Tunic	4	213	4	794
+40626	Breastplate of the Lost Protector	40508	Valorous Earthshatter Tunic	64	213	4	797
+40626	Breastplate of the Lost Protector	40514	Valorous Earthshatter Hauberk	64	213	4	796
+40626	Breastplate of the Lost Protector	40523	Valorous Earthshatter Chestguard	64	213	4	795
+40626	Breastplate of the Lost Protector	40525	Valorous Dreadnaught Battleplate	1	213	4	788
+40626	Breastplate of the Lost Protector	40544	Valorous Dreadnaught Breastplate	1	213	4	787
+40627	Breastplate of the Lost Vanquisher	40418	Valorous Frostfire Robe	128	213	4	803
+40627	Breastplate of the Lost Vanquisher	40463	Valorous Dreamwalker Robe	1024	213	4	799
+40627	Breastplate of the Lost Vanquisher	40469	Valorous Dreamwalker Vestments	1024	213	4	800
+40627	Breastplate of the Lost Vanquisher	40471	Valorous Dreamwalker Raiments	1024	213	4	798
+40627	Breastplate of the Lost Vanquisher	40495	Valorous Bonescythe Breastplate	8	213	4	801
+40627	Breastplate of the Lost Vanquisher	40550	Valorous Scourgeborne Battleplate	32	213	4	792
+40627	Breastplate of the Lost Vanquisher	40559	Valorous Scourgeborne Chestguard	32	213	4	793
+40628	Gauntlets of the Lost Conqueror	40420	Valorous Plagueheart Gloves	256	213	4	802
+40628	Gauntlets of the Lost Conqueror	40445	Valorous Gloves of Faith	16	213	4	804
+40628	Gauntlets of the Lost Conqueror	40454	Valorous Handwraps of Faith	16	213	4	805
+40628	Gauntlets of the Lost Conqueror	40570	Valorous Redemption Gloves	2	213	4	790
+40628	Gauntlets of the Lost Conqueror	40575	Valorous Redemption Gauntlets	2	213	4	789
+40628	Gauntlets of the Lost Conqueror	40580	Valorous Redemption Handguards	2	213	4	791
+40629	Gauntlets of the Lost Protector	40504	Valorous Cryptstalker Handguards	4	213	4	794
+40629	Gauntlets of the Lost Protector	40509	Valorous Earthshatter Handguards	64	213	4	797
+40629	Gauntlets of the Lost Protector	40515	Valorous Earthshatter Gloves	64	213	4	796
+40629	Gauntlets of the Lost Protector	40520	Valorous Earthshatter Grips	64	213	4	795
+40629	Gauntlets of the Lost Protector	40527	Valorous Dreadnaught Gauntlets	1	213	4	788
+40629	Gauntlets of the Lost Protector	40545	Valorous Dreadnaught Handguards	1	213	4	787
+40630	Gauntlets of the Lost Vanquisher	40415	Valorous Frostfire Gloves	128	213	4	803
+40630	Gauntlets of the Lost Vanquisher	40460	Valorous Dreamwalker Handguards	1024	213	4	799
+40630	Gauntlets of the Lost Vanquisher	40466	Valorous Dreamwalker Gloves	1024	213	4	800
+40630	Gauntlets of the Lost Vanquisher	40472	Valorous Dreamwalker Handgrips	1024	213	4	798
+40630	Gauntlets of the Lost Vanquisher	40496	Valorous Bonescythe Gauntlets	8	213	4	801
+40630	Gauntlets of the Lost Vanquisher	40552	Valorous Scourgeborne Gauntlets	32	213	4	792
+40630	Gauntlets of the Lost Vanquisher	40563	Valorous Scourgeborne Handguards	32	213	4	793
+40631	Crown of the Lost Conqueror	40421	Valorous Plagueheart Circlet	256	213	4	802
+40631	Crown of the Lost Conqueror	40447	Valorous Crown of Faith	16	213	4	804
+40631	Crown of the Lost Conqueror	40456	Valorous Circlet of Faith	16	213	4	805
+40631	Crown of the Lost Conqueror	40571	Valorous Redemption Headpiece	2	213	4	790
+40631	Crown of the Lost Conqueror	40576	Valorous Redemption Helm	2	213	4	789
+40631	Crown of the Lost Conqueror	40581	Valorous Redemption Faceguard	2	213	4	791
+40632	Crown of the Lost Protector	40505	Valorous Cryptstalker Headpiece	4	213	4	794
+40632	Crown of the Lost Protector	40510	Valorous Earthshatter Headpiece	64	213	4	797
+40632	Crown of the Lost Protector	40516	Valorous Earthshatter Helm	64	213	4	796
+40632	Crown of the Lost Protector	40521	Valorous Earthshatter Faceguard	64	213	4	795
+40632	Crown of the Lost Protector	40528	Valorous Dreadnaught Helmet	1	213	4	788
+40632	Crown of the Lost Protector	40546	Valorous Dreadnaught Greathelm	1	213	4	787
+40633	Crown of the Lost Vanquisher	40416	Valorous Frostfire Circlet	128	213	4	803
+40633	Crown of the Lost Vanquisher	40461	Valorous Dreamwalker Headpiece	1024	213	4	799
+40633	Crown of the Lost Vanquisher	40467	Valorous Dreamwalker Cover	1024	213	4	800
+40633	Crown of the Lost Vanquisher	40473	Valorous Dreamwalker Headguard	1024	213	4	798
+40633	Crown of the Lost Vanquisher	40499	Valorous Bonescythe Helmet	8	213	4	801
+40633	Crown of the Lost Vanquisher	40554	Valorous Scourgeborne Helmet	32	213	4	792
+40633	Crown of the Lost Vanquisher	40565	Valorous Scourgeborne Faceguard	32	213	4	793
+40634	Legplates of the Lost Conqueror	40422	Valorous Plagueheart Leggings	256	213	4	802
+40634	Legplates of the Lost Conqueror	40448	Valorous Leggings of Faith	16	213	4	804
+40634	Legplates of the Lost Conqueror	40457	Valorous Pants of Faith	16	213	4	805
+40634	Legplates of the Lost Conqueror	40572	Valorous Redemption Greaves	2	213	4	790
+40634	Legplates of the Lost Conqueror	40577	Valorous Redemption Legplates	2	213	4	789
+40634	Legplates of the Lost Conqueror	40583	Valorous Redemption Legguards	2	213	4	791
+40635	Legplates of the Lost Protector	40506	Valorous Cryptstalker Legguards	4	213	4	794
+40635	Legplates of the Lost Protector	40512	Valorous Earthshatter Legguards	64	213	4	797
+40635	Legplates of the Lost Protector	40517	Valorous Earthshatter Kilt	64	213	4	796
+40635	Legplates of the Lost Protector	40522	Valorous Earthshatter War-Kilt	64	213	4	795
+40635	Legplates of the Lost Protector	40529	Valorous Dreadnaught Legplates	1	213	4	788
+40635	Legplates of the Lost Protector	40547	Valorous Dreadnaught Legguards	1	213	4	787
+40636	Legplates of the Lost Vanquisher	40417	Valorous Frostfire Leggings	128	213	4	803
+40636	Legplates of the Lost Vanquisher	40462	Valorous Dreamwalker Leggings	1024	213	4	799
+40636	Legplates of the Lost Vanquisher	40468	Valorous Dreamwalker Trousers	1024	213	4	800
+40636	Legplates of the Lost Vanquisher	40493	Valorous Dreamwalker Legguards	1024	213	4	798
+40636	Legplates of the Lost Vanquisher	40500	Valorous Bonescythe Legplates	8	213	4	801
+40636	Legplates of the Lost Vanquisher	40556	Valorous Scourgeborne Legplates	32	213	4	792
+40636	Legplates of the Lost Vanquisher	40567	Valorous Scourgeborne Legguards	32	213	4	793
+40637	Mantle of the Lost Conqueror	40424	Valorous Plagueheart Shoulderpads	256	213	4	802
+40637	Mantle of the Lost Conqueror	40450	Valorous Shoulderpads of Faith	16	213	4	804
+40637	Mantle of the Lost Conqueror	40459	Valorous Mantle of Faith	16	213	4	805
+40637	Mantle of the Lost Conqueror	40573	Valorous Redemption Spaulders	2	213	4	790
+40637	Mantle of the Lost Conqueror	40578	Valorous Redemption Shoulderplates	2	213	4	789
+40637	Mantle of the Lost Conqueror	40584	Valorous Redemption Shoulderguards	2	213	4	791
+40638	Mantle of the Lost Protector	40507	Valorous Cryptstalker Spaulders	4	213	4	794
+40638	Mantle of the Lost Protector	40513	Valorous Earthshatter Spaulders	64	213	4	797
+40638	Mantle of the Lost Protector	40518	Valorous Earthshatter Shoulderpads	64	213	4	796
+40638	Mantle of the Lost Protector	40524	Valorous Earthshatter Shoulderguards	64	213	4	795
+40638	Mantle of the Lost Protector	40530	Valorous Dreadnaught Shoulderplates	1	213	4	788
+40638	Mantle of the Lost Protector	40548	Valorous Dreadnaught Pauldrons	1	213	4	787
+40639	Mantle of the Lost Vanquisher	40419	Valorous Frostfire Shoulderpads	128	213	4	803
+40639	Mantle of the Lost Vanquisher	40465	Valorous Dreamwalker Spaulders	1024	213	4	799
+40639	Mantle of the Lost Vanquisher	40470	Valorous Dreamwalker Mantle	1024	213	4	800
+40639	Mantle of the Lost Vanquisher	40494	Valorous Dreamwalker Shoulderpads	1024	213	4	798
+40639	Mantle of the Lost Vanquisher	40502	Valorous Bonescythe Pauldrons	8	213	4	801
+40639	Mantle of the Lost Vanquisher	40557	Valorous Scourgeborne Shoulderplates	32	213	4	792
+40639	Mantle of the Lost Vanquisher	40568	Valorous Scourgeborne Pauldrons	32	213	4	793
+45632	Breastplate of the Wayward Conqueror	46137	Conqueror's Deathbringer Robe	256	226	4	837
+45632	Breastplate of the Wayward Conqueror	46154	Conqueror's Aegis Battleplate	2	226	4	820
+45632	Breastplate of the Wayward Conqueror	46168	Conqueror's Raiments of Sanctification	16	226	4	832
+45632	Breastplate of the Wayward Conqueror	46173	Conqueror's Aegis Breastplate	2	226	4	821
+45632	Breastplate of the Wayward Conqueror	46178	Conqueror's Aegis Tunic	2	226	4	822
+45632	Breastplate of the Wayward Conqueror	46193	Conqueror's Robe of Sanctification	16	226	4	833
+45633	Breastplate of the Wayward Protector	46141	Conqueror's Scourgestalker Tunic	4	226	4	838
+45633	Breastplate of the Wayward Protector	46146	Conqueror's Siegebreaker Battleplate	1	226	4	830
+45633	Breastplate of the Wayward Protector	46162	Conqueror's Siegebreaker Breastplate	1	226	4	831
+45633	Breastplate of the Wayward Protector	46198	Conqueror's Worldbreaker Tunic	64	226	4	825
+45633	Breastplate of the Wayward Protector	46205	Conqueror's Worldbreaker Chestguard	64	226	4	823
+45633	Breastplate of the Wayward Protector	46206	Conqueror's Worldbreaker Hauberk	64	226	4	824
+45634	Breastplate of the Wayward Vanquisher	46111	Conqueror's Darkruned Battleplate	32	226	4	834
+45634	Breastplate of the Wayward Vanquisher	46118	Conqueror's Darkruned Chestguard	32	226	4	835
+45634	Breastplate of the Wayward Vanquisher	46123	Conqueror's Terrorblade Breastplate	8	226	4	826
+45634	Breastplate of the Wayward Vanquisher	46130	Conqueror's Kirin Tor Tunic	128	226	4	836
+45634	Breastplate of the Wayward Vanquisher	46159	Conqueror's Nightsong Raiments	1024	226	4	827
+45634	Breastplate of the Wayward Vanquisher	46186	Conqueror's Nightsong Robe	1024	226	4	829
+45634	Breastplate of the Wayward Vanquisher	46194	Conqueror's Nightsong Vestments	1024	226	4	828
+45635	Chestguard of the Wayward Conqueror	45374	Valorous Aegis Tunic	2	219	4	822
+45635	Chestguard of the Wayward Conqueror	45375	Valorous Aegis Battleplate	2	219	4	820
+45635	Chestguard of the Wayward Conqueror	45381	Valorous Aegis Breastplate	2	219	4	821
+45635	Chestguard of the Wayward Conqueror	45389	Valorous Robe of Sanctification	16	219	4	833
+45635	Chestguard of the Wayward Conqueror	45395	Valorous Raiments of Sanctification	16	219	4	832
+45635	Chestguard of the Wayward Conqueror	45421	Valorous Deathbringer Robe	256	219	4	837
+45636	Chestguard of the Wayward Protector	45364	Valorous Scourgestalker Tunic	4	219	4	838
+45636	Chestguard of the Wayward Protector	45405	Valorous Worldbreaker Tunic	64	219	4	825
+45636	Chestguard of the Wayward Protector	45411	Valorous Worldbreaker Hauberk	64	219	4	824
+45636	Chestguard of the Wayward Protector	45413	Valorous Worldbreaker Chestguard	64	219	4	823
+45636	Chestguard of the Wayward Protector	45424	Valorous Siegebreaker Breastplate	1	219	4	831
+45636	Chestguard of the Wayward Protector	45429	Valorous Siegebreaker Battleplate	1	219	4	830
+45637	Chestguard of the Wayward Vanquisher	45335	Valorous Darkruned Chestguard	32	219	4	835
+45637	Chestguard of the Wayward Vanquisher	45340	Valorous Darkruned Battleplate	32	219	4	834
+45637	Chestguard of the Wayward Vanquisher	45348	Valorous Nightsong Robe	1024	219	4	829
+45637	Chestguard of the Wayward Vanquisher	45354	Valorous Nightsong Vestments	1024	219	4	828
+45637	Chestguard of the Wayward Vanquisher	45358	Valorous Nightsong Raiments	1024	219	4	827
+45637	Chestguard of the Wayward Vanquisher	45368	Valorous Kirin Tor Tunic	128	219	4	836
+45637	Chestguard of the Wayward Vanquisher	45396	Valorous Terrorblade Breastplate	8	219	4	826
+45638	Crown of the Wayward Conqueror	46140	Conqueror's Deathbringer Hood	256	226	4	837
+45638	Crown of the Wayward Conqueror	46156	Conqueror's Aegis Helm	2	226	4	820
+45638	Crown of the Wayward Conqueror	46172	Conqueror's Circlet of Sanctification	16	226	4	832
+45638	Crown of the Wayward Conqueror	46175	Conqueror's Aegis Faceguard	2	226	4	821
+45638	Crown of the Wayward Conqueror	46180	Conqueror's Aegis Headpiece	2	226	4	822
+45638	Crown of the Wayward Conqueror	46197	Conqueror's Cowl of Sanctification	16	226	4	833
+45639	Crown of the Wayward Protector	46143	Conqueror's Scourgestalker Headpiece	4	226	4	838
+45639	Crown of the Wayward Protector	46151	Conqueror's Siegebreaker Helmet	1	226	4	830
+45639	Crown of the Wayward Protector	46166	Conqueror's Siegebreaker Greathelm	1	226	4	831
+45639	Crown of the Wayward Protector	46201	Conqueror's Worldbreaker Headpiece	64	226	4	825
+45639	Crown of the Wayward Protector	46209	Conqueror's Worldbreaker Helm	64	226	4	824
+45639	Crown of the Wayward Protector	46212	Conqueror's Worldbreaker Faceguard	64	226	4	823
+45640	Crown of the Wayward Vanquisher	46115	Conqueror's Darkruned Helmet	32	226	4	834
+45640	Crown of the Wayward Vanquisher	46120	Conqueror's Darkruned Faceguard	32	226	4	835
+45640	Crown of the Wayward Vanquisher	46125	Conqueror's Terrorblade Helmet	8	226	4	826
+45640	Crown of the Wayward Vanquisher	46129	Conqueror's Kirin Tor Hood	128	226	4	836
+45640	Crown of the Wayward Vanquisher	46161	Conqueror's Nightsong Headguard	1024	226	4	827
+45640	Crown of the Wayward Vanquisher	46184	Conqueror's Nightsong Headpiece	1024	226	4	829
+45640	Crown of the Wayward Vanquisher	46191	Conqueror's Nightsong Cover	1024	226	4	828
+45641	Gauntlets of the Wayward Conqueror	46135	Conqueror's Deathbringer Gloves	256	226	4	837
+45641	Gauntlets of the Wayward Conqueror	46155	Conqueror's Aegis Gauntlets	2	226	4	820
+45641	Gauntlets of the Wayward Conqueror	46163	Conqueror's Handwraps of Sanctification	16	226	4	832
+45641	Gauntlets of the Wayward Conqueror	46174	Conqueror's Aegis Handguards	2	226	4	821
+45641	Gauntlets of the Wayward Conqueror	46179	Conqueror's Aegis Gloves	2	226	4	822
+45641	Gauntlets of the Wayward Conqueror	46188	Conqueror's Gloves of Sanctification	16	226	4	833
+45642	Gauntlets of the Wayward Protector	46142	Conqueror's Scourgestalker Handguards	4	226	4	838
+45642	Gauntlets of the Wayward Protector	46148	Conqueror's Siegebreaker Gauntlets	1	226	4	830
+45642	Gauntlets of the Wayward Protector	46164	Conqueror's Siegebreaker Handguards	1	226	4	831
+45642	Gauntlets of the Wayward Protector	46199	Conqueror's Worldbreaker Handguards	64	226	4	825
+45642	Gauntlets of the Wayward Protector	46200	Conqueror's Worldbreaker Grips	64	226	4	823
+45642	Gauntlets of the Wayward Protector	46207	Conqueror's Worldbreaker Gloves	64	226	4	824
+45643	Gauntlets of the Wayward Vanquisher	46113	Conqueror's Darkruned Gauntlets	32	226	4	834
+45643	Gauntlets of the Wayward Vanquisher	46119	Conqueror's Darkruned Handguards	32	226	4	835
+45643	Gauntlets of the Wayward Vanquisher	46124	Conqueror's Terrorblade Gauntlets	8	226	4	826
+45643	Gauntlets of the Wayward Vanquisher	46132	Conqueror's Kirin Tor Gauntlets	128	226	4	836
+45643	Gauntlets of the Wayward Vanquisher	46158	Conqueror's Nightsong Handgrips	1024	226	4	827
+45643	Gauntlets of the Wayward Vanquisher	46183	Conqueror's Nightsong Handguards	1024	226	4	829
+45643	Gauntlets of the Wayward Vanquisher	46189	Conqueror's Nightsong Gloves	1024	226	4	828
+45644	Gloves of the Wayward Conqueror	45370	Valorous Aegis Gloves	2	219	4	822
+45644	Gloves of the Wayward Conqueror	45376	Valorous Aegis Gauntlets	2	219	4	820
+45644	Gloves of the Wayward Conqueror	45383	Valorous Aegis Handguards	2	219	4	821
+45644	Gloves of the Wayward Conqueror	45387	Valorous Gloves of Sanctification	16	219	4	833
+45644	Gloves of the Wayward Conqueror	45392	Valorous Handwraps of Sanctification	16	219	4	832
+45644	Gloves of the Wayward Conqueror	45419	Valorous Deathbringer Gloves	256	219	4	837
+45645	Gloves of the Wayward Protector	45360	Valorous Scourgestalker Handguards	4	219	4	838
+45645	Gloves of the Wayward Protector	45401	Valorous Worldbreaker Handguards	64	219	4	825
+45645	Gloves of the Wayward Protector	45406	Valorous Worldbreaker Gloves	64	219	4	824
+45645	Gloves of the Wayward Protector	45414	Valorous Worldbreaker Grips	64	219	4	823
+45645	Gloves of the Wayward Protector	45426	Valorous Siegebreaker Handguards	1	219	4	831
+45645	Gloves of the Wayward Protector	45430	Valorous Siegebreaker Gauntlets	1	219	4	830
+45646	Gloves of the Wayward Vanquisher	45337	Valorous Darkruned Handguards	32	219	4	835
+45646	Gloves of the Wayward Vanquisher	45341	Valorous Darkruned Gauntlets	32	219	4	834
+45646	Gloves of the Wayward Vanquisher	45345	Valorous Nightsong Handguards	1024	219	4	829
+45646	Gloves of the Wayward Vanquisher	45351	Valorous Nightsong Gloves	1024	219	4	828
+45646	Gloves of the Wayward Vanquisher	45355	Valorous Nightsong Handgrips	1024	219	4	827
+45646	Gloves of the Wayward Vanquisher	45397	Valorous Terrorblade Gauntlets	8	219	4	826
+45646	Gloves of the Wayward Vanquisher	46131	Valorous Kirin Tor Gauntlets	128	219	4	836
+45647	Helm of the Wayward Conqueror	45372	Valorous Aegis Headpiece	2	219	4	822
+45647	Helm of the Wayward Conqueror	45377	Valorous Aegis Helm	2	219	4	820
+45647	Helm of the Wayward Conqueror	45382	Valorous Aegis Faceguard	2	219	4	821
+45647	Helm of the Wayward Conqueror	45386	Valorous Cowl of Sanctification	16	219	4	833
+45647	Helm of the Wayward Conqueror	45391	Valorous Circlet of Sanctification	16	219	4	832
+45647	Helm of the Wayward Conqueror	45417	Valorous Deathbringer Hood	256	219	4	837
+45648	Helm of the Wayward Protector	45361	Valorous Scourgestalker Headpiece	4	219	4	838
+45648	Helm of the Wayward Protector	45402	Valorous Worldbreaker Headpiece	64	219	4	825
+45648	Helm of the Wayward Protector	45408	Valorous Worldbreaker Helm	64	219	4	824
+45648	Helm of the Wayward Protector	45412	Valorous Worldbreaker Faceguard	64	219	4	823
+45648	Helm of the Wayward Protector	45425	Valorous Siegebreaker Greathelm	1	219	4	831
+45648	Helm of the Wayward Protector	45431	Valorous Siegebreaker Helmet	1	219	4	830
+45649	Helm of the Wayward Vanquisher	45336	Valorous Darkruned Faceguard	32	219	4	835
+45649	Helm of the Wayward Vanquisher	45342	Valorous Darkruned Helmet	32	219	4	834
+45649	Helm of the Wayward Vanquisher	45346	Valorous Nightsong Headpiece	1024	219	4	829
+45649	Helm of the Wayward Vanquisher	45356	Valorous Nightsong Headguard	1024	219	4	827
+45649	Helm of the Wayward Vanquisher	45365	Valorous Kirin Tor Hood	128	219	4	836
+45649	Helm of the Wayward Vanquisher	45398	Valorous Terrorblade Helmet	8	219	4	826
+45649	Helm of the Wayward Vanquisher	46313	Valorous Nightsong Cover	1024	219	4	828
+45650	Leggings of the Wayward Conqueror	45371	Valorous Aegis Greaves	2	219	4	822
+45650	Leggings of the Wayward Conqueror	45379	Valorous Aegis Legplates	2	219	4	820
+45650	Leggings of the Wayward Conqueror	45384	Valorous Aegis Legguards	2	219	4	821
+45650	Leggings of the Wayward Conqueror	45388	Valorous Leggings of Sanctification	16	219	4	833
+45650	Leggings of the Wayward Conqueror	45394	Valorous Pants of Sanctification	16	219	4	832
+45650	Leggings of the Wayward Conqueror	45420	Valorous Deathbringer Leggings	256	219	4	837
+45651	Leggings of the Wayward Protector	45362	Valorous Scourgestalker Legguards	4	219	4	838
+45651	Leggings of the Wayward Protector	45403	Valorous Worldbreaker Legguards	64	219	4	825
+45651	Leggings of the Wayward Protector	45409	Valorous Worldbreaker Kilt	64	219	4	824
+45651	Leggings of the Wayward Protector	45416	Valorous Worldbreaker War-Kilt	64	219	4	823
+45651	Leggings of the Wayward Protector	45427	Valorous Siegebreaker Legguards	1	219	4	831
+45651	Leggings of the Wayward Protector	45432	Valorous Siegebreaker Legplates	1	219	4	830
+45652	Leggings of the Wayward Vanquisher	45338	Valorous Darkruned Legguards	32	219	4	835
+45652	Leggings of the Wayward Vanquisher	45343	Valorous Darkruned Legplates	32	219	4	834
+45652	Leggings of the Wayward Vanquisher	45347	Valorous Nightsong Leggings	1024	219	4	829
+45652	Leggings of the Wayward Vanquisher	45353	Valorous Nightsong Trousers	1024	219	4	828
+45652	Leggings of the Wayward Vanquisher	45357	Valorous Nightsong Legguards	1024	219	4	827
+45652	Leggings of the Wayward Vanquisher	45367	Valorous Kirin Tor Leggings	128	219	4	836
+45652	Leggings of the Wayward Vanquisher	45399	Valorous Terrorblade Legplates	8	219	4	826
+45653	Legplates of the Wayward Conqueror	46139	Conqueror's Deathbringer Leggings	256	226	4	837
+45653	Legplates of the Wayward Conqueror	46153	Conqueror's Aegis Legplates	2	226	4	820
+45653	Legplates of the Wayward Conqueror	46170	Conqueror's Pants of Sanctification	16	226	4	832
+45653	Legplates of the Wayward Conqueror	46176	Conqueror's Aegis Legguards	2	226	4	821
+45653	Legplates of the Wayward Conqueror	46181	Conqueror's Aegis Greaves	2	226	4	822
+45653	Legplates of the Wayward Conqueror	46195	Conqueror's Leggings of Sanctification	16	226	4	833
+45654	Legplates of the Wayward Protector	46144	Conqueror's Scourgestalker Legguards	4	226	4	838
+45654	Legplates of the Wayward Protector	46150	Conqueror's Siegebreaker Legplates	1	226	4	830
+45654	Legplates of the Wayward Protector	46169	Conqueror's Siegebreaker Legguards	1	226	4	831
+45654	Legplates of the Wayward Protector	46202	Conqueror's Worldbreaker Legguards	64	226	4	825
+45654	Legplates of the Wayward Protector	46208	Conqueror's Worldbreaker War-Kilt	64	226	4	823
+45654	Legplates of the Wayward Protector	46210	Conqueror's Worldbreaker Kilt	64	226	4	824
+45655	Legplates of the Wayward Vanquisher	46116	Conqueror's Darkruned Legplates	32	226	4	834
+45655	Legplates of the Wayward Vanquisher	46121	Conqueror's Darkruned Legguards	32	226	4	835
+45655	Legplates of the Wayward Vanquisher	46126	Conqueror's Terrorblade Legplates	8	226	4	826
+45655	Legplates of the Wayward Vanquisher	46133	Conqueror's Kirin Tor Leggings	128	226	4	836
+45655	Legplates of the Wayward Vanquisher	46160	Conqueror's Nightsong Legguards	1024	226	4	827
+45655	Legplates of the Wayward Vanquisher	46185	Conqueror's Nightsong Leggings	1024	226	4	829
+45655	Legplates of the Wayward Vanquisher	46192	Conqueror's Nightsong Trousers	1024	226	4	828
+45656	Mantle of the Wayward Conqueror	46136	Conqueror's Deathbringer Shoulderpads	256	226	4	837
+45656	Mantle of the Wayward Conqueror	46152	Conqueror's Aegis Shoulderplates	2	226	4	820
+45656	Mantle of the Wayward Conqueror	46165	Conqueror's Mantle of Sanctification	16	226	4	832
+45656	Mantle of the Wayward Conqueror	46177	Conqueror's Aegis Shoulderguards	2	226	4	821
+45656	Mantle of the Wayward Conqueror	46182	Conqueror's Aegis Spaulders	2	226	4	822
+45656	Mantle of the Wayward Conqueror	46190	Conqueror's Shoulderpads of Sanctification	16	226	4	833
+45657	Mantle of the Wayward Protector	46145	Conqueror's Scourgestalker Spaulders	4	226	4	838
+45657	Mantle of the Wayward Protector	46149	Conqueror's Siegebreaker Shoulderplates	1	226	4	830
+45657	Mantle of the Wayward Protector	46167	Conqueror's Siegebreaker Pauldrons	1	226	4	831
+45657	Mantle of the Wayward Protector	46203	Conqueror's Worldbreaker Shoulderguards	64	226	4	823
+45657	Mantle of the Wayward Protector	46204	Conqueror's Worldbreaker Spaulders	64	226	4	825
+45657	Mantle of the Wayward Protector	46211	Conqueror's Worldbreaker Shoulderpads	64	226	4	824
+45658	Mantle of the Wayward Vanquisher	46117	Conqueror's Darkruned Shoulderplates	32	226	4	834
+45658	Mantle of the Wayward Vanquisher	46122	Conqueror's Darkruned Pauldrons	32	226	4	835
+45658	Mantle of the Wayward Vanquisher	46127	Conqueror's Terrorblade Pauldrons	8	226	4	826
+45658	Mantle of the Wayward Vanquisher	46134	Conqueror's Kirin Tor Shoulderpads	128	226	4	836
+45658	Mantle of the Wayward Vanquisher	46157	Conqueror's Nightsong Shoulderpads	1024	226	4	827
+45658	Mantle of the Wayward Vanquisher	46187	Conqueror's Nightsong Spaulders	1024	226	4	829
+45658	Mantle of the Wayward Vanquisher	46196	Conqueror's Nightsong Mantle	1024	226	4	828
+45659	Spaulders of the Wayward Conqueror	45373	Valorous Aegis Spaulders	2	219	4	822
+45659	Spaulders of the Wayward Conqueror	45380	Valorous Aegis Shoulderplates	2	219	4	820
+45659	Spaulders of the Wayward Conqueror	45385	Valorous Aegis Shoulderguards	2	219	4	821
+45659	Spaulders of the Wayward Conqueror	45390	Valorous Shoulderpads of Sanctification	16	219	4	833
+45659	Spaulders of the Wayward Conqueror	45393	Valorous Mantle of Sanctification	16	219	4	832
+45659	Spaulders of the Wayward Conqueror	45422	Valorous Deathbringer Shoulderpads	256	219	4	837
+45660	Spaulders of the Wayward Protector	45363	Valorous Scourgestalker Spaulders	4	219	4	838
+45660	Spaulders of the Wayward Protector	45404	Valorous Worldbreaker Spaulders	64	219	4	825
+45660	Spaulders of the Wayward Protector	45410	Valorous Worldbreaker Shoulderpads	64	219	4	824
+45660	Spaulders of the Wayward Protector	45415	Valorous Worldbreaker Shoulderguards	64	219	4	823
+45660	Spaulders of the Wayward Protector	45428	Valorous Siegebreaker Pauldrons	1	219	4	831
+45660	Spaulders of the Wayward Protector	45433	Valorous Siegebreaker Shoulderplates	1	219	4	830
+45661	Spaulders of the Wayward Vanquisher	45339	Valorous Darkruned Pauldrons	32	219	4	835
+45661	Spaulders of the Wayward Vanquisher	45344	Valorous Darkruned Shoulderplates	32	219	4	834
+45661	Spaulders of the Wayward Vanquisher	45349	Valorous Nightsong Spaulders	1024	219	4	829
+45661	Spaulders of the Wayward Vanquisher	45352	Valorous Nightsong Mantle	1024	219	4	828
+45661	Spaulders of the Wayward Vanquisher	45359	Valorous Nightsong Shoulderpads	1024	219	4	827
+45661	Spaulders of the Wayward Vanquisher	45369	Valorous Kirin Tor Shoulderpads	128	219	4	836
+45661	Spaulders of the Wayward Vanquisher	45400	Valorous Terrorblade Pauldrons	8	219	4	826
+46114	Champion's Writ	45714	Darnassus Commendation Badge	-1	1	2	0
+46114	Champion's Writ	45715	Exodar Commendation Badge	-1	1	2	0
+46114	Champion's Writ	45716	Gnomeregan Commendation Badge	-1	1	2	0
+46114	Champion's Writ	45717	Ironforge Commendation Badge	-1	1	2	0
+46114	Champion's Writ	45718	Stormwind Commendation Badge	-1	1	2	0
+46114	Champion's Writ	45719	Orgrimmar Commendation Badge	-1	1	2	0
+46114	Champion's Writ	45720	Sen'jin Commendation Badge	-1	1	2	0
+46114	Champion's Writ	45721	Silvermoon Commendation Badge	-1	1	2	0
+46114	Champion's Writ	45722	Thunder Bluff Commendation Badge	-1	1	2	0
+46114	Champion's Writ	45723	Undercity Commendation Badge	-1	1	2	0
+47557	Regalia of the Grand Conqueror	47788	Kel'Thuzad's Gloves of Triumph	256	258	4	846
+47557	Regalia of the Grand Conqueror	47789	Kel'Thuzad's Hood of Triumph	256	258	4	846
+47557	Regalia of the Grand Conqueror	47790	Kel'Thuzad's Leggings of Triumph	256	258	4	846
+47557	Regalia of the Grand Conqueror	47791	Kel'Thuzad's Robe of Triumph	256	258	4	846
+47557	Regalia of the Grand Conqueror	47792	Kel'Thuzad's Shoulderpads of Triumph	256	258	4	846
+47557	Regalia of the Grand Conqueror	47793	Gul'dan's Shoulderpads of Triumph	256	258	4	845
+47557	Regalia of the Grand Conqueror	47794	Gul'dan's Robe of Triumph	256	258	4	845
+47557	Regalia of the Grand Conqueror	47795	Gul'dan's Leggings of Triumph	256	258	4	845
+47557	Regalia of the Grand Conqueror	47796	Gul'dan's Hood of Triumph	256	258	4	845
+47557	Regalia of the Grand Conqueror	47797	Gul'dan's Gloves of Triumph	256	258	4	845
+47557	Regalia of the Grand Conqueror	48029	Velen's Shoulderpads of Triumph	16	258	4	847
+47557	Regalia of the Grand Conqueror	48031	Velen's Robe of Triumph	16	258	4	847
+47557	Regalia of the Grand Conqueror	48033	Velen's Leggings of Triumph	16	258	4	847
+47557	Regalia of the Grand Conqueror	48035	Velen's Cowl of Triumph	16	258	4	847
+47557	Regalia of the Grand Conqueror	48037	Velen's Gloves of Triumph	16	258	4	847
+47557	Regalia of the Grand Conqueror	48057	Zabra's Gloves of Triumph	16	258	4	848
+47557	Regalia of the Grand Conqueror	48058	Zabra's Cowl of Triumph	16	258	4	848
+47557	Regalia of the Grand Conqueror	48059	Zabra's Leggings of Triumph	16	258	4	848
+47557	Regalia of the Grand Conqueror	48060	Zabra's Robe of Triumph	16	258	4	848
+47557	Regalia of the Grand Conqueror	48061	Zabra's Shoulderpads of Triumph	16	258	4	848
+47557	Regalia of the Grand Conqueror	48082	Velen's Mantle of Triumph	16	258	4	849
+47557	Regalia of the Grand Conqueror	48083	Velen's Raiments of Triumph	16	258	4	849
+47557	Regalia of the Grand Conqueror	48084	Velen's Pants of Triumph	16	258	4	849
+47557	Regalia of the Grand Conqueror	48085	Velen's Circlet of Triumph	16	258	4	849
+47557	Regalia of the Grand Conqueror	48086	Velen's Handwraps of Triumph	16	258	4	849
+47557	Regalia of the Grand Conqueror	48087	Zabra's Handwraps of Triumph	16	258	4	850
+47557	Regalia of the Grand Conqueror	48088	Zabra's Circlet of Triumph	16	258	4	850
+47557	Regalia of the Grand Conqueror	48089	Zabra's Pants of Triumph	16	258	4	850
+47557	Regalia of the Grand Conqueror	48090	Zabra's Raiments of Triumph	16	258	4	850
+47557	Regalia of the Grand Conqueror	48091	Zabra's Mantle of Triumph	16	258	4	850
+47557	Regalia of the Grand Conqueror	48580	Turalyon's Spaulders of Triumph	2	258	4	875
+47557	Regalia of the Grand Conqueror	48581	Turalyon's Greaves of Triumph	2	258	4	875
+47557	Regalia of the Grand Conqueror	48582	Turalyon's Headpiece of Triumph	2	258	4	875
+47557	Regalia of the Grand Conqueror	48583	Turalyon's Gloves of Triumph	2	258	4	875
+47557	Regalia of the Grand Conqueror	48584	Turalyon's Tunic of Triumph	2	258	4	875
+47557	Regalia of the Grand Conqueror	48585	Liadrin's Spaulders of Triumph	2	258	4	876
+47557	Regalia of the Grand Conqueror	48586	Liadrin's Greaves of Triumph	2	258	4	876
+47557	Regalia of the Grand Conqueror	48587	Liadrin's Headpiece of Triumph	2	258	4	876
+47557	Regalia of the Grand Conqueror	48588	Liadrin's Gloves of Triumph	2	258	4	876
+47557	Regalia of the Grand Conqueror	48589	Liadrin's Tunic of Triumph	2	258	4	876
+47557	Regalia of the Grand Conqueror	48612	Turalyon's Shoulderplates of Triumph	2	258	4	877
+47557	Regalia of the Grand Conqueror	48613	Turalyon's Legplates of Triumph	2	258	4	877
+47557	Regalia of the Grand Conqueror	48614	Turalyon's Helm of Triumph	2	258	4	877
+47557	Regalia of the Grand Conqueror	48615	Turalyon's Gauntlets of Triumph	2	258	4	877
+47557	Regalia of the Grand Conqueror	48616	Turalyon's Battleplate of Triumph	2	258	4	877
+47557	Regalia of the Grand Conqueror	48617	Liadrin's Battleplate of Triumph	2	258	4	878
+47557	Regalia of the Grand Conqueror	48618	Liadrin's Gauntlets of Triumph	2	258	4	878
+47557	Regalia of the Grand Conqueror	48619	Liadrin's Helm of Triumph	2	258	4	878
+47557	Regalia of the Grand Conqueror	48620	Liadrin's Legplates of Triumph	2	258	4	878
+47557	Regalia of the Grand Conqueror	48621	Liadrin's Shoulderplates of Triumph	2	258	4	878
+47557	Regalia of the Grand Conqueror	48642	Turalyon's Breastplate of Triumph	2	258	4	879
+47557	Regalia of the Grand Conqueror	48643	Turalyon's Handguards of Triumph	2	258	4	879
+47557	Regalia of the Grand Conqueror	48644	Turalyon's Faceguard of Triumph	2	258	4	879
+47557	Regalia of the Grand Conqueror	48645	Turalyon's Legguards of Triumph	2	258	4	879
+47557	Regalia of the Grand Conqueror	48646	Turalyon's Shoulderguards of Triumph	2	258	4	879
+47557	Regalia of the Grand Conqueror	48647	Liadrin's Shoulderguards of Triumph	2	258	4	880
+47557	Regalia of the Grand Conqueror	48648	Liadrin's Legguards of Triumph	2	258	4	880
+47557	Regalia of the Grand Conqueror	48649	Liadrin's Faceguard of Triumph	2	258	4	880
+47557	Regalia of the Grand Conqueror	48650	Liadrin's Handguards of Triumph	2	258	4	880
+47557	Regalia of the Grand Conqueror	48651	Liadrin's Breastplate of Triumph	2	258	4	880
+47558	Regalia of the Grand Protector	48260	Windrunner's Spaulders of Triumph	4	258	4	859
+47558	Regalia of the Grand Protector	48261	Windrunner's Legguards of Triumph	4	258	4	859
+47558	Regalia of the Grand Protector	48262	Windrunner's Headpiece of Triumph	4	258	4	859
+47558	Regalia of the Grand Protector	48263	Windrunner's Handguards of Triumph	4	258	4	859
+47558	Regalia of the Grand Protector	48264	Windrunner's Tunic of Triumph	4	258	4	859
+47558	Regalia of the Grand Protector	48265	Windrunner's Tunic of Triumph	4	258	4	860
+47558	Regalia of the Grand Protector	48266	Windrunner's Handguards of Triumph	4	258	4	860
+47558	Regalia of the Grand Protector	48267	Windrunner's Headpiece of Triumph	4	258	4	860
+47558	Regalia of the Grand Protector	48268	Windrunner's Legguards of Triumph	4	258	4	860
+47558	Regalia of the Grand Protector	48269	Windrunner's Spaulders of Triumph	4	258	4	860
+47558	Regalia of the Grand Protector	48290	Nobundo's Spaulders of Triumph	64	258	4	861
+47558	Regalia of the Grand Protector	48291	Nobundo's Legguards of Triumph	64	258	4	861
+47558	Regalia of the Grand Protector	48292	Nobundo's Headpiece of Triumph	64	258	4	861
+47558	Regalia of the Grand Protector	48293	Nobundo's Handguards of Triumph	64	258	4	861
+47558	Regalia of the Grand Protector	48294	Nobundo's Tunic of Triumph	64	258	4	861
+47558	Regalia of the Grand Protector	48305	Thrall's Tunic of Triumph	64	258	4	862
+47558	Regalia of the Grand Protector	48306	Thrall's Handguards of Triumph	64	258	4	862
+47558	Regalia of the Grand Protector	48307	Thrall's Headpiece of Triumph	64	258	4	862
+47558	Regalia of the Grand Protector	48308	Thrall's Legguards of Triumph	64	258	4	862
+47558	Regalia of the Grand Protector	48309	Thrall's Spaulders of Triumph	64	258	4	862
+47558	Regalia of the Grand Protector	48321	Nobundo's Shoulderpads of Triumph	64	258	4	864
+47558	Regalia of the Grand Protector	48322	Nobundo's Kilt of Triumph	64	258	4	864
+47558	Regalia of the Grand Protector	48323	Nobundo's Helm of Triumph	64	258	4	864
+47558	Regalia of the Grand Protector	48324	Nobundo's Gloves of Triumph	64	258	4	864
+47558	Regalia of the Grand Protector	48325	Nobundo's Hauberk of Triumph	64	258	4	864
+47558	Regalia of the Grand Protector	48326	Thrall's Hauberk of Triumph	64	258	4	863
+47558	Regalia of the Grand Protector	48327	Thrall's Gloves of Triumph	64	258	4	863
+47558	Regalia of the Grand Protector	48328	Thrall's Helm of Triumph	64	258	4	863
+47558	Regalia of the Grand Protector	48329	Thrall's Kilt of Triumph	64	258	4	863
+47558	Regalia of the Grand Protector	48330	Thrall's Shoulderpads of Triumph	64	258	4	863
+47558	Regalia of the Grand Protector	48351	Nobundo's Shoulderguards of Triumph	64	258	4	865
+47558	Regalia of the Grand Protector	48352	Nobundo's War-Kilt of Triumph	64	258	4	865
+47558	Regalia of the Grand Protector	48353	Nobundo's Faceguard of Triumph	64	258	4	865
+47558	Regalia of the Grand Protector	48354	Nobundo's Grips of Triumph	64	258	4	865
+47558	Regalia of the Grand Protector	48355	Nobundo's Chestguard of Triumph	64	258	4	865
+47558	Regalia of the Grand Protector	48356	Thrall's Chestguard of Triumph	64	258	4	866
+47558	Regalia of the Grand Protector	48357	Thrall's Grips of Triumph	64	258	4	866
+47558	Regalia of the Grand Protector	48358	Thrall's Faceguard of Triumph	64	258	4	866
+47558	Regalia of the Grand Protector	48359	Thrall's War-Kilt of Triumph	64	258	4	866
+47558	Regalia of the Grand Protector	48360	Thrall's Shoulderguards of Triumph	64	258	4	866
+47558	Regalia of the Grand Protector	48381	Wrynn's Shoulderplates of Triumph	1	258	4	867
+47558	Regalia of the Grand Protector	48382	Wrynn's Legplates of Triumph	1	258	4	867
+47558	Regalia of the Grand Protector	48383	Wrynn's Helmet of Triumph	1	258	4	867
+47558	Regalia of the Grand Protector	48384	Wrynn's Gauntlets of Triumph	1	258	4	867
+47558	Regalia of the Grand Protector	48385	Wrynn's Battleplate of Triumph	1	258	4	867
+47558	Regalia of the Grand Protector	48396	Hellscream's Battleplate of Triumph	1	258	4	868
+47558	Regalia of the Grand Protector	48397	Hellscream's Gauntlets of Triumph	1	258	4	868
+47558	Regalia of the Grand Protector	48398	Hellscream's Helmet of Triumph	1	258	4	868
+47558	Regalia of the Grand Protector	48399	Hellscream's Legplates of Triumph	1	258	4	868
+47558	Regalia of the Grand Protector	48400	Hellscream's Shoulderplates of Triumph	1	258	4	868
+47558	Regalia of the Grand Protector	48433	Wrynn's Greathelm of Triumph	1	258	4	869
+47558	Regalia of the Grand Protector	48447	Wrynn's Legguards of Triumph	1	258	4	869
+47558	Regalia of the Grand Protector	48451	Wrynn's Breastplate of Triumph	1	258	4	869
+47558	Regalia of the Grand Protector	48453	Wrynn's Handguards of Triumph	1	258	4	869
+47558	Regalia of the Grand Protector	48455	Wrynn's Pauldrons of Triumph	1	258	4	869
+47558	Regalia of the Grand Protector	48466	Hellscream's Breastplate of Triumph	1	258	4	870
+47558	Regalia of the Grand Protector	48467	Hellscream's Handguards of Triumph	1	258	4	870
+47558	Regalia of the Grand Protector	48468	Hellscream's Greathelm of Triumph	1	258	4	870
+47558	Regalia of the Grand Protector	48469	Hellscream's Legguards of Triumph	1	258	4	870
+47558	Regalia of the Grand Protector	48470	Hellscream's Pauldrons of Triumph	1	258	4	870
+47559	Regalia of the Grand Vanquisher	47758	Khadgar's Shoulderpads of Triumph	128	258	4	843
+47559	Regalia of the Grand Vanquisher	47759	Khadgar's Robe of Triumph	128	258	4	843
+47559	Regalia of the Grand Vanquisher	47760	Khadgar's Leggings of Triumph	128	258	4	843
+47559	Regalia of the Grand Vanquisher	47761	Khadgar's Hood of Triumph	128	258	4	843
+47559	Regalia of the Grand Vanquisher	47762	Khadgar's Gauntlets of Triumph	128	258	4	843
+47559	Regalia of the Grand Vanquisher	47763	Sunstrider's Gauntlets of Triumph	128	258	4	844
+47559	Regalia of the Grand Vanquisher	47764	Sunstrider's Hood of Triumph	128	258	4	844
+47559	Regalia of the Grand Vanquisher	47765	Sunstrider's Leggings of Triumph	128	258	4	844
+47559	Regalia of the Grand Vanquisher	47766	Sunstrider's Robe of Triumph	128	258	4	844
+47559	Regalia of the Grand Vanquisher	47767	Sunstrider's Shoulderpads of Triumph	128	258	4	844
+47559	Regalia of the Grand Vanquisher	48138	Malfurion's Spaulders of Triumph	1024	258	4	851
+47559	Regalia of the Grand Vanquisher	48139	Malfurion's Robe of Triumph	1024	258	4	851
+47559	Regalia of the Grand Vanquisher	48140	Malfurion's Leggings of Triumph	1024	258	4	851
+47559	Regalia of the Grand Vanquisher	48141	Malfurion's Headpiece of Triumph	1024	258	4	851
+47559	Regalia of the Grand Vanquisher	48142	Malfurion's Handguards of Triumph	1024	258	4	851
+47559	Regalia of the Grand Vanquisher	48143	Runetotem's Handguards of Triumph	1024	258	4	852
+47559	Regalia of the Grand Vanquisher	48144	Runetotem's Headpiece of Triumph	1024	258	4	852
+47559	Regalia of the Grand Vanquisher	48145	Runetotem's Leggings of Triumph	1024	258	4	852
+47559	Regalia of the Grand Vanquisher	48146	Runetotem's Robe of Triumph	1024	258	4	852
+47559	Regalia of the Grand Vanquisher	48147	Runetotem's Spaulders of Triumph	1024	258	4	852
+47559	Regalia of the Grand Vanquisher	48168	Malfurion's Mantle of Triumph	1024	258	4	853
+47559	Regalia of the Grand Vanquisher	48169	Malfurion's Vestments of Triumph	1024	258	4	853
+47559	Regalia of the Grand Vanquisher	48170	Malfurion's Trousers of Triumph	1024	258	4	853
+47559	Regalia of the Grand Vanquisher	48171	Malfurion's Cover of Triumph	1024	258	4	853
+47559	Regalia of the Grand Vanquisher	48172	Malfurion's Gloves of Triumph	1024	258	4	853
+47559	Regalia of the Grand Vanquisher	48173	Runetotem's Gloves of Triumph	1024	258	4	854
+47559	Regalia of the Grand Vanquisher	48174	Runetotem's Cover of Triumph	1024	258	4	854
+47559	Regalia of the Grand Vanquisher	48175	Runetotem's Trousers of Triumph	1024	258	4	854
+47559	Regalia of the Grand Vanquisher	48176	Runetotem's Vestments of Triumph	1024	258	4	854
+47559	Regalia of the Grand Vanquisher	48177	Runetotem's Mantle of Triumph	1024	258	4	854
+47559	Regalia of the Grand Vanquisher	48198	Runetotem's Shoulderpads of Triumph	1024	258	4	856
+47559	Regalia of the Grand Vanquisher	48199	Runetotem's Raiments of Triumph	1024	258	4	856
+47559	Regalia of the Grand Vanquisher	48200	Runetotem's Legguards of Triumph	1024	258	4	856
+47559	Regalia of the Grand Vanquisher	48201	Runetotem's Headguard of Triumph	1024	258	4	856
+47559	Regalia of the Grand Vanquisher	48202	Runetotem's Handgrips of Triumph	1024	258	4	856
+47559	Regalia of the Grand Vanquisher	48203	Malfurion's Handgrips of Triumph	1024	258	4	855
+47559	Regalia of the Grand Vanquisher	48204	Malfurion's Headguard of Triumph	1024	258	4	855
+47559	Regalia of the Grand Vanquisher	48205	Malfurion's Legguards of Triumph	1024	258	4	855
+47559	Regalia of the Grand Vanquisher	48206	Malfurion's Raiments of Triumph	1024	258	4	855
+47559	Regalia of the Grand Vanquisher	48207	Malfurion's Shoulderpads of Triumph	1024	258	4	855
+47559	Regalia of the Grand Vanquisher	48228	VanCleef's Pauldrons of Triumph	8	258	4	857
+47559	Regalia of the Grand Vanquisher	48229	VanCleef's Legplates of Triumph	8	258	4	857
+47559	Regalia of the Grand Vanquisher	48230	VanCleef's Helmet of Triumph	8	258	4	857
+47559	Regalia of the Grand Vanquisher	48231	VanCleef's Gauntlets of Triumph	8	258	4	857
+47559	Regalia of the Grand Vanquisher	48232	VanCleef's Breastplate of Triumph	8	258	4	857
+47559	Regalia of the Grand Vanquisher	48233	Garona's Breastplate of Triumph	8	258	4	858
+47559	Regalia of the Grand Vanquisher	48234	Garona's Gauntlets of Triumph	8	258	4	858
+47559	Regalia of the Grand Vanquisher	48235	Garona's Helmet of Triumph	8	258	4	858
+47559	Regalia of the Grand Vanquisher	48236	Garona's Legplates of Triumph	8	258	4	858
+47559	Regalia of the Grand Vanquisher	48237	Garona's Pauldrons of Triumph	8	258	4	858
+47559	Regalia of the Grand Vanquisher	48486	Thassarian's Shoulderplates of Triumph	32	258	4	871
+47559	Regalia of the Grand Vanquisher	48487	Thassarian's Legplates of Triumph	32	258	4	871
+47559	Regalia of the Grand Vanquisher	48488	Thassarian's Helmet of Triumph	32	258	4	871
+47559	Regalia of the Grand Vanquisher	48489	Thassarian's Gauntlets of Triumph	32	258	4	871
+47559	Regalia of the Grand Vanquisher	48490	Thassarian's Battleplate of Triumph	32	258	4	871
+47559	Regalia of the Grand Vanquisher	48491	Koltira's Battleplate of Triumph	32	258	4	872
+47559	Regalia of the Grand Vanquisher	48492	Koltira's Gauntlets of Triumph	32	258	4	872
+47559	Regalia of the Grand Vanquisher	48493	Koltira's Helmet of Triumph	32	258	4	872
+47559	Regalia of the Grand Vanquisher	48494	Koltira's Legplates of Triumph	32	258	4	872
+47559	Regalia of the Grand Vanquisher	48495	Koltira's Shoulderplates of Triumph	32	258	4	872
+47559	Regalia of the Grand Vanquisher	48543	Thassarian's Pauldrons of Triumph	32	258	4	873
+47559	Regalia of the Grand Vanquisher	48544	Thassarian's Legguards of Triumph	32	258	4	873
+47559	Regalia of the Grand Vanquisher	48545	Thassarian's Faceguard of Triumph	32	258	4	873
+47559	Regalia of the Grand Vanquisher	48546	Thassarian's Handguards of Triumph	32	258	4	873
+47559	Regalia of the Grand Vanquisher	48547	Thassarian's Chestguard of Triumph	32	258	4	873
+47559	Regalia of the Grand Vanquisher	48548	Koltira's Chestguard of Triumph	32	258	4	874
+47559	Regalia of the Grand Vanquisher	48549	Koltira's Handguards of Triumph	32	258	4	874
+47559	Regalia of the Grand Vanquisher	48550	Koltira's Faceguard of Triumph	32	258	4	874
+47559	Regalia of the Grand Vanquisher	48551	Koltira's Legguards of Triumph	32	258	4	874
+47559	Regalia of the Grand Vanquisher	48552	Koltira's Pauldrons of Triumph	32	258	4	874
+52025	Vanquisher's Mark of Sanctification	51125	Sanctified Scourgelord Shoulderplates	32	264	4	897
+52025	Vanquisher's Mark of Sanctification	51126	Sanctified Scourgelord Legplates	32	264	4	897
+52025	Vanquisher's Mark of Sanctification	51127	Sanctified Scourgelord Helmet	32	264	4	897
+52025	Vanquisher's Mark of Sanctification	51128	Sanctified Scourgelord Gauntlets	32	264	4	897
+52025	Vanquisher's Mark of Sanctification	51129	Sanctified Scourgelord Battleplate	32	264	4	897
+52025	Vanquisher's Mark of Sanctification	51130	Sanctified Scourgelord Pauldrons	32	264	4	898
+52025	Vanquisher's Mark of Sanctification	51131	Sanctified Scourgelord Legguards	32	264	4	898
+52025	Vanquisher's Mark of Sanctification	51132	Sanctified Scourgelord Handguards	32	264	4	898
+52025	Vanquisher's Mark of Sanctification	51133	Sanctified Scourgelord Faceguard	32	264	4	898
+52025	Vanquisher's Mark of Sanctification	51134	Sanctified Scourgelord Chestguard	32	264	4	898
+52025	Vanquisher's Mark of Sanctification	51135	Sanctified Lasherweave Pauldrons	1024	264	4	887
+52025	Vanquisher's Mark of Sanctification	51136	Sanctified Lasherweave Legplates	1024	264	4	887
+52025	Vanquisher's Mark of Sanctification	51137	Sanctified Lasherweave Helmet	1024	264	4	887
+52025	Vanquisher's Mark of Sanctification	51138	Sanctified Lasherweave Gauntlets	1024	264	4	887
+52025	Vanquisher's Mark of Sanctification	51139	Sanctified Lasherweave Robes	1024	264	4	887
+52025	Vanquisher's Mark of Sanctification	51140	Sanctified Lasherweave Shoulderpads	1024	264	4	889
+52025	Vanquisher's Mark of Sanctification	51141	Sanctified Lasherweave Raiment	1024	264	4	889
+52025	Vanquisher's Mark of Sanctification	51142	Sanctified Lasherweave Legguards	1024	264	4	889
+52025	Vanquisher's Mark of Sanctification	51143	Sanctified Lasherweave Headguard	1024	264	4	889
+52025	Vanquisher's Mark of Sanctification	51144	Sanctified Lasherweave Handgrips	1024	264	4	889
+52025	Vanquisher's Mark of Sanctification	51145	Sanctified Lasherweave Vestment	1024	264	4	888
+52025	Vanquisher's Mark of Sanctification	51146	Sanctified Lasherweave Trousers	1024	264	4	888
+52025	Vanquisher's Mark of Sanctification	51147	Sanctified Lasherweave Mantle	1024	264	4	888
+52025	Vanquisher's Mark of Sanctification	51148	Sanctified Lasherweave Gloves	1024	264	4	888
+52025	Vanquisher's Mark of Sanctification	51149	Sanctified Lasherweave Cover	1024	264	4	888
+52025	Vanquisher's Mark of Sanctification	51155	Sanctified Bloodmage Shoulderpads	128	264	4	883
+52025	Vanquisher's Mark of Sanctification	51156	Sanctified Bloodmage Robe	128	264	4	883
+52025	Vanquisher's Mark of Sanctification	51157	Sanctified Bloodmage Leggings	128	264	4	883
+52025	Vanquisher's Mark of Sanctification	51158	Sanctified Bloodmage Hood	128	264	4	883
+52025	Vanquisher's Mark of Sanctification	51159	Sanctified Bloodmage Gloves	128	264	4	883
+52025	Vanquisher's Mark of Sanctification	51185	Sanctified Shadowblade Pauldrons	8	264	4	890
+52025	Vanquisher's Mark of Sanctification	51186	Sanctified Shadowblade Legplates	8	264	4	890
+52025	Vanquisher's Mark of Sanctification	51187	Sanctified Shadowblade Helmet	8	264	4	890
+52025	Vanquisher's Mark of Sanctification	51188	Sanctified Shadowblade Gauntlets	8	264	4	890
+52025	Vanquisher's Mark of Sanctification	51189	Sanctified Shadowblade Breastplate	8	264	4	890
+52026	Protector's Mark of Sanctification	51150	Sanctified Ahn'Kahar Blood Hunter's Tunic	4	264	4	891
+52026	Protector's Mark of Sanctification	51151	Sanctified Ahn'Kahar Blood Hunter's Spaulders	4	264	4	891
+52026	Protector's Mark of Sanctification	51152	Sanctified Ahn'Kahar Blood Hunter's Legguards	4	264	4	891
+52026	Protector's Mark of Sanctification	51153	Sanctified Ahn'Kahar Blood Hunter's Headpiece	4	264	4	891
+52026	Protector's Mark of Sanctification	51154	Sanctified Ahn'Kahar Blood Hunter's Handguards	4	264	4	891
+52026	Protector's Mark of Sanctification	51190	Sanctified Frost Witch's Tunic	64	264	4	892
+52026	Protector's Mark of Sanctification	51191	Sanctified Frost Witch's Handguards	64	264	4	892
+52026	Protector's Mark of Sanctification	51192	Sanctified Frost Witch's Headpiece	64	264	4	892
+52026	Protector's Mark of Sanctification	51193	Sanctified Frost Witch's Legguards	64	264	4	892
+52026	Protector's Mark of Sanctification	51194	Sanctified Frost Witch's Spaulders	64	264	4	892
+52026	Protector's Mark of Sanctification	51195	Sanctified Frost Witch's Chestguard	64	264	4	894
+52026	Protector's Mark of Sanctification	51196	Sanctified Frost Witch's Grips	64	264	4	894
+52026	Protector's Mark of Sanctification	51197	Sanctified Frost Witch's Faceguard	64	264	4	894
+52026	Protector's Mark of Sanctification	51198	Sanctified Frost Witch's War-Kilt	64	264	4	894
+52026	Protector's Mark of Sanctification	51199	Sanctified Frost Witch's Shoulderguards	64	264	4	894
+52026	Protector's Mark of Sanctification	51200	Sanctified Frost Witch's Hauberk	64	264	4	893
+52026	Protector's Mark of Sanctification	51201	Sanctified Frost Witch's Gloves	64	264	4	893
+52026	Protector's Mark of Sanctification	51202	Sanctified Frost Witch's Helm	64	264	4	893
+52026	Protector's Mark of Sanctification	51203	Sanctified Frost Witch's Kilt	64	264	4	893
+52026	Protector's Mark of Sanctification	51204	Sanctified Frost Witch's Shoulderpads	64	264	4	893
+52026	Protector's Mark of Sanctification	51210	Sanctified Ymirjar Lord's Shoulderplates	1	264	4	895
+52026	Protector's Mark of Sanctification	51211	Sanctified Ymirjar Lord's Legplates	1	264	4	895
+52026	Protector's Mark of Sanctification	51212	Sanctified Ymirjar Lord's Helmet	1	264	4	895
+52026	Protector's Mark of Sanctification	51213	Sanctified Ymirjar Lord's Gauntlets	1	264	4	895
+52026	Protector's Mark of Sanctification	51214	Sanctified Ymirjar Lord's Battleplate	1	264	4	895
+52026	Protector's Mark of Sanctification	51215	Sanctified Ymirjar Lord's Pauldrons	1	264	4	896
+52026	Protector's Mark of Sanctification	51216	Sanctified Ymirjar Lord's Legguards	1	264	4	896
+52026	Protector's Mark of Sanctification	51217	Sanctified Ymirjar Lord's Handguards	1	264	4	896
+52026	Protector's Mark of Sanctification	51218	Sanctified Ymirjar Lord's Greathelm	1	264	4	896
+52026	Protector's Mark of Sanctification	51219	Sanctified Ymirjar Lord's Breastplate	1	264	4	896
+52027	Conqueror's Mark of Sanctification	51160	Sanctified Lightsworn Shoulderplates	2	264	4	900
+52027	Conqueror's Mark of Sanctification	51161	Sanctified Lightsworn Legplates	2	264	4	900
+52027	Conqueror's Mark of Sanctification	51162	Sanctified Lightsworn Helmet	2	264	4	900
+52027	Conqueror's Mark of Sanctification	51163	Sanctified Lightsworn Gauntlets	2	264	4	900
+52027	Conqueror's Mark of Sanctification	51164	Sanctified Lightsworn Battleplate	2	264	4	900
+52027	Conqueror's Mark of Sanctification	51165	Sanctified Lightsworn Tunic	2	264	4	899
+52027	Conqueror's Mark of Sanctification	51166	Sanctified Lightsworn Spaulders	2	264	4	899
+52027	Conqueror's Mark of Sanctification	51167	Sanctified Lightsworn Headpiece	2	264	4	899
+52027	Conqueror's Mark of Sanctification	51168	Sanctified Lightsworn Greaves	2	264	4	899
+52027	Conqueror's Mark of Sanctification	51169	Sanctified Lightsworn Gloves	2	264	4	899
+52027	Conqueror's Mark of Sanctification	51170	Sanctified Lightsworn Shoulderguards	2	264	4	901
+52027	Conqueror's Mark of Sanctification	51171	Sanctified Lightsworn Legguards	2	264	4	901
+52027	Conqueror's Mark of Sanctification	51172	Sanctified Lightsworn Handguards	2	264	4	901
+52027	Conqueror's Mark of Sanctification	51173	Sanctified Lightsworn Faceguard	2	264	4	901
+52027	Conqueror's Mark of Sanctification	51174	Sanctified Lightsworn Chestguard	2	264	4	901
+52027	Conqueror's Mark of Sanctification	51175	Sanctified Crimson Acolyte Shoulderpads	16	264	4	885
+52027	Conqueror's Mark of Sanctification	51176	Sanctified Crimson Acolyte Robe	16	264	4	885
+52027	Conqueror's Mark of Sanctification	51177	Sanctified Crimson Acolyte Leggings	16	264	4	885
+52027	Conqueror's Mark of Sanctification	51178	Sanctified Crimson Acolyte Hood	16	264	4	885
+52027	Conqueror's Mark of Sanctification	51179	Sanctified Crimson Acolyte Gloves	16	264	4	885
+52027	Conqueror's Mark of Sanctification	51180	Sanctified Crimson Acolyte Raiments	16	264	4	886
+52027	Conqueror's Mark of Sanctification	51181	Sanctified Crimson Acolyte Pants	16	264	4	886
+52027	Conqueror's Mark of Sanctification	51182	Sanctified Crimson Acolyte Mantle	16	264	4	886
+52027	Conqueror's Mark of Sanctification	51183	Sanctified Crimson Acolyte Handwraps	16	264	4	886
+52027	Conqueror's Mark of Sanctification	51184	Sanctified Crimson Acolyte Cowl	16	264	4	886
+52027	Conqueror's Mark of Sanctification	51205	Sanctified Dark Coven Shoulderpads	256	264	4	884
+52027	Conqueror's Mark of Sanctification	51206	Sanctified Dark Coven Robe	256	264	4	884
+52027	Conqueror's Mark of Sanctification	51207	Sanctified Dark Coven Leggings	256	264	4	884
+52027	Conqueror's Mark of Sanctification	51208	Sanctified Dark Coven Hood	256	264	4	884
+52027	Conqueror's Mark of Sanctification	51209	Sanctified Dark Coven Gloves	256	264	4	884
+52028	Vanquisher's Mark of Sanctification	51250	Sanctified Shadowblade Breastplate	8	277	4	890
+52028	Vanquisher's Mark of Sanctification	51251	Sanctified Shadowblade Gauntlets	8	277	4	890
+52028	Vanquisher's Mark of Sanctification	51252	Sanctified Shadowblade Helmet	8	277	4	890
+52028	Vanquisher's Mark of Sanctification	51253	Sanctified Shadowblade Legplates	8	277	4	890
+52028	Vanquisher's Mark of Sanctification	51254	Sanctified Shadowblade Pauldrons	8	277	4	890
+52028	Vanquisher's Mark of Sanctification	51280	Sanctified Bloodmage Gloves	128	277	4	883
+52028	Vanquisher's Mark of Sanctification	51281	Sanctified Bloodmage Hood	128	277	4	883
+52028	Vanquisher's Mark of Sanctification	51282	Sanctified Bloodmage Leggings	128	277	4	883
+52028	Vanquisher's Mark of Sanctification	51283	Sanctified Bloodmage Robe	128	277	4	883
+52028	Vanquisher's Mark of Sanctification	51284	Sanctified Bloodmage Shoulderpads	128	277	4	883
+52028	Vanquisher's Mark of Sanctification	51290	Sanctified Lasherweave Cover	1024	277	4	888
+52028	Vanquisher's Mark of Sanctification	51291	Sanctified Lasherweave Gloves	1024	277	4	888
+52028	Vanquisher's Mark of Sanctification	51292	Sanctified Lasherweave Mantle	1024	277	4	888
+52028	Vanquisher's Mark of Sanctification	51293	Sanctified Lasherweave Trousers	1024	277	4	888
+52028	Vanquisher's Mark of Sanctification	51294	Sanctified Lasherweave Vestment	1024	277	4	888
+52028	Vanquisher's Mark of Sanctification	51295	Sanctified Lasherweave Handgrips	1024	277	4	889
+52028	Vanquisher's Mark of Sanctification	51296	Sanctified Lasherweave Headguard	1024	277	4	889
+52028	Vanquisher's Mark of Sanctification	51297	Sanctified Lasherweave Legguards	1024	277	4	889
+52028	Vanquisher's Mark of Sanctification	51298	Sanctified Lasherweave Raiment	1024	277	4	889
+52028	Vanquisher's Mark of Sanctification	51299	Sanctified Lasherweave Shoulderpads	1024	277	4	889
+52028	Vanquisher's Mark of Sanctification	51300	Sanctified Lasherweave Robes	1024	277	4	887
+52028	Vanquisher's Mark of Sanctification	51301	Sanctified Lasherweave Gauntlets	1024	277	4	887
+52028	Vanquisher's Mark of Sanctification	51302	Sanctified Lasherweave Helmet	1024	277	4	887
+52028	Vanquisher's Mark of Sanctification	51303	Sanctified Lasherweave Legplates	1024	277	4	887
+52028	Vanquisher's Mark of Sanctification	51304	Sanctified Lasherweave Pauldrons	1024	277	4	887
+52028	Vanquisher's Mark of Sanctification	51305	Sanctified Scourgelord Chestguard	32	277	4	898
+52028	Vanquisher's Mark of Sanctification	51306	Sanctified Scourgelord Faceguard	32	277	4	898
+52028	Vanquisher's Mark of Sanctification	51307	Sanctified Scourgelord Handguards	32	277	4	898
+52028	Vanquisher's Mark of Sanctification	51308	Sanctified Scourgelord Legguards	32	277	4	898
+52028	Vanquisher's Mark of Sanctification	51309	Sanctified Scourgelord Pauldrons	32	277	4	898
+52028	Vanquisher's Mark of Sanctification	51310	Sanctified Scourgelord Battleplate	32	277	4	897
+52028	Vanquisher's Mark of Sanctification	51311	Sanctified Scourgelord Gauntlets	32	277	4	897
+52028	Vanquisher's Mark of Sanctification	51312	Sanctified Scourgelord Helmet	32	277	4	897
+52028	Vanquisher's Mark of Sanctification	51313	Sanctified Scourgelord Legplates	32	277	4	897
+52028	Vanquisher's Mark of Sanctification	51314	Sanctified Scourgelord Shoulderplates	32	277	4	897
+52029	Protector's Mark of Sanctification	51220	Sanctified Ymirjar Lord's Breastplate	1	277	4	896
+52029	Protector's Mark of Sanctification	51221	Sanctified Ymirjar Lord's Greathelm	1	277	4	896
+52029	Protector's Mark of Sanctification	51222	Sanctified Ymirjar Lord's Handguards	1	277	4	896
+52029	Protector's Mark of Sanctification	51223	Sanctified Ymirjar Lord's Legguards	1	277	4	896
+52029	Protector's Mark of Sanctification	51224	Sanctified Ymirjar Lord's Pauldrons	1	277	4	896
+52029	Protector's Mark of Sanctification	51225	Sanctified Ymirjar Lord's Battleplate	1	277	4	895
+52029	Protector's Mark of Sanctification	51226	Sanctified Ymirjar Lord's Gauntlets	1	277	4	895
+52029	Protector's Mark of Sanctification	51227	Sanctified Ymirjar Lord's Helmet	1	277	4	895
+52029	Protector's Mark of Sanctification	51228	Sanctified Ymirjar Lord's Legplates	1	277	4	895
+52029	Protector's Mark of Sanctification	51229	Sanctified Ymirjar Lord's Shoulderplates	1	277	4	895
+52029	Protector's Mark of Sanctification	51235	Sanctified Frost Witch's Shoulderpads	64	277	4	893
+52029	Protector's Mark of Sanctification	51236	Sanctified Frost Witch's Kilt	64	277	4	893
+52029	Protector's Mark of Sanctification	51237	Sanctified Frost Witch's Helm	64	277	4	893
+52029	Protector's Mark of Sanctification	51238	Sanctified Frost Witch's Gloves	64	277	4	893
+52029	Protector's Mark of Sanctification	51239	Sanctified Frost Witch's Hauberk	64	277	4	893
+52029	Protector's Mark of Sanctification	51240	Sanctified Frost Witch's Shoulderguards	64	277	4	894
+52029	Protector's Mark of Sanctification	51241	Sanctified Frost Witch's War-Kilt	64	277	4	894
+52029	Protector's Mark of Sanctification	51242	Sanctified Frost Witch's Faceguard	64	277	4	894
+52029	Protector's Mark of Sanctification	51243	Sanctified Frost Witch's Grips	64	277	4	894
+52029	Protector's Mark of Sanctification	51244	Sanctified Frost Witch's Chestguard	64	277	4	894
+52029	Protector's Mark of Sanctification	51245	Sanctified Frost Witch's Spaulders	64	277	4	892
+52029	Protector's Mark of Sanctification	51246	Sanctified Frost Witch's Legguards	64	277	4	892
+52029	Protector's Mark of Sanctification	51247	Sanctified Frost Witch's Headpiece	64	277	4	892
+52029	Protector's Mark of Sanctification	51248	Sanctified Frost Witch's Handguards	64	277	4	892
+52029	Protector's Mark of Sanctification	51249	Sanctified Frost Witch's Tunic	64	277	4	892
+52029	Protector's Mark of Sanctification	51285	Sanctified Ahn'Kahar Blood Hunter's Handguards	4	277	4	891
+52029	Protector's Mark of Sanctification	51286	Sanctified Ahn'Kahar Blood Hunter's Headpiece	4	277	4	891
+52029	Protector's Mark of Sanctification	51287	Sanctified Ahn'Kahar Blood Hunter's Legguards	4	277	4	891
+52029	Protector's Mark of Sanctification	51288	Sanctified Ahn'Kahar Blood Hunter's Spaulders	4	277	4	891
+52029	Protector's Mark of Sanctification	51289	Sanctified Ahn'Kahar Blood Hunter's Tunic	4	277	4	891
+52030	Conqueror's Mark of Sanctification	51230	Sanctified Dark Coven Gloves	256	277	4	884
+52030	Conqueror's Mark of Sanctification	51231	Sanctified Dark Coven Hood	256	277	4	884
+52030	Conqueror's Mark of Sanctification	51232	Sanctified Dark Coven Leggings	256	277	4	884
+52030	Conqueror's Mark of Sanctification	51233	Sanctified Dark Coven Robe	256	277	4	884
+52030	Conqueror's Mark of Sanctification	51234	Sanctified Dark Coven Shoulderpads	256	277	4	884
+52030	Conqueror's Mark of Sanctification	51255	Sanctified Crimson Acolyte Cowl	16	277	4	886
+52030	Conqueror's Mark of Sanctification	51256	Sanctified Crimson Acolyte Handwraps	16	277	4	886
+52030	Conqueror's Mark of Sanctification	51257	Sanctified Crimson Acolyte Mantle	16	277	4	886
+52030	Conqueror's Mark of Sanctification	51258	Sanctified Crimson Acolyte Pants	16	277	4	886
+52030	Conqueror's Mark of Sanctification	51259	Sanctified Crimson Acolyte Raiments	16	277	4	886
+52030	Conqueror's Mark of Sanctification	51260	Sanctified Crimson Acolyte Gloves	16	277	4	885
+52030	Conqueror's Mark of Sanctification	51261	Sanctified Crimson Acolyte Hood	16	277	4	885
+52030	Conqueror's Mark of Sanctification	51262	Sanctified Crimson Acolyte Leggings	16	277	4	885
+52030	Conqueror's Mark of Sanctification	51263	Sanctified Crimson Acolyte Robe	16	277	4	885
+52030	Conqueror's Mark of Sanctification	51264	Sanctified Crimson Acolyte Shoulderpads	16	277	4	885
+52030	Conqueror's Mark of Sanctification	51265	Sanctified Lightsworn Chestguard	2	277	4	901
+52030	Conqueror's Mark of Sanctification	51266	Sanctified Lightsworn Faceguard	2	277	4	901
+52030	Conqueror's Mark of Sanctification	51267	Sanctified Lightsworn Handguards	2	277	4	901
+52030	Conqueror's Mark of Sanctification	51268	Sanctified Lightsworn Legguards	2	277	4	901
+52030	Conqueror's Mark of Sanctification	51269	Sanctified Lightsworn Shoulderguards	2	277	4	901
+52030	Conqueror's Mark of Sanctification	51270	Sanctified Lightsworn Gloves	2	277	4	899
+52030	Conqueror's Mark of Sanctification	51271	Sanctified Lightsworn Greaves	2	277	4	899
+52030	Conqueror's Mark of Sanctification	51272	Sanctified Lightsworn Headpiece	2	277	4	899
+52030	Conqueror's Mark of Sanctification	51273	Sanctified Lightsworn Spaulders	2	277	4	899
+52030	Conqueror's Mark of Sanctification	51274	Sanctified Lightsworn Tunic	2	277	4	899
+52030	Conqueror's Mark of Sanctification	51275	Sanctified Lightsworn Battleplate	2	277	4	900
+52030	Conqueror's Mark of Sanctification	51276	Sanctified Lightsworn Gauntlets	2	277	4	900
+52030	Conqueror's Mark of Sanctification	51277	Sanctified Lightsworn Helmet	2	277	4	900
+52030	Conqueror's Mark of Sanctification	51278	Sanctified Lightsworn Legplates	2	277	4	900
+52030	Conqueror's Mark of Sanctification	51279	Sanctified Lightsworn Shoulderplates	2	277	4	900
