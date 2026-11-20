@@ -8,7 +8,7 @@ Temucraft interface into the client so module windows behave like Blizzard's own
 `python3 client/build_mpq.py` makes `Data/<locale>/patch-<locale>-T.MPQ` (needs StormLib; `--stormlib` points at
 `libstorm.so` or `StormLib.dll`). It holds:
 
-- [`Interface\GlueXML\TemucraftVersion.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/GlueXML/TemucraftVersion.lua): the login screen shows "Temucraft 1.2.0 (3.3.5a build 12340)".
+- [`Interface\GlueXML\TemucraftVersion.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/GlueXML/TemucraftVersion.lua): the login screen shows "Temucraft 1.3.0 (3.3.5a build 12340)".
 - [`Interface\FrameXML\Temucraft\TemucraftCore.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftCore.lua): after login the client whispers its version to the server
   (addon message `TCV`, `HELLO~1.0.0`) and shows a popup when the server says it is out of date.
 - [`Interface\FrameXML\Temucraft\TemucraftDisguise.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftDisguise.lua): the rogue Disguise button and menu ([mod-temucraft-rogue-disguise](https://github.com/Temucraft/mod-temucraft-rogue-disguise)).
@@ -31,7 +31,7 @@ The version is `client/VERSION`. To release a new client: raise `VERSION`, rebui
 | Setting | Default | What |
 |---|---|---|
 | `Temucraft.ClientVersion.Enable` | 1 | check versions |
-| `Temucraft.ClientVersion.Required` | 1.2.0 | oldest client allowed |
+| `Temucraft.ClientVersion.Required` | 1.3.0 | oldest client allowed |
 | `Temucraft.ClientVersion.RequirePatch` | 1 | also act on clients that never send a version (`GraceSeconds` after login) |
 | `Temucraft.ClientVersion.Action` | 1 | 0 tell them to update, 1 also disconnect after 30 seconds (never GMs) |
 
@@ -55,3 +55,11 @@ your character: click an item to try it on, "Try on set" dresses you in the whol
 ## Wardrobe
 [`TemucraftCostumes.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftCostumes.lua): the window of [mod-temucraft-costumes](https://github.com/Temucraft/mod-temucraft-costumes) (`.costume` or `/wardrobe`). Its catalog comes from
 `client/costumes/costume_catalog.sql` -> `costumes.tsv` -> `build_costume_window.py` (UI code in [`costume_window.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/costumes/costume_window.lua)).
+
+## Vanity
+[`TemucraftVanity.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftVanity.lua): the Vanity window of [mod-temucraft-account-wide](https://github.com/Temucraft/mod-temucraft-account-wide)
+(`/vanity`, `.collection vanity`, or the Vanity button of the Wardrobe). It lists the vanity items your account has
+unlocked (the Stones and Scrolls of Homecoming of [mod-temucraft-travel](https://github.com/Temucraft/mod-temucraft-travel) and any others in
+`mod_temucraft_vanity_item`), each with its icon, name and cooldown, and a Summon button that puts it back in your bags
+if this character doesn't have it. "Show locked" also lists the ones still to get. Addon prefix `TVA`.
+

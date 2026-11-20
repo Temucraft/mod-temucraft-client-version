@@ -5,7 +5,7 @@ Builds the Temucraft interface patch: Data/<locale>/patch-<locale>-T.MPQ.
 It carries
   - Interface\\GlueXML\\TemucraftVersion.lua: "Temucraft <version>" on the login screen,
   - Interface\\FrameXML\\Temucraft\\*.lua: the core (sends the version to the server, shows "out of date") and the
-    module windows (mission table / companions), loaded by FrameXML itself, so they always run like Blizzard's UI,
+    module windows (mission table / companions, wardrobe, vanity), loaded by FrameXML itself, so they always run like Blizzard's UI,
   - FrameXML.toc / GlueXML.toc: copies of the client's own lists (base/) with those files added.
 
 The version comes from VERSION. Put the MPQ in the launcher's locales/<locale>/ folder, and the same version in
@@ -22,7 +22,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 FRAME_FILES = ["Temucraft\\TemucraftCore.lua", "Temucraft\\TemucraftMissions.lua", "Temucraft\\TemucraftDisguise.lua",
                "Temucraft\\TemucraftAutoLearn.lua", "Temucraft\\TemucraftHeritage.lua",
                "Temucraft\\TemucraftSpellTabs.lua", "Temucraft\\TemucraftTankRoles.lua",
-               "Temucraft\\TemucraftTokenPreview.lua", "Temucraft\\TemucraftCostumes.lua"]
+               "Temucraft\\TemucraftTokenPreview.lua", "Temucraft\\TemucraftCostumes.lua",
+               "Temucraft\\TemucraftVanity.lua"]
 GLUE_FILES = ["TemucraftVersion.lua"]
 
 

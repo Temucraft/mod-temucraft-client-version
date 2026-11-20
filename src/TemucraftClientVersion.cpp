@@ -40,7 +40,7 @@ namespace
     struct Settings
     {
         bool enable = true, requirePatch = false;
-        std::string required = "1.2.0";
+        std::string required = "1.3.0";
         uint32 action = 0, grace = 60;
     } cfg;
 
@@ -136,7 +136,7 @@ namespace
         void OnAfterConfigLoad(bool /*reload*/) override
         {
             cfg.enable = sConfigMgr->GetOption<bool>("Temucraft.ClientVersion.Enable", true);
-            cfg.required = sConfigMgr->GetOption<std::string>("Temucraft.ClientVersion.Required", "1.2.0");
+            cfg.required = sConfigMgr->GetOption<std::string>("Temucraft.ClientVersion.Required", "1.3.0");
             cfg.requirePatch = sConfigMgr->GetOption<bool>("Temucraft.ClientVersion.RequirePatch", true);
             cfg.action = sConfigMgr->GetOption<uint32>("Temucraft.ClientVersion.Action", 1);
             cfg.grace = sConfigMgr->GetOption<uint32>("Temucraft.ClientVersion.GraceSeconds", 60);

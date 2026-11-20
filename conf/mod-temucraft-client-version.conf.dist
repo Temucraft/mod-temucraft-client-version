@@ -14,9 +14,9 @@ Temucraft.ClientVersion.Enable = 1
 #    Temucraft.ClientVersion.Required
 #        Description: Oldest client version allowed. Keep it the same as client/VERSION, the launcher's
 #                     client-version.txt and the patch you hand out.
-#        Default:     "1.2.0"
+#        Default:     "1.3.0"
 
-Temucraft.ClientVersion.Required = "1.2.0"
+Temucraft.ClientVersion.Required = "1.3.0"
 
 #
 #    Temucraft.ClientVersion.RequirePatch
