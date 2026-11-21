@@ -1,6 +1,6 @@
 -- Temucraft vanity collection (mod-temucraft-account-wide, addon prefix TVA): the vanity items the account has
 -- unlocked (the Stones and Scrolls of Homecoming and the like), each with its icon, name, cooldown and a Summon button
--- that puts it back in the bags. Open with /vanity, .collection vanity or the Vanity button of the Wardrobe.
+-- that puts it back in the bags. Open with /vanity, .temucraft collection vanity or the Vanity button of the Wardrobe.
 local PREFIX = "TVA";
 local ROWS, ROW_H = 8, 42;
 

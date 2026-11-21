@@ -37,7 +37,7 @@ The version is `client/VERSION`. To release a new client: raise `VERSION`, rebui
 | `Temucraft.ClientVersion.RequirePatch` | 1 | also act on clients that never send a version (`GraceSeconds` after login) |
 | `Temucraft.ClientVersion.Action` | 1 | 0 tell them to update, 1 also disconnect after 30 seconds (never GMs) |
 
-`.clientversion` shows your (or your target's) client version.
+`.temucraft clientversion` shows your (or your target's) client version.
 
 ## Install
 
@@ -55,12 +55,12 @@ your character: click an item to try it on, "Try on set" dresses you in the whol
 `client/tokens/tokens.tsv`, then `python3 client/tokens/build_token_preview.py` and rebuild the patch.
 
 ## Wardrobe
-[`TemucraftCostumes.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftCostumes.lua): the window of [mod-temucraft-costumes](https://github.com/Temucraft/mod-temucraft-costumes) (`.costume` or `/wardrobe`). Its catalog comes from
+[`TemucraftCostumes.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftCostumes.lua): the window of [mod-temucraft-costumes](https://github.com/Temucraft/mod-temucraft-costumes) (`.temucraft costume` or `/wardrobe`). Its catalog comes from
 `client/costumes/costume_catalog.sql` -> `costumes.tsv` -> `build_costume_window.py` (UI code in [`costume_window.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/costumes/costume_window.lua)).
 
 ## Vanity
 [`TemucraftVanity.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftVanity.lua): the Vanity window of [mod-temucraft-account-wide](https://github.com/Temucraft/mod-temucraft-account-wide)
-(`/vanity`, `.collection vanity`, or the Vanity button of the Wardrobe). It lists the vanity items your account has
+(`/vanity`, `.temucraft collection vanity`, or the Vanity button of the Wardrobe). It lists the vanity items your account has
 unlocked (the Stones and Scrolls of Homecoming of [mod-temucraft-travel](https://github.com/Temucraft/mod-temucraft-travel) and any others in
 `mod_temucraft_vanity_item`), each with its icon, name and cooldown, and a Summon button that puts it back in your bags
 if this character doesn't have it. "Show locked" also lists the ones still to get. Addon prefix `TVA`.

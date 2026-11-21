@@ -149,7 +149,7 @@ handlers.NOTANK = function(seconds, places, members, pct)
 	table.insert(choices, { "No thanks", "NOTHANKS", true });
 	local text = "Nobody in your group plays a tank spec. Someone can stand in as tank:\n\n"..StandInText(pct)..
 		"\n\nStand in yourself, or pick someone (they have to accept).";
-	if ( more > 0 ) then text = text.."\nOthers: /run or type .tankrole pick <name>"; end
+	if ( more > 0 ) then text = text.."\nOthers: /run or type .temucraft tankrole pick <name>"; end
 	Ask("No tank in the group", text, seconds, choices);
 end
 

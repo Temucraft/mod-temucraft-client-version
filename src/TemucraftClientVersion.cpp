@@ -12,7 +12,7 @@
  * and, after login, whispers it to the server as an addon message ("TCV", "HELLO~1.0.0"). The server compares it with
  * Temucraft.ClientVersion.Required: an older client is told to update (a popup in game); with Action = 1 it is
  * disconnected after the grace time. A client that never says hello (no patch) gets the same treatment when
- * Temucraft.ClientVersion.RequirePatch is on. GMs are never kicked. `.clientversion` shows yours / a target's.
+ * Temucraft.ClientVersion.RequirePatch is on. GMs are never kicked. `.temucraft clientversion` shows yours / a target's.
  */
 #include "Chat.h"
 #include "ChatCommand.h"
@@ -166,7 +166,7 @@ namespace
         temucraft_client_version_commands() : CommandScript("temucraft_client_version_commands") { }
         ChatCommandTable GetCommands() const override
         {
-            static ChatCommandTable root = { { "clientversion", Handle, SEC_PLAYER, Console::No } };
+            static ChatCommandTable root = { { "temucraft clientversion", Handle, 102150, Console::No } };
             return root;
         }
         static bool Handle(ChatHandler* handler)
