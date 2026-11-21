@@ -65,3 +65,12 @@ unlocked (the Stones and Scrolls of Homecoming of [mod-temucraft-travel](https:/
 `mod_temucraft_vanity_item`), each with its icon, name and cooldown, and a Summon button that puts it back in your bags
 if this character doesn't have it. "Show locked" also lists the ones still to get. Addon prefix `TVA`.
 
+## Also in this module
+
+These were separate modules; they now live here, each with its own folder under `src/`, its own config file in
+`conf/` (same file and key names as before) and its notes under `docs/`. Their SQL files kept their names, so nothing
+is applied twice. Remove the old module folders from `modules/` before building.
+
+| Was | What | Code | Notes |
+|---|---|---|---|
+| mod-temucraft-spellbook | spellbook tabs | `src/spellbook` | [docs/spellbook.md](docs/spellbook.md) |
