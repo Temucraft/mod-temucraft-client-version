@@ -33,3 +33,10 @@ Temucraft.ClientVersion.GraceSeconds = 60
 #        Default:     1
 
 Temucraft.ClientVersion.Action = 1
+
+#
+#    Temucraft.ClientVersion.KickDelay
+#        Description: With Action = 1, seconds between the warning and the disconnect.
+#        Default:     30
+
+Temucraft.ClientVersion.KickDelay = 30

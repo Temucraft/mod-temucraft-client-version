@@ -41,7 +41,7 @@ namespace
     {
         bool enable = true, requirePatch = false;
         std::string required = "1.3.0";
-        uint32 action = 0, grace = 60;
+        uint32 action = 0, grace = 60, kickDelay = 30;
     } cfg;
 
     struct Session { uint32 loginAt = 0; std::string version; bool told = false; uint32 kickAt = 0; };
@@ -92,8 +92,8 @@ namespace
             h.PSendSysMessage(Text(player, S_NO_PATCH, "|cffff6060The Temucraft interface patch is missing. Start the game from the Temucraft launcher (it installs Temucraft {}).|r"), cfg.required);
         if (cfg.action == 1 && !player->GetSession()->IsGMAccount())
         {
-            s.kickAt = Now() + 30;
-            h.SendSysMessage(Text(player, S_KICK, "|cffff6060You will be disconnected in 30 seconds.|r"));
+            s.kickAt = Now() + cfg.kickDelay;
+            h.PSendSysMessage(Text(player, S_KICK, "|cffff6060You will be disconnected in {} seconds.|r"), cfg.kickDelay);
         }
     }
 
@@ -140,6 +140,7 @@ namespace
             cfg.requirePatch = sConfigMgr->GetOption<bool>("Temucraft.ClientVersion.RequirePatch", true);
             cfg.action = sConfigMgr->GetOption<uint32>("Temucraft.ClientVersion.Action", 1);
             cfg.grace = sConfigMgr->GetOption<uint32>("Temucraft.ClientVersion.GraceSeconds", 60);
+            cfg.kickDelay = sConfigMgr->GetOption<uint32>("Temucraft.ClientVersion.KickDelay", 30);
         }
 
         void OnUpdate(uint32 diff) override
