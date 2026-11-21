@@ -24,7 +24,7 @@ FRAME_FILES = ["Temucraft\\TemucraftCore.lua", "Temucraft\\TemucraftMissions.lua
                "Temucraft\\TemucraftSpellTabs.lua", "Temucraft\\TemucraftTankRoles.lua",
                "Temucraft\\TemucraftTokenPreview.lua", "Temucraft\\TemucraftCostumes.lua",
                "Temucraft\\TemucraftVanity.lua",
-               "Temucraft\\TemucraftExpeditions.lua"]
+               "Temucraft\\TemucraftExpeditions.lua", "Temucraft\\TemucraftSpellInfo.lua"]
 GLUE_FILES = ["TemucraftVersion.lua"]
 
 
