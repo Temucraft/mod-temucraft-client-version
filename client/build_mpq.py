@@ -4,7 +4,8 @@ Builds the Temucraft interface patch: Data/<locale>/patch-<locale>-T.MPQ.
 
 It carries
   - Interface\\GlueXML\\TemucraftVersion.lua: "Temucraft <version>" on the login screen,
-  - Interface\\GlueXML\\TemucraftScenes.lua: which character screen scenes to use ("old"; Character models: HD replaces it with "new"),
+  - Interface\\TemucraftScenes.lua: the character screen scenes ("old" here; the launcher writes a loose Interface\\TemucraftScenes.lua
+    with the player's choice: "new" for Character models HD, plus the scenes they picked per race),
   - Interface\\FrameXML\\Temucraft\\*.lua: the core (sends the version to the server, shows "out of date") and the
     module windows (mission table / companions, wardrobe, vanity), loaded by FrameXML itself, so they always run like Blizzard's UI,
   - FrameXML.toc / GlueXML.toc: copies of the client's own lists (base/) with those files added.
@@ -26,7 +27,9 @@ FRAME_FILES = ["Temucraft\\TemucraftCore.lua", "Temucraft\\TemucraftMissions.lua
                "Temucraft\\TemucraftTokenPreview.lua", "Temucraft\\TemucraftCostumes.lua",
                "Temucraft\\TemucraftVanity.lua",
                "Temucraft\\TemucraftExpeditions.lua", "Temucraft\\TemucraftSpellInfo.lua"]
-GLUE_FILES = ["TemucraftVersion.lua", "TemucraftScenes.lua"]
+GLUE_FILES = ["TemucraftVersion.lua"]
+# Interface\\<file> (listed as ..\\<file> in GlueXML.toc, like LoginUI.lua): the launcher writes its own loose copy
+ROOT_GLUE_FILES = ["TemucraftScenes.lua"]
 
 
 def insert_before(text, marker, lines):
@@ -49,11 +52,14 @@ def main():
     add("Interface\\FrameXML\\FrameXML.toc",
         insert_before(open(os.path.join(HERE, "base", "FrameXML.toc"), encoding="latin-1").read(), "## add new modules above", FRAME_FILES))
     add("Interface\\GlueXML\\GlueXML.toc",
-        insert_before(open(os.path.join(HERE, "base", "GlueXML.toc"), encoding="latin-1").read(), "## this always runs last", GLUE_FILES))
+        insert_before(open(os.path.join(HERE, "base", "GlueXML.toc"), encoding="latin-1").read(), "## this always runs last",
+                      GLUE_FILES + ["..\\" + f for f in ROOT_GLUE_FILES]))
     for f in FRAME_FILES:
         add("Interface\\FrameXML\\" + f, open(os.path.join(HERE, "Interface", "FrameXML", *f.split("\\"))).read().replace("@VERSION@", version))
     for f in GLUE_FILES:
         add("Interface\\GlueXML\\" + f, open(os.path.join(HERE, "Interface", "GlueXML", f)).read().replace("@VERSION@", version))
+    for f in ROOT_GLUE_FILES:
+        add("Interface\\" + f, open(os.path.join(HERE, "Interface", f)).read())
 
     L = ctypes.CDLL(a.stormlib); v = ctypes.c_void_p
     L.SFileCreateArchive.argtypes = [ctypes.c_char_p, ctypes.c_uint, ctypes.c_uint, ctypes.POINTER(v)]
