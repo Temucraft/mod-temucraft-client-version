@@ -4,7 +4,7 @@ Builds the Temucraft interface patch: Data/<locale>/patch-<locale>-T.MPQ.
 
 It carries
   - Interface\\GlueXML\\TemucraftVersion.lua: "Temucraft <version>" on the login screen,
-  - Interface\\GlueXML\\TemucraftScenes.lua: which character screen scenes to use ("new"; the launcher option can replace it),
+  - Interface\\GlueXML\\TemucraftScenes.lua: which character screen scenes to use ("old"; Character models: HD replaces it with "new"),
   - Interface\\FrameXML\\Temucraft\\*.lua: the core (sends the version to the server, shows "out of date") and the
     module windows (mission table / companions, wardrobe, vanity), loaded by FrameXML itself, so they always run like Blizzard's UI,
   - FrameXML.toc / GlueXML.toc: copies of the client's own lists (base/) with those files added.

@@ -1,3 +1,3 @@
--- Temucraft character screens: "new" (like retail) or "old" (the original 3.3.5 scenes). See GlueParent.lua.
--- The launcher's "Character screens: Original" option replaces this file with one that says "old".
-TEMUCRAFT_CHARACTER_SCENES = "new";
+-- Temucraft character screens: "old" (Classic models: the original 3.3.5 scenes) or "new" (HD models, like retail).
+-- The launcher's "Character models: HD" option replaces this file (patch-<locale>-W) with one that says "new". See GlueParent.lua.
+TEMUCRAFT_CHARACTER_SCENES = "old";
