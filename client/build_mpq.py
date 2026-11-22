@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
 """
-Builds the Temucraft interface patch: Data/<locale>/patch-<locale>-T.MPQ.
+Builds the Temucraft interface patch: Data/patch-^.MPQ (the same for every language).
+
+It is a Data patch on purpose: the client ranks every Data\patch-?.MPQ above every Data\<locale>\patch-<locale>-?.MPQ
+(see claude/temucraft-client-patch-order-and-hd.md), and patch-5 has its own FrameXML.toc. As a locale patch (the old
+patch-<locale>-T) our FrameXML.toc lost to it, TemucraftCore.lua never ran, the server never got the version and
+kicked everyone. "^" ranks above every other Data patch that has interface files.
 
 It carries
   - Interface\\GlueXML\\TemucraftVersion.lua: "Temucraft <version>" on the login screen,
@@ -10,12 +15,12 @@ It carries
     module windows (mission table / companions, wardrobe, vanity), loaded by FrameXML itself, so they always run like Blizzard's UI,
   - FrameXML.toc / GlueXML.toc: copies of the client's own lists (base/) with those files added.
 
-The version comes from VERSION. Put the MPQ in the launcher's locales/<locale>/ folder, and the same version in
+The version comes from VERSION. Put the MPQ in the launcher's patches/ folder, and the same version in
 client-version.txt and in mod-temucraft-client-version.conf (Temucraft.ClientVersion.Required).
 
-    python3 build_mpq.py [--locale enUS] [--out folder] [--stormlib path/to/libstorm.so|StormLib.dll]
+    python3 build_mpq.py [--out folder] [--stormlib path/to/libstorm.so|StormLib.dll]
 
-base/*.toc must be the highest-priority copies of the client you ship (here: FrameXML.toc from patch-enUS-3.MPQ,
+base/*.toc must be the highest-priority copies of the client you ship (here: FrameXML.toc from patch-5.MPQ,
 GlueXML.toc from patch-enUS-C.MPQ). If another patch changes them later, refresh base/.
 """
 import argparse, ctypes, os, sys, tempfile
@@ -41,7 +46,6 @@ def insert_before(text, marker, lines):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--locale", default="enUS")
     ap.add_argument("--out", default=os.path.join(HERE, "out"))
     ap.add_argument("--stormlib", default=os.environ.get("STORMLIB", os.path.expanduser("~/StormLib/b/libstorm.so")))
     a = ap.parse_args()
@@ -65,8 +69,8 @@ def main():
     L.SFileCreateArchive.argtypes = [ctypes.c_char_p, ctypes.c_uint, ctypes.c_uint, ctypes.POINTER(v)]
     L.SFileAddFileEx.argtypes = [v, ctypes.c_char_p, ctypes.c_char_p, ctypes.c_uint, ctypes.c_uint, ctypes.c_uint]
     L.SFileCloseArchive.argtypes = [v]
-    os.makedirs(os.path.join(a.out, a.locale), exist_ok=True)
-    mpq = os.path.join(a.out, a.locale, f"patch-{a.locale}-T.MPQ")
+    os.makedirs(a.out, exist_ok=True)
+    mpq = os.path.join(a.out, "patch-^.MPQ")
     if os.path.exists(mpq): os.remove(mpq)
     h = v()
     # MPQ v1 with a listfile and attributes, like the client's own patches

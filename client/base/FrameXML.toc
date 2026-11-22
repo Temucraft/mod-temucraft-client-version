@@ -142,6 +142,27 @@ MovieFrame.xml
 VehicleMenuBar.xml
 AlternatePowerBar.xml
 AnimationSystem.lua
+## tsaddon-begin-lib
+RequireStub.lua
+lualib_bundle.lua
+Events.lua
+json.lua
+## tsaddon-end-lib
+## tsaddon-begin: classic-ext
+TSAddons\classic-ext\addon\ui-enhance\loot-toast.lua
+TSAddons\classic-ext\addon\npc-chat-addon.lua
+TSAddons\classic-ext\addon\custom-affixes.lua
+TSAddons\classic-ext\addon\addon.lua
+## tsaddon-end: classic-ext
+## tsaddon-begin: model-update
+TSAddons\model-update\addon\druid-model-select.lua
+TSAddons\model-update\addon\addon.lua
+## tsaddon-end: model-update
+
+
+## Open Azeroth
+GlobalStrings_OpenAzeroth.lua
 
 ## add new modules above here
 LocalizationPost.xml
+
