@@ -41,7 +41,11 @@ local panel = CreateFrame("Frame", "TemucraftSpellTabsPanel", UIParent);
 panel:SetFrameStrata("HIGH");
 panel:SetPoint("TOPLEFT", SpellBookFrame, "TOPLEFT", 22, -74);
 panel:SetWidth(300); panel:SetHeight(330);
-panel:SetBackdrop({ bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background", tile = true, tileSize = 32 });
+-- solid: the spellbook's own buttons are under it and must not show through
+local bgFill = panel:CreateTexture(nil, "BACKGROUND");
+bgFill:SetAllPoints(); bgFill:SetTexture(0.18, 0.14, 0.09, 1);
+local bg = panel:CreateTexture(nil, "BORDER");
+bg:SetAllPoints(); bg:SetTexture("Interface\\QuestFrame\\QuestBG"); bg:SetTexCoord(0, 0.586, 0, 0.66);
 panel:EnableMouse(true);
 panel:Hide();
 local title = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge");
