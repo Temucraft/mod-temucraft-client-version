@@ -4,7 +4,7 @@ TEMUCRAFT_CHANGELOG = {
 	{ version = "next", lines = {
 		"New character panel: the paper doll with slots down both sides, a bigger model, item level and stats in sections (Classic option: /tchar classic).",
 		"New micro menu at the bottom right, with Spellbook & Talents in one button, Collections and Shop.",
-		"New game menu (Esc) with Shop, What's New, AddOns, Edit Mode and Support.",
+		"New game menu (Esc) with Shop, What's New, AddOns and Support.",
 		"AddOn list in game: enable or disable addons, see their memory and CPU (/addons).",
 		"Tooltips: SpellID / ItemID and icon lines (Interface Options > Temucraft to hide them), cooldown remaining, and a reminder for spells that aren't on your bars.",
 		"Spellbook flyouts: teleports, portals and the Temucraft helper items in one entry each.",

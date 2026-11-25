@@ -208,15 +208,21 @@ local function Journal(kind, noun)
 	random:SetPoint("BOTTOMLEFT", 10, 10);
 	random:SetText(kind == "MOUNT" and "Summon Random Favorite Mount" or "Summon Random Favorite Pet");
 
-	-- the model: the summoned creature if the client has it cached, else the model file
-	local fallback, wait = nil, 0;
+	-- the model: the creature (SetCreature: its display, with its skin). 3.3.5 has no SetDisplayInfo, and a bare
+	-- SetModel of the .m2 has no skin (all white), so that is used only when there is no creature at all. A creature the
+	-- client hasn't seen yet is asked from the server by SetCreature: try again for a few seconds until it is in.
+	local pending, tries, wait = nil, 0, 0;
 	model:SetScript("OnUpdate", function(self, elapsed)
-		if ( not fallback ) then return; end
+		if ( not pending ) then return; end
 		wait = wait + elapsed;
-		if ( wait < 0.1 ) then return; end
+		if ( wait < 0.3 ) then return; end
+		wait = 0;
 		local m = self.GetModel and self:GetModel();
-		if ( type(m) ~= "string" or m == "" ) then self:SetModel(fallback); end
-		fallback = nil;
+		if ( type(m) == "string" and m ~= "" ) then pending = nil; return; end
+		tries = tries + 1;
+		if ( tries > 10 ) then pending = nil; return; end
+		self:SetCreature(pending);
+		self:SetFacing(0.5);
 	end);
 	local turning, lastX = false, 0;
 	model:EnableMouse(true);
@@ -230,11 +236,11 @@ local function Journal(kind, noun)
 	end);
 	local function ShowModel(e)
 		model:ClearModel();
-		fallback = nil;
+		pending = nil;
 		if ( showChar:GetChecked() or not e ) then model:SetUnit("player"); return; end
 		if ( e.creature and e.creature > 0 and model.SetCreature ) then
 			model:SetCreature(e.creature);
-			if ( e.model and e.model ~= "" ) then fallback, wait = e.model, 0; end
+			pending, tries, wait = e.creature, 0, 0;
 		elseif ( e.model and e.model ~= "" ) then
 			model:SetModel(e.model);
 		end
@@ -408,6 +414,8 @@ panels[4] = Placeholder("Heirlooms", "Heirlooms will be listed here.");
 panels[5] = Placeholder("Appearances", "Transmog appearances you have unlocked (mod-transmog) will be listed here.");
 panels[6] = Placeholder("Campsites", "Campsites (mod-temucraft-camping) will be listed here.");
 local TAB_NAMES = { "Mounts", "Pet Journal", "Toy Box", "Heirlooms", "Appearances", "Campsites" };
+-- the tabs that have something yet (the others are "Coming later." placeholders: hidden until they're filled)
+local TAB_READY = { true, true, false, false, false, false };
 local current = 1;
 local tabs = {};
 local function Select(index)
@@ -420,12 +428,14 @@ for i, label in ipairs(TAB_NAMES) do
 	tab:SetID(i); tab:SetText(label);
 	if ( i == 1 ) then tab:SetPoint("TOPLEFT", frame, "BOTTOMLEFT", 20, 8); else tab:SetPoint("LEFT", tabs[i - 1], "RIGHT", -16, 0); end
 	tab:SetScript("OnClick", function(self) PlaySound("igCharacterInfoTab"); Select(self:GetID()); end);
+	if ( not TAB_READY[i] ) then tab:Hide(); end
 	tabs[i] = tab;
 end
 PanelTemplates_SetNumTabs(frame, #TAB_NAMES);
 
 function TemucraftCollections_Toggle(index)
 	if ( frame:IsShown() and (not index or index == current) ) then frame:Hide(); return; end
+	if ( index and not TAB_READY[index] ) then index = 1; end
 	frame:Show();
 	Select(index or current);
 end

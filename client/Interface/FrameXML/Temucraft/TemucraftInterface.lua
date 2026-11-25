@@ -2,7 +2,7 @@
 -- game menu) and the tooltip options, kept per account by TemucraftStore.lua (keys "ui.classic<which>", like the
 -- spellbook's "ui.classicbook", and "ui.<option>"). A "Temucraft" page in Interface Options has the checkboxes; /tui
 -- opens it.
---   TemucraftUI_IsClassic(which)            "char", "micro", "menu", "guild", "gbank", "rep", "currency" (and "book",
+--   TemucraftUI_IsClassic(which)            "char", "micro", "menu", "guild", "gbank", "rep", "currency", "gossip" (and "book",
 --                                           "talents" of TemucraftPlayerSpells.lua)
 --   TemucraftUI_SetClassic(which, on)       saves it and tells the piece (TemucraftUI_OnChange)
 --   TemucraftUI_GetOption(key, default)     true / false ("1" / "0" in the store)
@@ -59,7 +59,7 @@ title:SetPoint("TOPLEFT", 16, -16);
 title:SetText("Temucraft interface");
 local subtitle = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall");
 subtitle:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -8);
-subtitle:SetWidth(560); subtitle:SetJustifyH("LEFT");
+subtitle:SetPoint("RIGHT", panel, "RIGHT", -16, 0); subtitle:SetJustifyH("LEFT");   -- wraps inside the page
 subtitle:SetText("The new (retail-style) windows, or the classic 3.3.5 ones. Saved for your account.");
 
 -- { label, get, set }
@@ -73,9 +73,10 @@ local CHECKS = {
 	{ "Classic guild bank", function() return TemucraftUI_IsClassic("gbank"); end, function(on) TemucraftUI_SetClassic("gbank", on); end },
 	{ "Classic reputation window", function() return TemucraftUI_IsClassic("rep"); end, function(on) TemucraftUI_SetClassic("rep", on); end },
 	{ "Classic currency window", function() return TemucraftUI_IsClassic("currency"); end, function(on) TemucraftUI_SetClassic("currency", on); end },
+	{ "Classic gossip window (small NPC option icons)", function() return TemucraftUI_IsClassic("gossip"); end, function(on) TemucraftUI_SetClassic("gossip", on); end },
 	{ "Show recent guild chat in the chat window at login",
 		function() return TemucraftUI_GetOption("guildloginchat", true); end, function(on) TemucraftUI_SetOption("guildloginchat", on); end },
-	{ "Show SpellID / ItemID and the icon's texture name in tooltips (3.3.5 can't read icon file IDs)",
+	{ "Show SpellID / ItemID and icon names in tooltips",
 		function() return TemucraftUI_GetOption("tooltipids", true); end, function(on) TemucraftUI_SetOption("tooltipids", on); end },
 };
 local checks = {};
@@ -83,6 +84,7 @@ for i, c in ipairs(CHECKS) do
 	local check = CreateFrame("CheckButton", "TemucraftInterfaceOptionsCheck"..i, panel, "InterfaceOptionsCheckButtonTemplate");
 	check:SetPoint("TOPLEFT", subtitle, "BOTTOMLEFT", -2, -12 - (i - 1) * 28);
 	_G[check:GetName().."Text"]:SetText(c[1]);
+	_G[check:GetName().."Text"]:SetWidth(360); _G[check:GetName().."Text"]:SetJustifyH("LEFT");
 	check:SetScript("OnClick", function(self)
 		PlaySound(self:GetChecked() and "igMainMenuOptionCheckBoxOn" or "igMainMenuOptionCheckBoxOff");
 		c[3](self:GetChecked() and true or false);

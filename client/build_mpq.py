@@ -42,7 +42,7 @@ FRAME_FILES = ["Temucraft\\TemucraftCore.lua", "Temucraft\\TemucraftMissions.lua
                "Temucraft\\TemucraftTalents.lua", "Temucraft\\TemucraftCollectionsData.lua",
                "Temucraft\\TemucraftCollections.lua",
                # the player UI overhaul (after the spellbook and collections they open)
-               "Temucraft\\TemucraftInterface.lua", "Temucraft\\TemucraftTooltips.lua",
+               "Temucraft\\TemucraftInterface.lua", "Temucraft\\TemucraftGossip.lua", "Temucraft\\TemucraftTooltips.lua",
                "Temucraft\\TemucraftCharacter.lua", "Temucraft\\TemucraftMicroMenu.lua",
                "Temucraft\\TemucraftAddOns.lua", "Temucraft\\TemucraftChangelog.lua",
                "Temucraft\\TemucraftGameMenu.lua", "Temucraft\\TemucraftTaxi.lua",

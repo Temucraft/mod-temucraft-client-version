@@ -2,7 +2,7 @@
 local dir = string.match(arg and arg[0] or "", "^(.*)[/\\]tests[/\\]") or "client";
 local ui = dir.."/Interface/FrameXML/Temucraft/";
 for _, f in ipairs({ "TemucraftInterface.lua", "TemucraftTooltips.lua", "TemucraftCharacter.lua", "TemucraftMicroMenu.lua",
-	"TemucraftAddOns.lua", "TemucraftChangelog.lua", "TemucraftGameMenu.lua", "TemucraftFlyouts.lua", "TemucraftSpellBook.lua" }) do
+	"TemucraftAddOns.lua", "TemucraftChangelog.lua", "TemucraftGameMenu.lua", "TemucraftFlyouts.lua", "TemucraftSpellBook.lua", "TemucraftGossip.lua" }) do
 	dofile(ui..f);
 end
 local U, T, C, M, A, G, F, B = TemucraftUILogic, TemucraftTooltipsLogic, TemucraftCharacterLogic, TemucraftMicroMenuLogic,
@@ -12,6 +12,12 @@ local function check(name, ok) if ( not ok ) then failed = failed + 1; print("FA
 
 -- settings
 check("option default on", U.Bool(nil, true) == true and U.Bool("0", true) == false and U.Bool("1", false) == true);
+
+-- gossip icons
+local GS = TemucraftGossipLogic;
+check("gossip binder is the hearthstone", GS.Icon("binder", "Alliance") == "Interface\\Icons\\INV_Misc_Rune_01");
+check("gossip taxi by faction", GS.Icon("taxi", "Horde") == "Interface\\Icons\\Ability_Mount_Wyvern_01" and GS.Icon("taxi", "Alliance") == "Interface\\Icons\\Ability_Mount_Gryphon_01");
+check("gossip unknown type", GS.Icon("somethingnew") == "Interface\\Icons\\INV_Misc_Note_01" and GS.Icon(nil) == GS.Icon("gossip"));
 
 -- tooltips
 check("spell id from link", T.IdFromLink("|cff71d5ff|Hspell:53140|h[Teleport: Dalaran]|h|r") == 53140);
@@ -75,7 +81,7 @@ check("no changelog: nil", G.ChangelogText({}, "1.0") == nil);
 local rows = G.Rows(false, false);
 local names = {};
 for _, r in ipairs(rows) do table.insert(names, r[1]); end
-check("menu rows", table.concat(names, ",") == "options,shop,whatsnew,addons,editmode,support,GameMenuButtonMacros,GameMenuButtonLogout,GameMenuButtonQuit,GameMenuButtonContinue");
+check("menu rows", table.concat(names, ",") == "options,shop,whatsnew,addons,support,GameMenuButtonMacros,GameMenuButtonLogout,GameMenuButtonQuit,GameMenuButtonContinue");
 check("options open adds 4", #G.Rows(true, false) == #rows + 4 and #G.Rows(true, true) == #rows + 5);
 
 -- flyouts

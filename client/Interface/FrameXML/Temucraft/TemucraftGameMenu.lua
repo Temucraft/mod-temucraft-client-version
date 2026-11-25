@@ -1,5 +1,5 @@
 -- Temucraft game menu (Esc), retail look: Options (opens System, Sound, Interface and Key Bindings under it), Shop,
--- What's New, AddOns, Edit Mode, Support, Macros, then Log Out, Exit Game and Return to Game. It is the stock
+-- What's New, AddOns, Support, Macros, then Log Out, Exit Game and Return to Game. It is the stock
 -- GameMenuFrame with its stock buttons (Log Out, Exit Game, Macros ... keep their own code) laid out again and ours
 -- added; "Classic game menu" (Interface Options > Temucraft) puts back the stock layout.
 -- What's New shows TEMUCRAFT_CHANGELOG (TemucraftChangelog.lua).
@@ -30,7 +30,8 @@ function L.Rows(optionsOpen, mac)
 		end
 		if ( mac ) then table.insert(rows, { "GameMenuButtonMacOptions", nil, true }); end
 	end
-	for _, s in ipairs({ "shop", "whatsnew", "addons", "editmode", "support", "GameMenuButtonMacros" }) do table.insert(rows, { s }); end
+	-- "editmode" (its button is below) comes back here once Edit Mode exists: no dead ends in the menu
+	for _, s in ipairs({ "shop", "whatsnew", "addons", "support", "GameMenuButtonMacros" }) do table.insert(rows, { s }); end
 	table.insert(rows, { "GameMenuButtonLogout", 12 });
 	table.insert(rows, { "GameMenuButtonQuit" });
 	table.insert(rows, { "GameMenuButtonContinue", 12 });

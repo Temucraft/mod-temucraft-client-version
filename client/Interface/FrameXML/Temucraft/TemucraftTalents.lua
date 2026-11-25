@@ -272,10 +272,10 @@ local function MakeNode(tree, i)
 		end
 		AddPreviewTalentPoints(t, self.index, button == "RightButton" and -1 or 1, false, group);
 	end);
+	-- the client's own talent tooltip has the green / red "Left click to add a point" lines (preview on)
 	b:SetScript("OnEnter", function(self)
 		GameTooltip:SetOwner(self, "ANCHOR_RIGHT");
 		GameTooltip:SetTalent(self:GetParent().tab, self.index, false, false, Group(), true);
-		GameTooltip:AddLine("Left click: add a point to the preview. Right click: take one back.", 0.6, 0.6, 0.6, 1);
 		GameTooltip:Show();
 	end);
 	b:SetScript("OnLeave", function() GameTooltip:Hide(); end);
@@ -287,7 +287,7 @@ for t = 1, 3 do
 	local tree = CreateFrame("Frame", "TemucraftTalentsTree"..t, talents);
 	tree.tab = t;
 	tree:SetWidth(TREE_WIDTH); tree:SetHeight(TREE_HEIGHT);
-	tree:SetPoint("TOPLEFT", 8 + (t - 1) * (TREE_WIDTH + 6), -44);
+	tree:SetPoint("TOPLEFT", 20 + (t - 1) * (TREE_WIDTH + 12), -44);   -- the window is 860 wide on this tab (TemucraftPlayerSpells.lua)
 	tree.bg = {};
 	local pieces = { { "TopLeft", 0, 0, 0.8 * TREE_WIDTH, 0.75 * TREE_HEIGHT }, { "TopRight", 0.8 * TREE_WIDTH, 0, 0.2 * TREE_WIDTH, 0.75 * TREE_HEIGHT },
 		{ "BottomLeft", 0, 0.75 * TREE_HEIGHT, 0.8 * TREE_WIDTH, 0.25 * TREE_HEIGHT }, { "BottomRight", 0.8 * TREE_WIDTH, 0.75 * TREE_HEIGHT, 0.2 * TREE_WIDTH, 0.25 * TREE_HEIGHT } };
@@ -433,7 +433,7 @@ end);
 -- search
 local search = CreateFrame("EditBox", "TemucraftTalentsSearch", talents, "InputBoxTemplate");
 search:SetWidth(200); search:SetHeight(20); search:SetAutoFocus(false);
-search:SetPoint("TOPRIGHT", -16, -16);
+search:SetPoint("TOPRIGHT", -40, -16);   -- clear of the close button
 local hint = search:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall");
 hint:SetPoint("LEFT", 2, 0); hint:SetText("Search talents");
 search:SetScript("OnEscapePressed", function(self) self:ClearFocus(); end);
@@ -653,6 +653,93 @@ for _, e in ipairs({ "PLAYER_TALENT_UPDATE", "CHARACTER_POINTS_CHANGED", "PREVIE
 end
 events:SetScript("OnEvent", function(self, event)
 	if ( event == "ACTIVE_TALENT_GROUP_CHANGED" or event == "PLAYER_TALENT_UPDATE" ) then wipe(described); end
-	if ( talents:IsShown() ) then UpdateTalents(); end
+	if ( talents:IsShown() ) then
+		UpdateTalents();
+		-- the tooltip of the talent under the mouse shows its new rank at once
+		local owner = GameTooltip:IsShown() and GameTooltip:GetOwner();
+		if ( owner and owner.index and owner.rank and owner:GetParent() and owner:GetParent().tab ) then
+			owner:GetScript("OnEnter")(owner);
+		end
+	end
 	if ( spec:IsShown() ) then UpdateSpec(); end
 end);
+
+----------------------------------------------------------------------------------------------------------------------
+-- The stock talent frame (Classic talent window) with Temucraft's talents
+----------------------------------------------------------------------------------------------------------------------
+-- Temucraft's added talents sit between some talents and their prerequisite in the same column. The stock
+-- TalentFrame_DrawLines (TalentFrameBase.lua) then takes the "blocked vertically" branch, whose message indexes
+-- TALENT_BRANCH_ARRAY[buttonTier][tier] and breaks ("attempt to index field '?'"), so the stock frame failed on every
+-- update, and once Blizzard_TalentUI was loaded its hidden frame broke on every preview point of this window too
+-- (PREVIEW_TALENT_POINTS_CHANGED). This copy draws such a line straight through (like retail) and skips any
+-- position outside the frame's grid.
+local function Branch(frame, tier, column)
+	local row = frame.TALENT_BRANCH_ARRAY and frame.TALENT_BRANCH_ARRAY[tier];
+	return row and row[column];
+end
+local function SafeDrawLines(buttonTier, buttonColumn, tier, column, requirementsMet, frame)
+	if ( not (buttonTier and buttonColumn and tier and column and Branch(frame, buttonTier, buttonColumn) and Branch(frame, tier, column)) ) then return; end
+	requirementsMet = requirementsMet and 1 or -1;
+	local A = frame.TALENT_BRANCH_ARRAY;
+	if ( buttonColumn == column ) then
+		for i = tier, buttonTier - 1 do
+			A[i][buttonColumn].down = requirementsMet;
+			if ( i + 1 <= buttonTier - 1 ) then A[i + 1][buttonColumn].up = requirementsMet; end
+		end
+		A[buttonTier][buttonColumn].topArrow = requirementsMet;
+		return;
+	end
+	local left, right = min(buttonColumn, column), max(buttonColumn, column);
+	if ( buttonTier == tier ) then
+		for i = left + 1, right - 1 do if ( A[tier][i].id ) then return; end end
+		for i = left, right - 1 do A[tier][i].right = requirementsMet; A[tier][i + 1].left = requirementsMet; end
+		if ( buttonColumn < column ) then A[buttonTier][buttonColumn].rightArrow = requirementsMet;
+		else A[buttonTier][buttonColumn].leftArrow = requirementsMet; end
+		return;
+	end
+	-- diagonal: across the prerequisite's row, then down; if that row is blocked, down first, then across
+	local l, r = left, right;
+	if ( l == column ) then l = l + 1; else r = r - 1; end
+	local blocked = false;
+	for i = l, r do if ( A[tier][i].id ) then blocked = true; end end
+	if ( not blocked ) then
+		A[tier][buttonColumn].down = requirementsMet;
+		A[buttonTier][buttonColumn].up = requirementsMet;
+		for i = tier, buttonTier - 1 do A[i][buttonColumn].down = requirementsMet; A[i + 1][buttonColumn].up = requirementsMet; end
+		for i = left, right - 1 do A[tier][i].right = requirementsMet; A[tier][i + 1].left = requirementsMet; end
+		A[buttonTier][buttonColumn].topArrow = requirementsMet;
+		return;
+	end
+	l, r = left, right;
+	if ( l == buttonColumn ) then l = l + 1; else r = r - 1; end
+	for i = l, r do if ( A[buttonTier][i].id ) then return; end end
+	for i = tier, buttonTier - 1 do A[i][column].up = requirementsMet; A[i + 1][column].down = requirementsMet; end
+	if ( buttonColumn < column ) then A[buttonTier][buttonColumn].rightArrow = requirementsMet;
+	else A[buttonTier][buttonColumn].leftArrow = requirementsMet; end
+end
+TalentFrame_DrawLines = SafeDrawLines;
+TemucraftTalents_DrawLines = SafeDrawLines;   -- for debugging (/run)
+-- the stock frame, while hidden, does not redraw on every preview point of this window (it redraws when shown)
+local hooked = false;
+local function QuietStockFrame()
+	if ( hooked or not PlayerTalentFrame ) then return; end
+	hooked = true;
+	local onEvent = PlayerTalentFrame:GetScript("OnEvent");
+	PlayerTalentFrame:SetScript("OnEvent", function(self, event, ...)
+		if ( not self:IsShown() and (event == "PREVIEW_TALENT_POINTS_CHANGED" or event == "PREVIEW_PET_TALENT_POINTS_CHANGED"
+			or event == "PLAYER_TALENT_UPDATE" or event == "PET_TALENT_UPDATE") ) then return; end
+		if ( onEvent ) then return onEvent(self, event, ...); end
+	end);
+end
+events:RegisterEvent("ADDON_LOADED");
+local onEvent = events:GetScript("OnEvent");
+events:SetScript("OnEvent", function(self, event, name, ...)
+	if ( event == "ADDON_LOADED" ) then
+		if ( name == "Blizzard_TalentUI" ) then QuietStockFrame(); end
+		-- something loaded after FrameXML may have put the stock function back
+		if ( TalentFrame_DrawLines ~= SafeDrawLines ) then TalentFrame_DrawLines = SafeDrawLines; end
+		return;
+	end
+	return onEvent(self, event, name, ...);
+end);
+QuietStockFrame();

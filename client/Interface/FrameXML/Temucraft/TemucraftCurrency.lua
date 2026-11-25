@@ -329,6 +329,7 @@ end);
 local classic = CreateFrame("CheckButton", "TemucraftCurrencyClassicCheck", frame, "UICheckButtonTemplate");
 classic:SetWidth(22); classic:SetHeight(22);
 classic:SetPoint("BOTTOMLEFT", 16, 2);
+classic:Hide();   -- it sat on the bottom tabs: the choice is in Interface > Temucraft (and /tui) only
 _G[classic:GetName().."Text"]:SetText("Classic");
 classic:SetScript("OnClick", function(self)
 	self:SetChecked(false);
@@ -336,7 +337,7 @@ classic:SetScript("OnClick", function(self)
 	DEFAULT_CHAT_FRAME:AddMessage("|cff66ccffTemucraft:|r classic currency window on (/tui to switch back).");
 end);
 
-local LayoutTabs = TemucraftCharacter_AddTabs and TemucraftCharacter_AddTabs(frame, 4);
+local LayoutTabs = TemucraftCharacter_AddTabs and TemucraftCharacter_AddTabs(frame, TEMUCRAFT_CHARACTER_TAB_CURRENCY or 5);
 frame:SetScript("OnShow", function()
 	PlaySound("igCharacterInfoOpen");
 	if ( LayoutTabs ) then LayoutTabs(); end

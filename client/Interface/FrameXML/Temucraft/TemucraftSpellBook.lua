@@ -167,10 +167,28 @@ combatNote:Hide();
 
 -- book tabs at the top
 local bookTabs = {};
+-- retail-sized tabs (the small Options-style tabs were hard to read): dark, the selected one lit with a gold edge
+local TAB_BACKDROP = { bgFile = "Interface\\Tooltips\\UI-Tooltip-Background", edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+	tile = true, tileSize = 16, edgeSize = 14, insets = { left = 3, right = 3, top = 3, bottom = 3 } };
+local function BookTabSelect(tab, on)
+	if ( on ) then
+		tab:SetBackdropColor(0.35, 0.27, 0.08, 0.95); tab:SetBackdropBorderColor(1, 0.82, 0, 1);
+		tab:GetFontString():SetTextColor(1, 1, 1);
+	else
+		tab:SetBackdropColor(0, 0, 0, 0.75); tab:SetBackdropBorderColor(0.5, 0.5, 0.5, 1);
+		tab:GetFontString():SetTextColor(NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b);
+	end
+end
+local function BookTabSize(tab) tab:SetWidth(max(110, tab:GetFontString():GetStringWidth() + 36)); end
 local function BookTab(i, key)
-	local tab = CreateFrame("Button", "TemucraftSpellBookTab"..i, panel, "OptionsFrameTabButtonTemplate");
+	local tab = CreateFrame("Button", "TemucraftSpellBookTab"..i, panel);
+	tab:SetHeight(28); tab:SetWidth(110);
+	tab:SetBackdrop(TAB_BACKDROP);
+	tab:SetNormalFontObject(GameFontNormal); tab:SetHighlightFontObject(GameFontHighlight);
+	tab:SetText(" ");
+	tab:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD");
 	tab.key = key;
-	if ( i == 1 ) then tab:SetPoint("TOPLEFT", 20, -30); else tab:SetPoint("LEFT", bookTabs[i - 1], "RIGHT", -14, 0); end
+	if ( i == 1 ) then tab:SetPoint("TOPLEFT", 20, -26); else tab:SetPoint("LEFT", bookTabs[i - 1], "RIGHT", 4, 0); end
 	tab:SetScript("OnClick", function(self)
 		PlaySound("igMainMenuOptionCheckBoxOn");
 		book, page = self.key, 1;
@@ -184,7 +202,7 @@ BookTab(1, "class"); BookTab(2, "general");
 local petButton = CreateFrame("Button", "TemucraftSpellBookPetButton", panel, "UIPanelButtonTemplate");
 petButton:SetWidth(60); petButton:SetHeight(20);
 petButton:SetText(PET or "Pet");
-petButton:SetPoint("LEFT", bookTabs[2], "RIGHT", 6, -2);
+petButton:SetPoint("LEFT", bookTabs[2], "RIGHT", 8, 0);
 petButton:SetScript("OnClick", function() TemucraftStockToggleSpellBook(BOOKTYPE_PET); end);
 
 local collectionsButton = CreateFrame("Button", "TemucraftSpellBookCollectionsButton", panel, "UIPanelButtonTemplate");
@@ -498,8 +516,8 @@ local function UpdateTabs()
 	bookTabs[1]:SetText((UnitClass("player")));
 	bookTabs[2]:SetText(GENERAL or "General");
 	for _, tab in ipairs(bookTabs) do
-		PanelTemplates_TabResize(tab, 0);
-		if ( tab.key == book ) then PanelTemplates_SelectTab(tab); else PanelTemplates_DeselectTab(tab); end
+		BookTabSize(tab);
+		BookTabSelect(tab, tab.key == book);
 	end
 	if ( HasPetSpells() ) then petButton:Show(); else petButton:Hide(); end
 end

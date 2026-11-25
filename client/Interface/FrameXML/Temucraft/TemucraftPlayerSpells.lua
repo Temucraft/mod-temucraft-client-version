@@ -5,7 +5,7 @@
 --
 -- Combat: the spellbook's buttons are secure (they cast), so anything that moves, resizes or re-points them, or changes
 -- their attributes, waits for the end of combat (TemucraftPlayerSpells_AfterCombat).
-local WIDTH, WIDE_WIDTH, HEIGHT = 820, 1560, 640;
+local WIDTH, WIDE_WIDTH, HEIGHT, TALENTS_WIDTH = 820, 1560, 640, 860;
 local TAB_SPEC, TAB_TALENTS, TAB_SPELLBOOK = 1, 2, 3;
 TEMUCRAFT_PLAYERSPELLS_TAB_SPEC, TEMUCRAFT_PLAYERSPELLS_TAB_TALENTS, TEMUCRAFT_PLAYERSPELLS_TAB_SPELLBOOK = TAB_SPEC, TAB_TALENTS, TAB_SPELLBOOK;
 
@@ -65,11 +65,26 @@ function TemucraftPlayerSpells_AddPanel(index, panel, show)
 	panel:Hide();
 end
 
+-- the window's size for the open tab (the talents need room for three trees and the buttons on the right), scaled
+-- down when the screen is smaller than that, and put back in the middle when part of it would be off screen
+local TAB_WIDTH = { [TAB_TALENTS] = TALENTS_WIDTH };
 local wide = false;
+local function Layout()
+	local width = wide and WIDE_WIDTH or (TAB_WIDTH[current] or WIDTH);
+	frame:SetWidth(width);
+	local sw, sh = UIParent:GetWidth(), UIParent:GetHeight();
+	local scale = min(1, (sw - 20) / width, (sh - 20) / HEIGHT);
+	if ( abs(frame:GetScale() - scale) > 0.001 ) then frame:SetScale(scale); end
+	local left, right, top, bottom = frame:GetLeft(), frame:GetRight(), frame:GetTop(), frame:GetBottom();
+	if ( left and (left < 0 or bottom < 0 or right * scale > sw + 1 or top * scale > sh + 1) ) then
+		frame:ClearAllPoints();
+		frame:SetPoint("CENTER", UIParent, "CENTER", 0, 20);
+	end
+end
 function TemucraftPlayerSpells_SetWide(on)
 	TemucraftPlayerSpells_AfterCombat("wide", function()
 		wide = on and current == TAB_SPELLBOOK;
-		frame:SetWidth(wide and WIDE_WIDTH or WIDTH);
+		Layout();
 	end);
 end
 
@@ -98,7 +113,8 @@ function TemucraftPlayerSpells_Show(index)
 		if ( i ~= index ) then panel:Hide(); end
 	end
 	title:SetText(index == TAB_SPELLBOOK and SPELLBOOK or (index == TAB_TALENTS and TALENTS or "Specialization"));
-	if ( index ~= TAB_SPELLBOOK and wide ) then TemucraftPlayerSpells_SetWide(false); end
+	if ( index ~= TAB_SPELLBOOK and wide ) then wide = false; end
+	TemucraftPlayerSpells_AfterCombat("wide", Layout);
 	if ( panels[index] ) then
 		panels[index]:Show();
 		if ( onShow[index] ) then onShow[index](panels[index]); end
@@ -144,6 +160,9 @@ function TemucraftPlayerSpells_IsClassic(which)
 end
 function TemucraftPlayerSpells_SetClassic(which, on)
 	if ( TemucraftStore_Set ) then TemucraftStore_Set("A", "ui.classic"..which, on and "1" or ""); end
+	-- back to the new window: the stock one closes (the next N / P opens the new one)
+	if ( not on and which == "talents" and PlayerTalentFrame and PlayerTalentFrame:IsShown() ) then HideUIPanel(PlayerTalentFrame); end
+	if ( not on and which == "book" and SpellBookFrame and SpellBookFrame:IsShown() ) then HideUIPanel(SpellBookFrame); end
 	if ( on and frame:IsShown() ) then
 		if ( (which == "book" and current == TAB_SPELLBOOK) or (which == "talents" and current ~= TAB_SPELLBOOK) ) then frame:Hide(); end
 	end

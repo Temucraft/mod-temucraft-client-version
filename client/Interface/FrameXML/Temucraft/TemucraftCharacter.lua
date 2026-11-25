@@ -356,12 +356,15 @@ titleButton:SetScript("OnClick", function(self)
 	for _, t in ipairs(known) do
 		table.insert(list, { text = t.name, checked = GetCurrentTitle() == t.id, func = function() SetCurrentTitle(t.id); end });
 	end
-	EasyMenu(list, titleMenu, self, 0, 0, "MENU");
+	-- the dialog-style list: solid, so the item slots under it don't show through (the "MENU" style is see-through)
+	EasyMenu(list, titleMenu, self, 0, 0);
 end);
 
 local classic = CreateFrame("CheckButton", "TemucraftCharacterClassicCheck", frame, "UICheckButtonTemplate");
 classic:SetWidth(22); classic:SetHeight(22);
 classic:SetPoint("BOTTOMLEFT", 16, 14);
+-- it sat on the bottom tabs: the choice is in Interface > Temucraft (and /tchar classic) only
+classic:Hide();
 _G[classic:GetName().."Text"]:SetText("Classic");
 classic:SetScript("OnClick", function(self)
 	self:SetChecked(false);
@@ -372,21 +375,29 @@ end);
 -- tabs
 local StockToggleCharacter = ToggleCharacter;
 TemucraftStockToggleCharacter = StockToggleCharacter;
+-- the classic set: Character, Pet, Reputation, Skills, Currency, and Professions when the TemucraftProfGear addon
+-- (mod-temucraft-professions) is on. Skills is the stock skill list; Professions its Profession Equipment panel.
+-- { label, stock tab, shown?, open = func for a tab that isn't a stock one }
+local function ProfGear() return SlashCmdList and SlashCmdList["TEMUCRAFTPROFGEAR"]; end
 local TABS = {
 	{ CHARACTER or "Character", nil },
 	{ PET or "Pet", "PetPaperDollFrame", function() return HasPetUI(); end },
 	{ REPUTATION or "Reputation", "ReputationFrame" },
+	{ SKILLS or "Skills", "SkillFrame" },
 	{ CURRENCY or "Currency", "TokenFrame" },
+	{ "Professions", nil, function() return ProfGear() ~= nil; end, open = function() ProfGear()(); end },
 };
+TEMUCRAFT_CHARACTER_TAB_REPUTATION, TEMUCRAFT_CHARACTER_TAB_CURRENCY = 3, 5;
 local tabs = {};
 for i, t in ipairs(TABS) do
 	local tab = CreateFrame("Button", "TemucraftCharacterFrameTab"..i, frame, "CharacterFrameTabButtonTemplate");
 	tab:SetID(i);
 	tab:SetText(t[1]);
 	tab:SetScript("OnClick", function()
-		if ( not t[2] ) then return; end
+		if ( not t[2] and not t.open ) then return; end
 		PlaySound("igCharacterInfoTab");
 		HideUIPanel(frame);
+		if ( t.open ) then t.open(); return; end
 		ToggleCharacter(t[2]);   -- the Temucraft reputation / currency windows (TemucraftCharacter_Redirect), else stock
 	end);
 	tabs[i] = tab;
@@ -436,7 +447,7 @@ function TemucraftCharacter_Toggle()
 end
 
 -- the same tabs along the bottom of another window of the panel (TemucraftReputation.lua, TemucraftCurrency.lua):
--- selected = its tab (3 Reputation, 4 Currency). Returns the function that lays them out (call it in OnShow).
+-- selected = its tab (3 Reputation, 5 Currency). Returns the function that lays them out (call it in OnShow).
 function TemucraftCharacter_AddTabs(owner, selected)
 	local own = {};
 	for i, t in ipairs(TABS) do
@@ -447,6 +458,7 @@ function TemucraftCharacter_AddTabs(owner, selected)
 			if ( i == selected ) then return; end
 			PlaySound("igCharacterInfoTab");
 			HideUIPanel(owner);
+			if ( t.open ) then t.open(); return; end
 			ToggleCharacter(t[2] or "PaperDollFrame");
 		end);
 		own[i] = tab;

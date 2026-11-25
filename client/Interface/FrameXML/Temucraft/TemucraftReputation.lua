@@ -729,6 +729,7 @@ end);
 local classic = CreateFrame("CheckButton", "TemucraftReputationClassicCheck", frame, "UICheckButtonTemplate");
 classic:SetWidth(22); classic:SetHeight(22);
 classic:SetPoint("BOTTOMLEFT", 16, 2);
+classic:Hide();   -- it sat on the bottom tabs: the choice is in Interface > Temucraft (and /tui) only
 _G[classic:GetName().."Text"]:SetText("Classic");
 classic:SetScript("OnClick", function(self)
 	self:SetChecked(false);
@@ -736,7 +737,7 @@ classic:SetScript("OnClick", function(self)
 	DEFAULT_CHAT_FRAME:AddMessage("|cff66ccffTemucraft:|r classic reputation window on (/tui to switch back).");
 end);
 
-local LayoutTabs = TemucraftCharacter_AddTabs and TemucraftCharacter_AddTabs(frame, 3);
+local LayoutTabs = TemucraftCharacter_AddTabs and TemucraftCharacter_AddTabs(frame, TEMUCRAFT_CHARACTER_TAB_REPUTATION or 3);
 
 frame:SetScript("OnShow", function()
 	PlaySound("igCharacterInfoOpen");

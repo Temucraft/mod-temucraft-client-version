@@ -89,7 +89,8 @@ if this character doesn't have it. "Show locked" also lists the ones still to ge
 tabs at the bottom. P and the spellbook micro button open it on Spellbook, N and the talent micro button on Talents
 (they replace `ToggleSpellBook` / `ToggleTalentFrame`; the pet book, Shift-P, stays the stock one). `/tsb classic` (or
 the "Classic spellbook" checkbox) and `/ttf classic` (the "Classic talents" checkbox) bring back the stock frames,
-`/tsb new` and `/ttf new` this one.
+`/tsb new` and `/ttf new` this one; Interface Options > Temucraft has the same choices. Both ways switch at once, no
+`/reload`. The window is 860 wide on the Talents tab (820 otherwise) and scales down to fit smaller screens.
 
 - **Spellbook** ([`TemucraftSpellBook.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftSpellBook.lua)): tabs *class* and *General*, a search box (name, subtitle, section and the
   tooltip text, read once from a hidden tooltip), a 3-column grid of icon, name and grey subtitle (the spell's subtext,
@@ -108,12 +109,20 @@ the "Classic spellbook" checkbox) and `/ttf classic` (the "Classic talents" chec
   three trees side by side and works through the client's talent preview (`previewTalents` is turned on): clicks add
   preview points, "Apply Changes" learns them, "Reset Preview" drops them. Search lights up matching talents. Loadouts
   save the build to a name and load one into the preview (learned points still need a respec or the other talent
-  group). Glyph sockets along the bottom (use a glyph, click a socket; shift-right-click removes).
+  group). Glyph sockets along the bottom (use a glyph, click a socket; shift-right-click removes). The tooltip under the
+  mouse updates after each click. Some Temucraft talents sit between a talent and its prerequisite in the same column:
+  the stock `TalentFrame_DrawLines` broke on those (its "blocked vertically" message indexes the wrong cell), so the
+  classic frame failed, and once Blizzard_TalentUI was loaded so did every preview click here. This file replaces it
+  with a copy that draws such lines straight through, and keeps the hidden stock frame from redrawing on preview
+  points.
 - **Collections** ([`TemucraftCollections.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftCollections.lua), `/collections` or the button in the book): tabs Mounts /
-  Pet Journal / Toy Box / Heirlooms / Appearances / Campsites (the last four are placeholders for now). Mounts and pets:
+  Pet Journal (Toy Box / Heirlooms / Appearances / Campsites are written but hidden by `TAB_READY` until they have
+  something). Mounts and pets:
   every one the game has (`TemucraftCollectionsData.lua`), the missing ones greyed with the item that teaches them,
   "X / Y collected" (Y: collected plus the missing ones with a known source; "Unknown source" shows the rest),
-  favourites (right click; per account), a 3D preview (`SetCreature`, else the model file), Show Character, Mount /
+  favourites (right click; per account), a 3D preview (`SetCreature` with the creature, tried again for a few seconds while the client asks the
+  server for it; 3.3.5 has no `SetDisplayInfo`, and a bare `SetModel` of the .m2 has no skin, so the model file is used
+  only for an entry without a creature), Show Character, Mount /
   Summon and Summon Random Favorite (`CallCompanion`, not protected). The data table: `python3 client/collections/build_collections.py`
   (Spell.dbc, SkillLineAbility.dbc skill lines 777 / 778 and items of class 15 / subclass 5 and 2, creature models from
   CreatureDisplayInfo / CreatureModelData; defaults to `_dev/server-dbc/dbc` and the core's `data/sql/base/db_world`).
@@ -128,15 +137,23 @@ the "Classic spellbook" checkbox) and `/ttf classic` (the "Classic talents" chec
 Interface Options > Temucraft (or `/tui`) has a "Classic" box for each piece and the tooltip ID option
 ([`TemucraftInterface.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftInterface.lua); per account in the store, keys `ui.classicchar`,
 `ui.classicmicro`, `ui.classicmenu`, `ui.classicguild`, `ui.classicgbank`, `ui.classicrep`, `ui.classiccurrency`,
-`ui.tooltipids`, `ui.guildloginchat`).
+`ui.classicgossip`, `ui.tooltipids`, `ui.guildloginchat`). The windows themselves have no Classic checkbox any more (it
+sat on their bottom tabs), except the spellbook and talents.
+
+- **Gossip** ([`TemucraftGossip.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftGossip.lua)): the stock GossipFrame with a 36 px
+  icon per NPC option by its type (binder: hearthstone, vendor: bag, trainer: book, taxi: gryphon / wyvern by faction,
+  banker: coin, battlemaster: banner, healer: resurrection, gossip: note...) and taller rows; quests keep their ! / ?
+  icons. Restyled after each `GossipFrameUpdate`, and put back for quests and with "Classic gossip window".
 
 - **Character panel** ([`TemucraftCharacter.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftCharacter.lua), C, `/tchar`, `/tchar classic|new`):
   the stock item slots (they move into the window while it is open, so clicking, Alt flyouts and the equipment manager
   work as always) down both sides and the weapons at the bottom, a bigger model on the race's backdrop (drag to turn,
   wheel to zoom), a Titles menu, and on the right the item level (average of the 17 slots, a two-hander counts twice)
   and the stats: Attributes, Enhancements (by role: melee, ranged or caster; hybrids by their main talent tree) and
-  Defense. Tabs Character / Pet / Reputation / Currency; Pet opens the stock frame on that tab, Reputation and
-  Currency the windows below.
+  Defense. Tabs Character / Pet / Reputation / Skills / Currency / Professions, like the classic set; Pet and Skills
+  open the stock frame on that tab, Reputation and Currency the windows below, Professions (only with the
+  TemucraftProfGear addon of mod-temucraft-professions) its Profession Equipment panel. The Titles list is the solid
+  dialog-style menu.
 - **Micro menu** ([`TemucraftMicroMenu.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftMicroMenu.lua)): a row at the bottom right (smaller
   if need be, or above the main bar when there's no room beside it): Character, Spellbook & Talents (right click:
   talents), Achievements, Quest Log, Guild (right click: friends), Group Finder (right click: PvP), Collections, Shop,
@@ -180,8 +197,8 @@ Interface Options > Temucraft (or `/tui`) has a "Classic" box for each piece and
   until the Adventure Guide.
 - **Game menu** ([`TemucraftGameMenu.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftGameMenu.lua)): the stock GameMenuFrame laid out again:
   Options (opens System / Sound / Interface / Key Bindings under it), Shop, What's New (`TemucraftChangelog.lua`:
-  add a block with each release), AddOns, Edit Mode (placeholder), Support (the stock help / ticket frame), Macros,
-  Log Out, Exit Game, Return to Game. Shop is a placeholder until a shop window defines `TemucraftShop_Show`.
+  add a block with each release), AddOns, Support (the stock help / ticket frame), Macros,
+  Log Out, Exit Game, Return to Game. Edit Mode has a button in the code but no row until it exists. Shop is a placeholder until a shop window defines `TemucraftShop_Show`.
 - **AddOns** ([`TemucraftAddOns.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftAddOns.lua), `/addons`): every addon with a checkbox
   (`EnableAddOn` / `DisableAddOn`, on the next UI load), its state, memory, and CPU when the "CPU profiling" box
   (CVar `scriptProfile`) is on; Enable All / Disable All / Reload UI.
