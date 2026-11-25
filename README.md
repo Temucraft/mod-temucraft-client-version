@@ -118,7 +118,7 @@ the "Classic spellbook" checkbox) and `/ttf classic` (the "Classic talents" chec
 ## Player UI (retail look, each with a Classic option)
 Interface Options > Temucraft (or `/tui`) has a "Classic" box for each piece and the tooltip ID option
 ([`TemucraftInterface.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftInterface.lua); per account in the store, keys `ui.classicchar`,
-`ui.classicmicro`, `ui.classicmenu`, `ui.tooltipids`).
+`ui.classicmicro`, `ui.classicmenu`, `ui.classicguild`, `ui.classicgbank`, `ui.tooltipids`, `ui.guildloginchat`).
 
 - **Character panel** ([`TemucraftCharacter.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftCharacter.lua), C, `/tchar`, `/tchar classic|new`):
   the stock item slots (they move into the window while it is open, so clicking, Alt flyouts and the equipment manager
@@ -131,6 +131,24 @@ Interface Options > Temucraft (or `/tui`) has a "Classic" box for each piece and
   talents), Achievements, Quest Log, Guild (right click: friends), Group Finder (right click: PvP), Collections, Shop,
   Game Menu (latency / memory tooltip), Help. Each calls what its stock button calls and copies its stock button's
   state (pushed, disabled below its level); the stock buttons are hidden, and come back on vehicle bars.
+- **Guild & Communities** ([`TemucraftGuild.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftGuild.lua), J, the micro menu's guild button, `/tguild`,
+  `/tguild classic|new`): the guild's card on the left (name, your rank, online count, message of the day, Add Member,
+  Leave Guild, Classic Window for the stock tab with guild control) and the tabs Chat (guild and officer chat with
+  its history and timestamps, "Load older messages", the online members beside it, a box to write to the guild or
+  the officers), Roster (class colours, level, rank, zone, note, last online; click a header to sort, offline
+  members too; double click whispers, right click the stock menu), News (achievements, epic items, joins, leaves,
+  promotions), Info (message of the day and guild information, editable with the rights; the guild log) and Perks
+  (when [mod-temucraft-guild-perks](https://github.com/Temucraft/mod-temucraft-guild-perks) is on the server). The
+  history, news, the whole guild log and the perks come from [mod-temucraft-guild](https://github.com/Temucraft/mod-temucraft-guild)
+  (addon messages `TGD`); without it the window shows the live chat and the stock last log entries. After login the
+  last lines of guild chat are written to the chat window. J is bound to the Guild key once per account when both
+  are free.
+- **Guild bank** ([`TemucraftGuildBank.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftGuildBank.lua)): the stock guild bank (the same item
+  buttons, tabs and popups, so moving items works as always) in a dark retail-style window: "Guild Bank", the tab's
+  name with its access, a Search box that dims what doesn't match, "Remaining Daily Withdrawals for <your rank>",
+  the Available Amount bar; Log and Money Log list deposits (green) and withdrawals (red) with class-coloured names,
+  Gold / Silver / Copper and "(10 months ago)", every entry ever made from mod-temucraft-guild's archive ("Show
+  more..."), else the stock last 25. Changed only out of combat.
 - **Game menu** ([`TemucraftGameMenu.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftGameMenu.lua)): the stock GameMenuFrame laid out again:
   Options (opens System / Sound / Interface / Key Bindings under it), Shop, What's New (`TemucraftChangelog.lua`:
   add a block with each release), AddOns, Edit Mode (placeholder), Support (the stock help / ticket frame), Macros,
@@ -150,8 +168,8 @@ Interface Options > Temucraft (or `/tui`) has a "Classic" box for each piece and
 
 Tests of the grouping, search, paging, collection and loadout logic, and of the player UI logic:
 `lua5.1 client/tests/spellbook_test.lua`, `lua5.1 client/tests/collections_test.lua`,
-`lua5.1 client/tests/interface_test.lua`, `lua5.1 client/tests/taxi_test.lua` and
-`lua5.1 client/tests/issues_test.lua` (from the module folder).
+`lua5.1 client/tests/interface_test.lua`, `lua5.1 client/tests/taxi_test.lua`,
+`lua5.1 client/tests/issues_test.lua` and `lua5.1 client/tests/guild_test.lua` (from the module folder).
 
 ## Also in this module
 

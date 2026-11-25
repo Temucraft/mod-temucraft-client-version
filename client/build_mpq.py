@@ -46,6 +46,8 @@ FRAME_FILES = ["Temucraft\\TemucraftCore.lua", "Temucraft\\TemucraftMissions.lua
                "Temucraft\\TemucraftCharacter.lua", "Temucraft\\TemucraftMicroMenu.lua",
                "Temucraft\\TemucraftAddOns.lua", "Temucraft\\TemucraftChangelog.lua",
                "Temucraft\\TemucraftGameMenu.lua", "Temucraft\\TemucraftTaxi.lua",
+               # after TemucraftInterface.lua, TemucraftStore.lua and TemucraftMicroMenu.lua (the guild button)
+               "Temucraft\\TemucraftGuild.lua", "Temucraft\\TemucraftGuildBank.lua",
                # after TemucraftCore.lua (the version), TemucraftStore.lua and TemucraftTooltips.lua (its lines come first)
                "Temucraft\\TemucraftIssues.lua"]
 # pictures (not in FrameXML.toc): Interface\\FrameXML\\<file>
