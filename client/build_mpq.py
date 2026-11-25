@@ -9,6 +9,8 @@ kicked everyone. "^" ranks above every other Data patch that has interface files
 
 It carries
   - Interface\\GlueXML\\TemucraftVersion.lua: "Temucraft <version>" on the login screen,
+  - Interface\\GlueXML\\TemucraftCharCreate.lua / TemucraftCharSelect.lua: the retail-style character create and select
+    screens, on top of the client's own (TemucraftGlueData.lua: their data, made by gen_glue_data.py),
   - Interface\\TemucraftScenes.lua: the character screen scenes ("old" here; the launcher writes a loose Interface\\TemucraftScenes.lua
     with the player's choice: "new" for Character models HD, plus the scenes they picked per race),
   - Interface\\FrameXML\\Temucraft\\*.lua: the core (sends the version to the server, shows "out of date") and the
@@ -43,7 +45,8 @@ FRAME_FILES = ["Temucraft\\TemucraftCore.lua", "Temucraft\\TemucraftMissions.lua
                "Temucraft\\TemucraftCharacter.lua", "Temucraft\\TemucraftMicroMenu.lua",
                "Temucraft\\TemucraftAddOns.lua", "Temucraft\\TemucraftChangelog.lua",
                "Temucraft\\TemucraftGameMenu.lua"]
-GLUE_FILES = ["TemucraftVersion.lua"]
+# after the client's own glue files (CharacterCreate / CharacterSelect), so they can sit on top of them
+GLUE_FILES = ["TemucraftVersion.lua", "TemucraftGlueData.lua", "TemucraftCharCreate.lua", "TemucraftCharSelect.lua"]
 # Interface\\<file> (listed as ..\\<file> in GlueXML.toc, like LoginUI.lua): the launcher writes its own loose copy
 ROOT_GLUE_FILES = ["TemucraftScenes.lua"]
 
