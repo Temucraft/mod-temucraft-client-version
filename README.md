@@ -5,8 +5,11 @@ Temucraft interface into the client so module windows behave like Blizzard's own
 
 ## The client patch (`client/`)
 
-`python3 client/build_mpq.py` makes `Data/<locale>/patch-<locale>-T.MPQ` (needs StormLib; `--stormlib` points at
-`libstorm.so` or `StormLib.dll`). It holds:
+`python3 client/build_mpq.py [--out folder] [--stormlib path]` makes `out/patch-^.MPQ`, a **Data** patch (the same
+for every language; it goes in `Data/`, not `Data/<locale>/`). Needs StormLib: `--stormlib` (or `STORMLIB`) points at
+`libstorm.so` or `StormLib.dll`. It is a Data patch on purpose: the client ranks every `Data\patch-?.MPQ` above every
+locale patch, and patch-5 has its own FrameXML.toc, so as a locale patch our FrameXML.toc lost and nothing of ours
+ran. `^` ranks above every other Data patch with interface files. It holds:
 
 - [`Interface\GlueXML\TemucraftVersion.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/GlueXML/TemucraftVersion.lua): the login screen shows "Temucraft 1.5.0 (3.3.5a build 12340)".
 - [`Interface\FrameXML\Temucraft\TemucraftCore.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftCore.lua): after login the client whispers its version to the server
@@ -30,13 +33,19 @@ Temucraft interface into the client so module windows behave like Blizzard's own
   block), so they land in `bugreport` for the AzerothCore dashboard. Shown only while the server says reporting is on.
   The key is a click binding (`CLICK TemucraftIssueKeyButton:LeftButton`; this patch has no `Bindings.xml` of its
   own): F6 when free, `/issuekey <key>` or `/issuekey none` to change it. `TemucraftIssueBug.blp` is its icon.
-- `FrameXML.toc` and `GlueXML.toc`: the client's own lists (copies in `client/base/`) with those files added. They
-  come from the highest-priority patches of the client (FrameXML.toc from patch-enUS-3.MPQ, GlueXML.toc from
-  patch-enUS-C.MPQ); refresh `client/base/` if another patch changes them.
+- [`Interface\GlueXML\TemucraftCharCreate.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/GlueXML/TemucraftCharCreate.lua),
+  [`TemucraftCharSelect.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/GlueXML/TemucraftCharSelect.lua),
+  `TemucraftGlueData.lua` and `TemucraftGlueSafety.lua`: the retail-style login screens (see *Login screens* below).
+- `Interface\TemucraftScenes.lua`: the character screens' settings ("old" scenes here; the launcher writes its own
+  loose copy with the player's choice).
+- `FrameXML.toc` and `GlueXML.toc`: the client's own lists (copies in `client/base/`) with those files added, in the
+  order of `FRAME_FILES` / `GLUE_FILES` in `build_mpq.py` (later files use earlier ones: keep new files after what
+  they call). They come from the highest-priority patches of the client (FrameXML.toc from patch-5.MPQ, GlueXML.toc
+  from patch-enUS-C.MPQ); refresh `client/base/` if another patch changes them.
 
-The version is `client/VERSION`. To release a new client: raise `VERSION`, rebuild the MPQ, put it in the launcher's
-`locales/<locale>/` folder, write the same version in the launcher's `client-version.txt` and in
-`Temucraft.ClientVersion.Required`.
+The version is `client/VERSION` (now 1.6.0). To release a new client: raise `VERSION`, run the stub tests (below),
+rebuild the MPQ, put `patch-^.MPQ` in the launcher's `patches/` folder, write the same version in the launcher's
+`client-version.txt` and in `Temucraft.ClientVersion.Required`.
 
 ## The server side
 
@@ -186,11 +195,50 @@ Interface Options > Temucraft (or `/tui`) has a "Classic" box for each piece and
   `SecureHandlerWrapScript` (header `TemucraftFlyoutHeader`) so the row opens and closes in combat too; what a row
   holds changes only out of combat. Groups: `TemucraftFlyoutLogic.FLYOUTS`, `TELEPORT_IDS`, `PORTAL_IDS`, `HELPER_ITEMS`.
 
-Tests of the grouping, search, paging, collection and loadout logic, and of the player UI logic:
-`lua5.1 client/tests/spellbook_test.lua`, `lua5.1 client/tests/collections_test.lua`,
-`lua5.1 client/tests/interface_test.lua`, `lua5.1 client/tests/taxi_test.lua`,
-`lua5.1 client/tests/issues_test.lua`, `lua5.1 client/tests/guild_test.lua` and
-`lua5.1 client/tests/reputation_test.lua` (from the module folder).
+## Login screens (GlueXML)
+
+The client's own CharacterCreate.lua / CharacterSelect.lua still run and do the work; their frames are moved into a
+hidden holder and ours sit on top. The "Classic" choice here is `TEMUCRAFT_LOGIN_UI = "classic"` in
+`Interface\TemucraftScenes.lua` (written by the launcher): both screens are then the stock ones.
+
+- **Character select** (`TemucraftCharSelect.lua`): character cards on the right (name, level, class colour, zone
+  with its version bracket from `TemucraftGlueData.lua`, faction crest), a search box (name, class, zone, level "70", "60-70", "80+", role
+  words such as "tank" / "healer"), a top bar with Menu (Options, AddOns, Credits, Cinematics, Exit), an eye button
+  that hides the interface, Create / Delete under the cards. The Realms button is hidden (Live or PTR is picked in
+  the launcher). Cards can be reordered by drag and drop or the arrows on the selected card; the order is kept per
+  account and realm in Config.wtf's `accountList` as a segment after `~` (`GetSavedAccountList` /
+  `SetSavedAccountList` are wrapped so AccountLogin.lua still sees only the saved accounts).
+- **Character create** (`TemucraftCharCreate.lua`): Alliance races in two columns on the left, Horde on the right,
+  classes along the bottom, male / female at the top; step 2 Customize with the name and random-name dice, option
+  arrows with "Face 3 / 9" counters (totals from the DBCs in `TemucraftGlueData.lua`, made by `gen_glue_data.py`),
+  Randomize Appearance. `TEMUCRAFT_CREATE_SCENES = "race"` shows each race's own scene; `TEMUCRAFT_SCENE_PICKS`
+  the player's picks.
+- **Glue safety** (`TemucraftGlueSafety.lua`, loaded first): `GetAvailableRaces`, `GetAvailableClasses` and
+  `GetClassesForRace` push 3 values per race or class without growing the Lua stack; with 20-30 races the stock
+  Wow.exe wrote past it ("Not enough memory" crash picking Zandalari). They are wrapped to run from a Lua function
+  with a big register frame. Wow-races-30.exe fixes it in the exe; the wrapper is harmless there.
+
+## Slash commands and key bindings
+
+| Command / key | Opens |
+|---|---|
+| `/tui` | Interface Options > Temucraft (every Classic box, tooltip IDs, guild chat at login) |
+| C, `/tchar [classic\|new]` | character panel |
+| P / N, `/tsb [classic\|new]`, `/ttf [classic\|new]` | spellbook / talents |
+| `/collections`, `/tcol` | collections |
+| J, `/tguild [classic\|new]` | guild window (J is bound to the stock Guild key once per account when both are free) |
+| U (Reputation tab), `/renown [faction]` | reputation, Renown journeys |
+| `/addons` | addon list |
+| `/issue`, `/bug`; F6 (`/issuekey <key>\|none`) | Issue Reporter; the key is a click binding, F6 by default when free |
+| `/wardrobe`, `/vanity`, `/tokenpreview <link>`, `/heritage`, `/disguise`, `/tankrole` | module windows |
+| `/missions`, `/tmt`, `/companions`, `/tex`, `/wayfinder` | mission table, companions, expeditions |
+
+## Tests
+
+Stub tests (no client; run from the module folder with Lua 5.1) for the grouping, search, paging, collection and
+loadout logic, the player UI, the login screens and the protocols: `lua5.1 client/tests/spellbook_test.lua`,
+`collections_test.lua`, `interface_test.lua`, `taxi_test.lua`, `issues_test.lua`, `guild_test.lua`,
+`reputation_test.lua` and `glue_test.lua` (all in `client/tests/`). Also check every file with `luac5.1 -p`.
 
 ## Also in this module
 
