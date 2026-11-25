@@ -55,6 +55,8 @@ FRAME_FILES = ["Temucraft\\TemucraftCore.lua", "Temucraft\\TemucraftMissions.lua
                "Temucraft\\TemucraftIssues.lua"]
 # pictures (not in FrameXML.toc): Interface\\FrameXML\\<file>
 ART_FILES = ["Temucraft\\TemucraftIssueBug.blp"]
+# pictures for the login screens: Interface\\Glues\\<file>
+GLUE_ART_FILES = ["CharacterCreate\\TemucraftRaceRing.blp"]
 # after the client's own glue files (CharacterCreate / CharacterSelect), so they can sit on top of them
 GLUE_FILES = ["TemucraftGlueSafety.lua", "TemucraftVersion.lua", "TemucraftGlueData.lua", "TemucraftCharCreate.lua", "TemucraftCharSelect.lua"]
 # Interface\\<file> (listed as ..\\<file> in GlueXML.toc, like LoginUI.lua): the launcher writes its own loose copy
@@ -86,6 +88,8 @@ def main():
         add("Interface\\FrameXML\\" + f, open(os.path.join(HERE, "Interface", "FrameXML", *f.split("\\"))).read().replace("@VERSION@", version))
     for f in ART_FILES:
         add("Interface\\FrameXML\\" + f, open(os.path.join(HERE, "Interface", "FrameXML", *f.split("\\")), "rb").read())
+    for f in GLUE_ART_FILES:
+        add("Interface\\Glues\\" + f, open(os.path.join(HERE, "Interface", "Glues", *f.split("\\")), "rb").read())
     for f in GLUE_FILES:
         add("Interface\\GlueXML\\" + f, open(os.path.join(HERE, "Interface", "GlueXML", f)).read().replace("@VERSION@", version))
     for f in ROOT_GLUE_FILES:

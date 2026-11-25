@@ -140,6 +140,49 @@ function Logic.NameStatus(text)
 	return "ok";
 end
 
+-- Breaks long text into lines of about `width` characters (the glue tooltip doesn't wrap: one long line would run
+-- across the whole screen). Keeps |n breaks and colour codes.
+function Logic.Wrap(text, width)
+	width = width or 52;
+	local out = {};
+	for para in string.gmatch((text or "").."|n", "(.-)|n") do
+		local line, len = "", 0;
+		for word in string.gmatch(para, "%S+") do
+			local visible = string.len((string.gsub(string.gsub(word, "|c%x%x%x%x%x%x%x%x", ""), "|r", "")));
+			if ( len > 0 and len + 1 + visible > width ) then
+				table.insert(out, line);
+				line, len = word, visible;
+			else
+				line = (len > 0) and (line.." "..word) or word;
+				len = len + ((len > 0) and 1 or 0) + visible;
+			end
+		end
+		table.insert(out, line);
+	end
+	return table.concat(out, "|n");
+end
+
+-- Faction and class colours for the "Race - Class" line (the glue screens have no RAID_CLASS_COLORS)
+Logic.FACTION_COLORS = { Alliance = "ff4a9cff", Horde = "ffe8352a" };
+Logic.CLASS_COLORS = {
+	WARRIOR = "ffc79c6e", PALADIN = "fff58cba", HUNTER = "ffabd473", ROGUE = "fffff569", PRIEST = "ffffffff",
+	DEATHKNIGHT = "ffc41f3b", SHAMAN = "ff0070de", MAGE = "ff69ccf0", WARLOCK = "ff9482c9", MONK = "ff00ff96",
+	DRUID = "ffff7d0a", DEMONHUNTER = "ffa330c9", EVOKER = "ff33937f",
+};
+-- "|cff4a9cffHighmountain Tauren|r  -  |cfff58cbaPaladin|r"
+function Logic.Title(race, faction, className, classFile)
+	local parts = {};
+	if ( race and race ~= "" ) then
+		local c = Logic.FACTION_COLORS[faction or ""];
+		table.insert(parts, c and ("|c"..c..race.."|r") or race);
+	end
+	if ( className and className ~= "" ) then
+		local c = Logic.CLASS_COLORS[string.upper(classFile or "")];
+		table.insert(parts, c and ("|c"..c..className.."|r") or className);
+	end
+	return table.concat(parts, "  -  ");
+end
+
 ---------------------------------------------------------------------------------------------------------------------
 -- The screen (only in the client)
 ---------------------------------------------------------------------------------------------------------------------
@@ -164,10 +207,19 @@ local function Active()
 end
 TemucraftCharCreate_Active = Active;
 
-local function Tooltip(owner, text)
+-- side: "right" puts the tooltip to the right of the button (Alliance column), "left" to its left (Horde column)
+local function Tooltip(owner, text, side)
 	if ( text and GlueTooltip_SetOwner and CharacterCreateTooltip ) then
 		GlueTooltip_SetOwner(owner, CharacterCreateTooltip, -3, -5);
-		GlueTooltip_SetText(text, CharacterCreateTooltip);
+		GlueTooltip_SetText(Logic.Wrap(text), CharacterCreateTooltip);
+		if ( side ) then
+			CharacterCreateTooltip:ClearAllPoints();
+			if ( side == "left" ) then
+				CharacterCreateTooltip:SetPoint("TOPRIGHT", owner, "TOPLEFT", -10, 4);
+			else
+				CharacterCreateTooltip:SetPoint("TOPLEFT", owner, "TOPRIGHT", 10, 4);
+			end
+		end
 	end
 end
 local function HideTooltip()
@@ -178,6 +230,23 @@ end
 
 -- The stock functions only ask a button whether it's enabled and tell it to check itself
 local proxy = { IsEnabled = function() return 1; end, SetChecked = function() end };
+
+-- The faction crests (the PvP badges the character list uses too): the badge fills the top left of its 64x64 file
+local FACTION_CREST_FILE = { Alliance = "Interface\\TargetingFrame\\UI-PVP-Alliance", Horde = "Interface\\TargetingFrame\\UI-PVP-Horde" };
+local FACTION_CREST = { Alliance = { 0, 0.66, 0, 0.66 }, Horde = { 0, 0.66, 0, 0.66 } };
+
+local function SelectedFaction()
+	local index = GetSelectedRace();
+	if ( not index ) then
+		return nil;
+	end
+	local _, faction = GetFactionForRace(index);
+	if ( faction == "Alliance" or faction == "Horde" ) then
+		return faction;
+	end
+	local _, file = GetNameForRace();
+	return TemucraftRaceFaction and TemucraftRaceFaction(file) or nil;
+end
 
 local function SelectedFile()
 	local _, file = GetNameForRace();
@@ -223,10 +292,19 @@ local function MakeIconButton(name, parent, size)
 	hl:SetBlendMode("ADD");
 	hl:SetWidth(size + 14); hl:SetHeight(size + 14);
 	hl:SetPoint("CENTER", b, "CENTER", 1, -1);
-	b:SetScript("OnEnter", function(self) Tooltip(self, self.tooltip); end);
+	b:SetScript("OnEnter", function(self) Tooltip(self, self.tooltip, self.tooltipSide); end);
 	b:SetScript("OnLeave", HideTooltip);
 	return b;
 end
+
+-- A round frame around a race icon (the race art has none)
+local function AddRing(b, size)
+	b.border = b:CreateTexture(nil, "OVERLAY");
+	b.border:SetTexture("Interface\\Glues\\CharacterCreate\\TemucraftRaceRing");
+	b.border:SetWidth(size * 1.28); b.border:SetHeight(size * 1.28);
+	b.border:SetPoint("CENTER", b, "CENTER", 0, 0);
+end
+
 
 local function SetIconState(b, selected, enabled)
 	if ( selected ) then b.ring:Show(); else b.ring:Hide(); end
@@ -285,6 +363,7 @@ local function RefreshRaces()
 		local b = raceButtons[n];
 		if ( not b ) then
 			b = MakeIconButton("TemucraftCreateRace"..n, root.races, ICON_SIZE);
+			AddRing(b, ICON_SIZE);
 			b.icon:SetTexture("Interface\\Glues\\CharacterCreate\\RyansRacesRound");
 			b:SetScript("OnClick", function(self)
 				self:SetChecked(nil);
@@ -302,6 +381,7 @@ local function RefreshRaces()
 		b.raceIndex = race.index;
 		local info = GetFlavorText and GetFlavorText("RACE_INFO_"..string.upper(race.file), GetSelectedSex());
 		b.tooltip = enabled and (info and (race.name.."|n|cffffffff"..info.."|r") or race.name) or (stockTip or race.name);
+		b.tooltipSide = (p.side == "Alliance") and "right" or "left";
 		b:ClearAllPoints();
 		local x = SIDE_MARGIN + (p.column - 1) * ICON_STEP + ICON_SIZE / 2;
 		local y = TOP_MARGIN - (p.row - 1) * ICON_STEP - ICON_SIZE / 2;
@@ -449,8 +529,25 @@ function Refresh()
 		RefreshClasses();
 	end
 	local race = GetNameForRace();
-	local className = GetSelectedClass();
-	root.title:SetText((race or "").."  "..(className or ""));
+	local className, classFile = GetSelectedClass();
+	local faction = SelectedFaction();
+	root.title:SetText(Logic.Title(race, faction, className, classFile));
+	-- step 2 shows the faction crest and the class icon either side of the line
+	local crest = faction and FACTION_CREST[faction];
+	if ( customize and crest ) then
+		root.titleFaction:SetTexture(FACTION_CREST_FILE[faction]);
+		root.titleFaction:SetTexCoord(crest[1], crest[2], crest[3], crest[4]);
+		root.titleFaction:Show();
+	else
+		root.titleFaction:Hide();
+	end
+	local coords = classFile and CLASS_ICON_TCOORDS and CLASS_ICON_TCOORDS[string.upper(classFile)];
+	if ( customize and coords ) then
+		root.titleClass:SetTexCoord(coords[1], coords[2], coords[3], coords[4]);
+		root.titleClass:Show();
+	else
+		root.titleClass:Hide();
+	end
 	if ( CharCreateOkayButton and CharCreateOkayButton:IsEnabled() ) then
 		root.next:Enable();
 	else
@@ -529,7 +626,14 @@ local function Build()
 		root[sex] = b;
 	end
 	root.title = root:CreateFontString(nil, "OVERLAY", "GlueFontNormalLarge");
-	root.title:SetPoint("BOTTOM", root, "BOTTOM", 0, 108);
+	root.title:SetPoint("BOTTOM", root, "BOTTOM", 0, 112);
+	root.titleFaction = root:CreateTexture(nil, "OVERLAY");
+	root.titleFaction:SetWidth(30); root.titleFaction:SetHeight(30);
+	root.titleFaction:SetPoint("RIGHT", root.title, "LEFT", -8, 0);
+	root.titleClass = root:CreateTexture(nil, "OVERLAY");
+	root.titleClass:SetTexture("Interface\\Glues\\CharacterCreate\\UI-CharacterCreate-Classes");
+	root.titleClass:SetWidth(26); root.titleClass:SetHeight(26);
+	root.titleClass:SetPoint("LEFT", root.title, "RIGHT", 8, 0);
 
 	-- step 1: race columns and the class row
 	root.races = CreateFrame("Frame", nil, root);
@@ -544,9 +648,11 @@ local function Build()
 			label:SetPoint("BOTTOM", root, "TOPRIGHT", -x, TOP_MARGIN + 10);
 		end
 		local crest = root.races:CreateTexture(nil, "ARTWORK");
-		crest:SetTexture("Interface\\TargetingFrame\\UI-PVP-"..side);
-		crest:SetWidth(48); crest:SetHeight(48);
-		crest:SetPoint("BOTTOM", label, "TOP", side == "Alliance" and 4 or 10, -10);
+		crest:SetTexture(FACTION_CREST_FILE[side]);
+		local c = FACTION_CREST[side];
+		crest:SetTexCoord(c[1], c[2], c[3], c[4]);
+		crest:SetWidth(56); crest:SetHeight(56);
+		crest:SetPoint("BOTTOM", label, "TOP", 0, 2);
 	end
 	root.classes = Panel(root);
 	root.classes:SetHeight(70);
@@ -555,7 +661,7 @@ local function Build()
 	-- step 2: the name at the top, the options on the left
 	root.nameBar = CreateFrame("Frame", nil, root);
 	root.nameBar:SetWidth(320); root.nameBar:SetHeight(40);
-	root.nameBar:SetPoint("TOP", root, "TOP", 0, -72);
+	root.nameBar:SetPoint("BOTTOM", root, "BOTTOM", 0, 32);
 	root.dice = CreateFrame("Button", "TemucraftCreateNameDice", root.nameBar);
 	root.dice:SetWidth(32); root.dice:SetHeight(32);
 	root.dice:SetNormalTexture("Interface\\Buttons\\UI-GroupLoot-Dice-Up");
@@ -574,7 +680,7 @@ local function Build()
 	root.nameMark:SetWidth(24); root.nameMark:SetHeight(24);
 	root.nameMark:SetPoint("RIGHT", root.dice, "LEFT", -2, 0);
 	root.nameHint = root.nameBar:CreateFontString(nil, "OVERLAY", "GlueFontHighlightSmall");
-	root.nameHint:SetPoint("TOP", root.nameBar, "BOTTOM", -20, -2);
+	root.nameHint:SetPoint("BOTTOM", root.nameBar, "TOP", -20, 2);
 
 	root.options = Panel(root);
 	root.options:SetWidth(270);
@@ -622,8 +728,8 @@ local function Build()
 	-- rotate the character
 	for _, dir in ipairs({ "Left", "Right" }) do
 		local b = CreateFrame("Button", "TemucraftCreateRotate"..dir, root);
-		b:SetWidth(48); b:SetHeight(48);
-		b:SetPoint("BOTTOM", root, "BOTTOM", dir == "Left" and -40 or 40, 136);
+		b:SetWidth(40); b:SetHeight(40);
+		b:SetPoint("BOTTOM", root, "BOTTOM", dir == "Left" and -150 or 150, 150);
 		b:SetNormalTexture("Interface\\Glues\\CharacterCreate\\UI-RotationRight-Big-Up");
 		b:SetPushedTexture("Interface\\Glues\\CharacterCreate\\UI-RotationRight-Big-Down");
 		b:SetHighlightTexture("Interface\\Glues\\Common\\Glue-RightArrow-Button-Highlight", "ADD");
@@ -651,10 +757,19 @@ local function Build()
 	end);
 	root.next:SetPoint("BOTTOMRIGHT", root, "BOTTOMRIGHT", -30, 30);
 
+	-- Only cheap checks every frame: the whole screen is redrawn on clicks and when something changes, not on a timer
+	-- (redrawing 30 race buttons four times a second made every click lag).
+	local lastState, lastRace, lastClass, lastSex, lastOkay;
 	root:SetScript("OnUpdate", function(self, elapsed)
 		throttle = throttle + (elapsed or 0);
-		if ( throttle > 0.25 ) then
-			throttle = 0;
+		if ( throttle < 0.2 ) then
+			return;
+		end
+		throttle = 0;
+		local state, race, class, sex = CharacterCreateFrame.state, GetSelectedRace(), select(3, GetSelectedClass()), GetSelectedSex();
+		local okay = CharCreateOkayButton and CharCreateOkayButton:IsEnabled() and true or false;
+		if ( state ~= lastState or race ~= lastRace or class ~= lastClass or sex ~= lastSex or okay ~= lastOkay ) then
+			lastState, lastRace, lastClass, lastSex, lastOkay = state, race, class, sex, okay;
 			Refresh();
 		end
 	end);

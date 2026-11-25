@@ -85,6 +85,12 @@ function Logic.ZoneText(zone)
 	if ( not zone or zone == "" ) then
 		return "";
 	end
+	-- Our AreaTable names already carry a long bracket ("Valley of Trials (Durotar, Classic)"): keep only the name, then
+	-- add the short label below when the name really is on more than one map
+	local base = string.match(zone, "^(.-)%s*%b()$");
+	if ( base and base ~= "" ) then
+		zone = base;
+	end
 	local ids = TEMUCRAFT_ZONE_BRACKET_NAMES and TEMUCRAFT_ZONE_BRACKET_NAMES[zone];
 	local label = ids and TEMUCRAFT_ZONE_BRACKET and TEMUCRAFT_ZONE_BRACKET[ids[1]];
 	if ( label and label ~= "" ) then
@@ -559,6 +565,9 @@ local function MakeCard(n)
 	b.crest = b:CreateTexture(nil, "ARTWORK");
 	b.crest:SetWidth(36); b.crest:SetHeight(36);
 	b.crest:SetPoint("RIGHT", b, "RIGHT", -6, 0);
+	-- its place in the list ("3"), shown in the top right corner; the tooltip says "3 of 6"
+	b.order = b:CreateFontString(nil, "OVERLAY", "GlueFontDisableSmall");
+	b.order:SetPoint("TOPRIGHT", b, "TOPRIGHT", -46, -6);
 	b.selected = b:CreateTexture(nil, "BACKGROUND");
 	b.selected:SetTexture("Interface\\Glues\\CharacterSelect\\Glue-CharacterSelect-Highlight");
 	b.selected:SetBlendMode("ADD");
@@ -571,7 +580,36 @@ local function MakeCard(n)
 	hl:SetAlpha(0.5);
 	hl:SetAllPoints(b.selected);
 	-- c.id is the client's own index of the character, whatever the card's place on screen
-	b:SetScript("OnMouseDown", function() dragEnded = false; end);
+	-- Dragging without OnDragStart (the glue screens don't always send it): a press that moves more than a few pixels
+	-- starts a drag, the release ends it (the card keeps the mouse until the button is let go)
+	b:SetScript("OnMouseDown", function(self, button)
+		dragEnded = false;
+		if ( button == "LeftButton" and GetCursorPosition ) then
+			local _, y = GetCursorPosition();
+			self.pressY = y;
+		end
+	end);
+	b:SetScript("OnMouseUp", function(self)
+		self.pressY = nil;
+		if ( dragging ) then
+			StopDrag(self);
+		end
+	end);
+	b:SetScript("OnUpdate", function(self)
+		if ( self.pressY and not dragging and GetCursorPosition ) then
+			local _, y = GetCursorPosition();
+			if ( y and math.abs(y - self.pressY) > 8 ) then
+				self.pressY = nil;
+				StartDrag(self);
+			end
+		end
+	end);
+	b:SetScript("OnEnter", function(self)
+		if ( self.place and not dragging ) then
+			Tooltip(self, self.place.." of "..#list..(#list > 1 and "|n|cffaaaaaaDrag to change the order|r" or ""));
+		end
+	end);
+	b:SetScript("OnLeave", HideTooltip);
 	b:SetScript("OnClick", function(self)
 		if ( dragEnded ) then
 			dragEnded = false;
@@ -594,7 +632,7 @@ local function MakeCard(n)
 	end);
 	if ( b.RegisterForDrag ) then
 		b:RegisterForDrag("LeftButton");
-		b:SetScript("OnDragStart", StartDrag);
+		b:SetScript("OnDragStart", function(self) self.pressY = nil; if ( not dragging ) then StartDrag(self); end end);
 		b:SetScript("OnDragStop", StopDrag);
 	end
 	-- the order arrows (selected card only)
@@ -675,6 +713,8 @@ function Refresh(keepOffset)
 				b.crest:Hide();
 			end
 			if ( c.paid ) then b.paid:Show(); else b.paid:Hide(); end
+			b.place = Logic.IndexOf(list, c.id);
+			b.order:SetText((#list > 1 and b.place and c.id ~= sel) and tostring(b.place) or "");
 			if ( c.id == sel ) then b.selected:Show(); else b.selected:Hide(); end
 			local pos = (c.id == sel and not dragging and #shown > 1) and (offset + n) or nil;
 			if ( pos ) then b.up:Show(); b.down:Show(); else b.up:Hide(); b.down:Hide(); end

@@ -413,5 +413,14 @@ check("realms", state.realms);
 TemucraftSelectCreate:Click();
 check("create", state.screen == "charcreate");
 
+-- 2026-11-25 evening: long AreaTable brackets cut, title colours, tooltip wrapping
+check("zone: AreaTable bracket dropped", S.ZoneText("Valley of Trials (Durotar, Classic)") == "Valley of Trials");
+check("zone: short label kept for real duplicates", S.ZoneText("Dalaran (Northrend, Wrath)") == "Dalaran (Wrath of the Lich King)");
+check("title: faction and class colours", C.Title("Highmountain Tauren", "Horde", "Paladin", "PALADIN") == "|cffe8352aHighmountain Tauren|r  -  |cfff58cbaPaladin|r");
+local wrapped = C.Wrap(string.rep("word ", 40), 30);
+local longest = 0;
+for line in string.gmatch(wrapped.."|n", "(.-)|n") do longest = math.max(longest, string.len(line)); end
+check("tooltip text wrapped", longest <= 30 and string.find(wrapped, "|n"));
+
 if ( failed > 0 ) then print(failed.." failed"); os.exit(1); end
 print("all passed");
