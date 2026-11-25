@@ -1,7 +1,8 @@
 -- Temucraft character panel (retail look): the paper doll with the item slots down both sides and the weapons along
 -- the bottom, a 3D model in the middle on the race's backdrop, and on the right the item level and the stats in
--- sections (Attributes, Enhancements, Defense). Tabs Character / Pet / Reputation / Currency along the bottom; Pet,
--- Reputation and Currency open the stock character frame on that tab for now.
+-- sections (Attributes, Enhancements, Defense). Tabs Character / Pet / Reputation / Currency along the bottom; Pet
+-- opens the stock character frame on that tab, Reputation and Currency the Temucraft windows (TemucraftReputation.lua,
+-- TemucraftCurrency.lua) unless their Classic option is on.
 -- C (ToggleCharacter("PaperDollFrame")), the micro button and the stock frame's Character tab open it. "Classic" (the
 -- checkbox, Interface Options > Temucraft or "/tchar classic") brings back the stock paper doll, "/tchar new" this one.
 -- The item slots are the stock ones (CharacterHeadSlot ...): they move into this window while it is open and go back
@@ -386,7 +387,7 @@ for i, t in ipairs(TABS) do
 		if ( not t[2] ) then return; end
 		PlaySound("igCharacterInfoTab");
 		HideUIPanel(frame);
-		StockToggleCharacter(t[2]);
+		ToggleCharacter(t[2]);   -- the Temucraft reputation / currency windows (TemucraftCharacter_Redirect), else stock
 	end);
 	tabs[i] = tab;
 end
@@ -434,8 +435,52 @@ function TemucraftCharacter_Toggle()
 	if ( frame:IsShown() ) then HideUIPanel(frame); else ShowUIPanel(frame); end
 end
 
+-- the same tabs along the bottom of another window of the panel (TemucraftReputation.lua, TemucraftCurrency.lua):
+-- selected = its tab (3 Reputation, 4 Currency). Returns the function that lays them out (call it in OnShow).
+function TemucraftCharacter_AddTabs(owner, selected)
+	local own = {};
+	for i, t in ipairs(TABS) do
+		local tab = CreateFrame("Button", owner:GetName().."Tab"..i, owner, "CharacterFrameTabButtonTemplate");
+		tab:SetID(i);
+		tab:SetText(t[1]);
+		tab:SetScript("OnClick", function()
+			if ( i == selected ) then return; end
+			PlaySound("igCharacterInfoTab");
+			HideUIPanel(owner);
+			ToggleCharacter(t[2] or "PaperDollFrame");
+		end);
+		own[i] = tab;
+	end
+	PanelTemplates_SetNumTabs(owner, #TABS);
+	return function()
+		local last;
+		for i, t in ipairs(TABS) do
+			local tab = own[i];
+			if ( t[3] and not t[3]() ) then
+				tab:Hide();
+			else
+				tab:ClearAllPoints();
+				if ( last ) then tab:SetPoint("LEFT", last, "RIGHT", -16, 0); else tab:SetPoint("TOPLEFT", owner, "BOTTOMLEFT", 20, 8); end
+				tab:Show();
+				last = tab;
+			end
+		end
+		PanelTemplates_SetTab(owner, selected);
+	end;
+end
+
+-- ToggleCharacter(tab) of another Temucraft window: TemucraftCharacter_Redirect[tab] = { classic = its Classic
+-- option ("rep"), open = func }; func() opens or closes that window and returns true, or returns false (Classic on)
+-- for the stock frame
+TemucraftCharacter_Redirect = {};
+
 -- C, the micro button and the stock Character tab
 function ToggleCharacter(tab, ...)
+	local redirect = TemucraftCharacter_Redirect[tab];
+	if ( redirect ) then
+		if ( frame:IsShown() and not TemucraftUI_IsClassic(redirect.classic) ) then HideUIPanel(frame); end
+		if ( redirect.open() ) then return; end
+	end
 	if ( tab ~= "PaperDollFrame" or TemucraftUI_IsClassic("char") ) then
 		if ( frame:IsShown() ) then HideUIPanel(frame); end
 		return StockToggleCharacter(tab, ...);

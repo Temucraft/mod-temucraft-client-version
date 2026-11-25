@@ -118,14 +118,16 @@ the "Classic spellbook" checkbox) and `/ttf classic` (the "Classic talents" chec
 ## Player UI (retail look, each with a Classic option)
 Interface Options > Temucraft (or `/tui`) has a "Classic" box for each piece and the tooltip ID option
 ([`TemucraftInterface.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftInterface.lua); per account in the store, keys `ui.classicchar`,
-`ui.classicmicro`, `ui.classicmenu`, `ui.classicguild`, `ui.classicgbank`, `ui.tooltipids`, `ui.guildloginchat`).
+`ui.classicmicro`, `ui.classicmenu`, `ui.classicguild`, `ui.classicgbank`, `ui.classicrep`, `ui.classiccurrency`,
+`ui.tooltipids`, `ui.guildloginchat`).
 
 - **Character panel** ([`TemucraftCharacter.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftCharacter.lua), C, `/tchar`, `/tchar classic|new`):
   the stock item slots (they move into the window while it is open, so clicking, Alt flyouts and the equipment manager
   work as always) down both sides and the weapons at the bottom, a bigger model on the race's backdrop (drag to turn,
   wheel to zoom), a Titles menu, and on the right the item level (average of the 17 slots, a two-hander counts twice)
   and the stats: Attributes, Enhancements (by role: melee, ranged or caster; hybrids by their main talent tree) and
-  Defense. Tabs Character / Pet / Reputation / Currency; the last three open the stock frame on that tab.
+  Defense. Tabs Character / Pet / Reputation / Currency; Pet opens the stock frame on that tab, Reputation and
+  Currency the windows below.
 - **Micro menu** ([`TemucraftMicroMenu.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftMicroMenu.lua)): a row at the bottom right (smaller
   if need be, or above the main bar when there's no room beside it): Character, Spellbook & Talents (right click:
   talents), Achievements, Quest Log, Guild (right click: friends), Group Finder (right click: PvP), Collections, Shop,
@@ -149,6 +151,24 @@ Interface Options > Temucraft (or `/tui`) has a "Classic" box for each piece and
   the Available Amount bar; Log and Money Log list deposits (green) and withdrawals (red) with class-coloured names,
   Gold / Silver / Copper and "(10 months ago)", every entry ever made from mod-temucraft-guild's archive ("Show
   more..."), else the stock last 25. Changed only out of combat.
+- **Reputation** ([`TemucraftReputation.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftReputation.lua), the Reputation tab, U):
+  factions under collapsible expansion headers (Allied Races, Mists of Pandaria, Cataclysm, Wrath of the Lich King,
+  The Burning Crusade, Classic, Lost Lands, Crafting Orders, the client's other headers, Inactive last), a filter
+  (All / Active / Inactive / At War), bars with the standing (its value on mouse over) or "Renown N" / "Level N" for
+  factions with a Renown track, "Warband Reputation" in the tooltip of account-wide factions, and a detail panel:
+  description, At War, Move to Inactive, Show as Experience Bar (the stock calls and rules) and View Renown. Which of
+  our factions goes in which group is in [`TemucraftReputationData.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftReputationData.lua),
+  written by `client/gen_reputation_data.py` from the release patches' Faction.dbc (edit the groups there and run it
+  again). 3.3.5 gives the interface no faction ids, so factions are matched by name: the English names are in that
+  file, and [mod-temucraft-renown](https://github.com/Temucraft/mod-temucraft-renown) sends them in the player's
+  locale. Renown and Warband need that module (addon messages `TRN`); without it the window is a plain reputation list.
+- **Currency** ([`TemucraftCurrency.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftCurrency.lua), the Currency tab): the same style; the
+  currencies under their collapsible categories with icon and count, a detail panel with the description, Move to
+  Unused and Show on Backpack (at most 3, as in the stock window).
+- **Renown journeys** ([`TemucraftRenown.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftRenown.lua), View Renown, `/renown [faction]`): a
+  faction's Renown track from mod-temucraft-renown: a ring with the level, "Current Progress: X / Y", the rewards
+  1..N (got / next / locked, arrows to page) and the Overview with the "Journey Highlights" cards. Its own window
+  until the Adventure Guide.
 - **Game menu** ([`TemucraftGameMenu.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftGameMenu.lua)): the stock GameMenuFrame laid out again:
   Options (opens System / Sound / Interface / Key Bindings under it), Shop, What's New (`TemucraftChangelog.lua`:
   add a block with each release), AddOns, Edit Mode (placeholder), Support (the stock help / ticket frame), Macros,
@@ -169,7 +189,8 @@ Interface Options > Temucraft (or `/tui`) has a "Classic" box for each piece and
 Tests of the grouping, search, paging, collection and loadout logic, and of the player UI logic:
 `lua5.1 client/tests/spellbook_test.lua`, `lua5.1 client/tests/collections_test.lua`,
 `lua5.1 client/tests/interface_test.lua`, `lua5.1 client/tests/taxi_test.lua`,
-`lua5.1 client/tests/issues_test.lua` and `lua5.1 client/tests/guild_test.lua` (from the module folder).
+`lua5.1 client/tests/issues_test.lua`, `lua5.1 client/tests/guild_test.lua` and
+`lua5.1 client/tests/reputation_test.lua` (from the module folder).
 
 ## Also in this module
 
