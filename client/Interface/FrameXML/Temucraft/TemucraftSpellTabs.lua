@@ -6,6 +6,8 @@ local F_RACIAL, F_PROFESSION, F_GUILD, F_PASSIVE, F_TELEPORT, F_TALENT, F_MOUNT,
 local PER_PAGE = 12;
 
 local function Send(text) SendAddonMessage(PREFIX, text, "WHISPER", UnitName("player")); end
+-- what the server says a spell is (flag bits above), for the new spellbook (TemucraftSpellBook.lua)
+function TemucraftSpellTabs_GetFlags(id) return flags[id] or 0; end
 local function Has(f, bit) return f and (f % (bit * 2)) >= bit; end
 local function SpellIdOf(slot, book)
 	local link = GetSpellLink(slot, book);
@@ -202,7 +204,10 @@ events:SetScript("OnEvent", function(self, event, prefix, message, channel, send
 	if ( event == "CHAT_MSG_ADDON" ) then
 		if ( prefix ~= PREFIX or channel ~= "WHISPER" or sender ~= UnitName("player") ) then return; end
 		if ( message == "BEGIN" ) then pending = {};
-		elseif ( message == "END" and pending ) then flags, pending = pending, nil; if ( current ) then Show(); end
+		elseif ( message == "END" and pending ) then
+			flags, pending = pending, nil;
+			if ( current ) then Show(); end
+			if ( TemucraftSpellBook_OnFlags ) then TemucraftSpellBook_OnFlags(); end
 		elseif ( pending and string.sub(message, 1, 2) == "C~" ) then
 			for id, f in string.gmatch(string.sub(message, 3), "(%d+):(%d+)") do pending[tonumber(id)] = tonumber(f); end
 		end

@@ -12,7 +12,8 @@ It carries
   - Interface\\TemucraftScenes.lua: the character screen scenes ("old" here; the launcher writes a loose Interface\\TemucraftScenes.lua
     with the player's choice: "new" for Character models HD, plus the scenes they picked per race),
   - Interface\\FrameXML\\Temucraft\\*.lua: the core (sends the version to the server, shows "out of date") and the
-    module windows (mission table / companions, wardrobe, vanity), loaded by FrameXML itself, so they always run like Blizzard's UI,
+    module windows (mission table / companions, wardrobe, vanity, the spellbook / talents window, collections), loaded by
+    FrameXML itself, so they always run like Blizzard's UI,
   - FrameXML.toc / GlueXML.toc: copies of the client's own lists (base/) with those files added.
 
 The version comes from VERSION. Put the MPQ in the launcher's patches/ folder, and the same version in
@@ -31,7 +32,12 @@ FRAME_FILES = ["Temucraft\\TemucraftCore.lua", "Temucraft\\TemucraftMissions.lua
                "Temucraft\\TemucraftSpellTabs.lua", "Temucraft\\TemucraftTankRoles.lua",
                "Temucraft\\TemucraftTokenPreview.lua", "Temucraft\\TemucraftCostumes.lua",
                "Temucraft\\TemucraftVanity.lua",
-               "Temucraft\\TemucraftExpeditions.lua", "Temucraft\\TemucraftSpellInfo.lua"]
+               "Temucraft\\TemucraftExpeditions.lua", "Temucraft\\TemucraftSpellInfo.lua",
+               # after TemucraftSpellTabs.lua (the spell flags) and TemucraftAutoLearn.lua (the Train button)
+               "Temucraft\\TemucraftStore.lua", "Temucraft\\TemucraftPlayerSpells.lua",
+               "Temucraft\\TemucraftSpellBook.lua", "Temucraft\\TemucraftTalentsData.lua",
+               "Temucraft\\TemucraftTalents.lua", "Temucraft\\TemucraftCollectionsData.lua",
+               "Temucraft\\TemucraftCollections.lua"]
 GLUE_FILES = ["TemucraftVersion.lua"]
 # Interface\\<file> (listed as ..\\<file> in GlueXML.toc, like LoginUI.lua): the launcher writes its own loose copy
 ROOT_GLUE_FILES = ["TemucraftScenes.lua"]

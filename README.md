@@ -66,6 +66,49 @@ unlocked (the Stones and Scrolls of Homecoming of [mod-temucraft-travel](https:/
 `mod_temucraft_vanity_item`), each with its icon, name and cooldown, and a Summon button that puts it back in your bags
 if this character doesn't have it. "Show locked" also lists the ones still to get. Addon prefix `TVA`.
 
+## Spellbook, talents and collections
+[`TemucraftPlayerSpells.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftPlayerSpells.lua) is a retail-style window with **Specialization / Talents / Spellbook**
+tabs at the bottom. P and the spellbook micro button open it on Spellbook, N and the talent micro button on Talents
+(they replace `ToggleSpellBook` / `ToggleTalentFrame`; the pet book, Shift-P, stays the stock one). `/tsb classic` (or
+the "Classic spellbook" checkbox) and `/ttf classic` (the "Classic talents" checkbox) bring back the stock frames,
+`/tsb new` and `/ttf new` this one.
+
+- **Spellbook** ([`TemucraftSpellBook.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftSpellBook.lua)): tabs *class* and *General*, a search box (name, subtitle, section and the
+  tooltip text, read once from a hidden tooltip), a 3-column grid of icon, name and grey subtitle (the spell's subtext,
+  e.g. "Shapeshift", "Racial Passive", "Guild Perk"; never "Rank n") under headings: the class (class spell tabs that
+  aren't talent trees, if the server has any), then each talent tree; General, Racial, Professions, Guild Perks and any
+  other spell tab (Temucraft spells) in General. Highest rank only, passives with the stock passive border. The
+  expand button shows two pages. The old Racials / Professions / Guild tabs of `TemucraftSpellTabs.lua` became these
+  sections (the flags still come from the server, prefix TSB); its Mounts / Companions tabs became Collections. The
+  Train button of `TemucraftAutoLearn.lua` moves into the book while it's open. The spell buttons are
+  `SecureActionButtonTemplate` (type `spell`, the spell id): click casts and drag picks the spell up, in and out of
+  combat. Pages, search and expand change secure buttons, so in combat they wait for the end of combat
+  (`TemucraftPlayerSpells_AfterCombat`).
+- **Specialization / Talents** ([`TemucraftTalents.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftTalents.lua), texts in `TemucraftTalentsData.lua`): a card per tree
+  (stock tree art, role, description, preferred weapon, primary stat, two sample abilities); "Active" is the tree with the
+  most points in the active talent group and Activate switches talent groups (dual spec). The Talents tab shows the
+  three trees side by side and works through the client's talent preview (`previewTalents` is turned on): clicks add
+  preview points, "Apply Changes" learns them, "Reset Preview" drops them. Search lights up matching talents. Loadouts
+  save the build to a name and load one into the preview (learned points still need a respec or the other talent
+  group). Glyph sockets along the bottom (use a glyph, click a socket; shift-right-click removes).
+- **Collections** ([`TemucraftCollections.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftCollections.lua), `/collections` or the button in the book): tabs Mounts /
+  Pet Journal / Toy Box / Heirlooms / Appearances / Campsites (the last four are placeholders for now). Mounts and pets:
+  every one the game has (`TemucraftCollectionsData.lua`), the missing ones greyed with the item that teaches them,
+  "X / Y collected" (Y: collected plus the missing ones with a known source; "Unknown source" shows the rest),
+  favourites (right click; per account), a 3D preview (`SetCreature`, else the model file), Show Character, Mount /
+  Summon and Summon Random Favorite (`CallCompanion`, not protected). The data table: `python3 client/collections/build_collections.py`
+  (Spell.dbc, SkillLineAbility.dbc skill lines 777 / 778 and items of class 15 / subclass 5 and 2, creature models from
+  CreatureDisplayInfo / CreatureModelData; defaults to `_dev/server-dbc/dbc` and the core's `data/sql/base/db_world`).
+  Later: Appearances can read mod-transmog's `custom_unlocked_appearances` (characters DB: `account_id`,
+  `item_template_id`, one row per unlocked item, per account); Toy Box mod-temucraft-lostlands' illusions and the
+  account-wide vanity items; Campsites mod-temucraft-camping.
+- **Saved between sessions** ([`TemucraftStore.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftStore.lua)): FrameXML has no SavedVariables, so favourites (per account),
+  loadouts (per character) and the classic / new choice (per account) are kept by mod-temucraft-account-wide (prefix
+  `TUS`, table `mod_temucraft_ui_store`). Without it they last until logout.
+
+Tests of the grouping, search, paging, collection and loadout logic: `lua5.1 client/tests/spellbook_test.lua` and
+`lua5.1 client/tests/collections_test.lua` (from the module folder).
+
 ## Also in this module
 
 These were separate modules; they now live here, each with its own folder under `src/`, its own config file in
