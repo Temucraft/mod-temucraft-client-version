@@ -15,7 +15,17 @@ local C, S = assert(TemucraftCreateLogic), assert(TemucraftSelectLogic);
 local n = 0;
 for _ in pairs(TEMUCRAFT_CUSTOMIZE_COUNTS) do n = n + 1; end
 check("counts for 30 races x 2 sexes", n >= 60 and TEMUCRAFT_CUSTOMIZE_COUNTS.HUMAN_MALE and TEMUCRAFT_CUSTOMIZE_COUNTS.HORDEHARANIR_FEMALE);
-check("dalaran has brackets", TEMUCRAFT_ZONE_BRACKET_NAMES.Dalaran and TEMUCRAFT_ZONE_BRACKET[TEMUCRAFT_ZONE_BRACKET_NAMES.Dalaran[1]] == "Northrend");
+check("dalaran has brackets", TEMUCRAFT_ZONE_BRACKET_NAMES.Dalaran and TEMUCRAFT_ZONE_BRACKET[TEMUCRAFT_ZONE_BRACKET_NAMES.Dalaran[1]] == "Wrath of the Lich King");
+local shortLabels = true;
+for id, label in pairs(TEMUCRAFT_ZONE_BRACKET) do
+	if ( string.find(label, "Classic") or string.find(label, "^Midnight %d") or string.find(label, ", ") ) then shortLabels = false; print("  long label", id, label); end
+end
+check("labels short: no Classic, no numbering, no lists", shortLabels);
+local zonesOk = true;
+for name, ids in pairs(TEMUCRAFT_ZONE_BRACKET_NAMES) do
+	for _, id in ipairs(ids) do if ( not TEMUCRAFT_ZONE_BRACKET[id] ) then zonesOk = false; end end
+end
+check("every character select row has a label", zonesOk);
 
 -- layout: every race placed, sides by faction, no two in one cell
 local files = {
@@ -77,17 +87,62 @@ local chars = {
 	{ name = "Jaina", level = 70, class = "Mage", classFile = "MAGE", race = "Human", faction = "Alliance", zone = S.ZoneText("Dalaran") },
 	{ name = "Bolvar", level = 12, class = "Paladin", classFile = "PALADIN", race = "Human", faction = "Alliance", zone = "Elwynn Forest" },
 };
-check("zone bracket", chars[2].zone == "Dalaran (Northrend)");
+check("zone bracket", chars[2].zone == "Dalaran (Wrath of the Lich King)");
+check("one map, no bracket", S.ZoneText("Orgrimmar") == "Orgrimmar" and S.ZoneText("Elwynn Forest") == "Elwynn Forest"
+	and S.ZoneText("Valley of Trials") == "Valley of Trials" and S.ZoneText("City of Dalaran") == "City of Dalaran"
+	and S.ZoneText("Stormwind City") == "Stormwind City");
 check("zone without bracket", S.ZoneText("Nowhere Special") == "Nowhere Special" and S.ZoneText(nil) == "");
 check("search name", #S.Filter(chars, "thra") == 1);
 check("search level", #S.Filter(chars, "70") == 1 and #S.Filter(chars, "60-80") == 2 and #S.Filter(chars, "13+") == 2);
 check("search class and race", #S.Filter(chars, "human mage") == 1);
 check("search faction", #S.Filter(chars, "alliance") == 2);
-check("search zone bracket", #S.Filter(chars, "northrend") == 1);
+check("search zone bracket", #S.Filter(chars, "wrath") == 1);
 check("search roles", #S.Filter(chars, "heal") == 2 and #S.Filter(chars, "tank") == 1 and #S.Filter(chars, "dps") == 3);
 check("empty search keeps all", #S.Filter(chars, "") == 3);
 check("class from colour", S.ClassFile("Chaman", "|c000070deChaman|r") == "SHAMAN" and S.ClassFile("Death Knight") == "DEATHKNIGHT");
 check("faction from race name", S.Faction("Human") == "Alliance" and S.Faction("Pandaren") == nil and S.Faction("Orc", "DEATHKNIGHT") == "Horde");
+
+-- select: order
+local function names(l) local t = {}; for i, c in ipairs(l) do t[i] = c.name; end return table.concat(t, ","); end
+local roster3 = { { id = 1, name = "A" }, { id = 2, name = "B" }, { id = 3, name = "C" }, { id = 4, name = "New" } };
+check("order: saved first, new at the end, gone skipped", names(S.ApplyOrder(roster3, { "C", "Gone", "A", "B" })) == "C,A,B,New");
+check("order: none saved keeps the client's", names(S.ApplyOrder(roster3, nil)) == "A,B,C,New");
+local moved = S.ApplyOrder(roster3, {});
+check("move down", S.Move(moved, 1, 3) and names(moved) == "B,C,A,New");
+check("move up", S.Move(moved, 4, 1) and names(moved) == "New,B,C,A");
+check("move nowhere", not S.Move(moved, 2, 2) and not S.Move(moved, 2, 9));
+check("index of", S.IndexOf(moved, 3) == 3);
+local utf = "Jaína\tX\nÖrk";
+check("encode round trip", S.Decode(S.Encode(utf)) == utf and not string.find(S.Encode(utf), "[%x~|!]"));
+-- AccountLogin.lua's own format (copied): "tc1:" and hex, read with gmatch("%x%x") over all the rest
+local function tcKey(i) return (i * 7 + 13) % 256; end
+local function tcHide(text) local out = {}; for i = 1, string.len(text) do out[i] = string.format("%02x", (string.byte(text, i) + tcKey(i)) % 256); end return table.concat(out); end
+local function tcShow(hex) local out, i = {}, 1; for pair in string.gmatch(hex, "%x%x") do out[i] = string.char((tonumber(pair, 16) - tcKey(i)) % 256); i = i + 1; end return table.concat(out); end
+local accounts = "tc1:"..tcHide("ryan\tsecret\nalt\t");
+local blob = S.SetOrder(accounts, "ryan", "Temucraft", { "Jaina", "Thrall" });
+check("order kept after the accounts", string.sub(blob, 1, #accounts) == accounts and S.AccountsPart(blob) == accounts);
+check("AccountLogin still reads its accounts", tcShow(string.sub(blob, 5)) == "ryan\tsecret\nalt\t");
+check("order read back (account in any case)", table.concat(S.GetOrder(blob, "RYAN", "Temucraft"), ",") == "Jaina,Thrall");
+blob = S.SetOrder(blob, "alt", "Temucraft", { "Bolvar" });
+blob = S.SetOrder(blob, "ryan", "Temucraft PTR", { "Thrall", "Jaina" });
+check("per account and realm", table.concat(S.GetOrder(blob, "ryan", "Temucraft"), ",") == "Jaina,Thrall"
+	and table.concat(S.GetOrder(blob, "alt", "Temucraft"), ",") == "Bolvar"
+	and table.concat(S.GetOrder(blob, "ryan", "Temucraft PTR"), ",") == "Thrall,Jaina" and S.GetOrder(blob, "alt", "Temucraft PTR") == nil);
+blob = S.SetOrder(blob, "ryan", "Temucraft", { "Thrall", "Jaina", "Bad\tName" });
+check("order replaced, not added", table.concat(S.GetOrder(blob, "ryan", "Temucraft"), ",") == "Thrall,Jaina");
+local noAccounts = S.SetOrder("", "ryan", "Temucraft", { "Jaina" });
+check("no saved accounts: tagged so nothing reads it as names", string.sub(noAccounts, 1, 5) == "tc1:~" and S.AccountsPart(noAccounts) == "");
+check("stock name list kept", S.AccountsPart(S.SetOrder("one|!two|", "a", "r", { "X" })) == "one|!two|");
+check("join without orders", S.JoinSaved("", "") == "" and S.JoinSaved("tc1:", "") == "" and S.JoinSaved(accounts, "") == accounts);
+local big = "";
+for k = 1, 30 do
+	local many = {};
+	for i = 1, 60 do many[i] = "Character"..k.."x"..i; end
+	big = S.SetOrder(big, "acc"..k, "realm", many);
+end
+local _, code = S.SplitSaved(big);
+check("order segment capped", string.len(code) <= S.MAX_SAVED and S.GetOrder(big, "acc30", "realm") and not S.GetOrder(big, "acc1", "realm"));
+check("utf8 cut", S.Utf8Sub("Jaína", 3) == "Jaí" and S.Utf8Len("Jaína") == 5);
 
 ---------------------------------------------------------------------------------------------------------------------
 -- 2. stub load
@@ -133,6 +188,11 @@ function W:GetText() return self.text; end
 function W:GetFrameLevel() return 1; end
 function W:GetButtonState() return "NORMAL"; end
 function W:GetName() return self.name or "stub"; end
+function W:GetTop() return self.top; end
+function W:GetBottom() return self.bottom; end
+function W:GetEffectiveScale() return 1; end
+function W:SetAlpha(a) self.alpha = a; end
+function W:GetStringWidth() return string.len(self.text or "") * 6; end   -- 6 px a byte
 function W:CreateTexture() local r = new("Texture"); table.insert(self.regions, r); return r; end
 function W:CreateFontString() local r = new("FontString"); table.insert(self.regions, r); return r; end
 function W:GetNormalTexture() return new("Texture"); end
@@ -184,8 +244,16 @@ function SetGlueScreen(name) state.screen = name; end
 function IsConnectedToServer() return true; end
 function GetServerName() return "Temucraft"; end
 local roster = {
-	{ "Thrall", "Orc", "Shaman", 80, "Orgrimmar" }, { "Jaina", "Human", "Mage", 80, "Dalaran" }, { "Lorewalker", "Pandaren", "Monk", 10, "The Jade Forest" },
+	{ "Thrall", "Orc", "Shaman", 80, "Orgrimmar" }, { "Jaina", "Human", "Mage", 80, "Dalaran" }, { "Lorewalker", "Pandaren", "Monk", 10, "The Jade Forest of the Very Long Name, Pandaria" },
 };
+-- the client's saved account list (Config.wtf accountList): one saved account and an order (Jaina, Thrall) for it
+local savedList = S.SetOrder("tc1:"..tcHide("ryan\t"), "ryan", "Temucraft", { "Jaina", "Thrall" });
+function GetSavedAccountList() return savedList; end
+function SetSavedAccountList(text) savedList = text; end
+function GetSavedAccountName() return ""; end
+local cursorY = 0;
+function GetCursorPosition() return 0, cursorY; end
+function CharacterSelect_OnKeyDown(self, key) state.stockKey = key; end
 function GetNumCharacters() return #roster; end
 function GetCharacterInfo(i) local c = roster[i]; if ( c ) then return c[1], c[2], c[3], c[4], c[5], 2, false, false, false, false; end end
 function GetSelectBackgroundModel(i) return ({ "Orc", "Human", "HordePandaren" })[i]; end
@@ -214,6 +282,8 @@ CharacterSelect.selectedIndex, CharacterSelect.createIndex = 1, 4;
 CharacterSelectUI = CreateFrame("Frame", "CharacterSelectUI", CharacterSelect);
 CharacterSelectCharacterFrame = CreateFrame("Frame", "CharacterSelectCharacterFrame", CharacterSelectUI);
 CharSelectEnterWorldButton = CreateFrame("Button", "CharSelectEnterWorldButton", CharacterSelectUI);
+AccountLoginAccountEdit = CreateFrame("EditBox", "AccountLoginAccountEdit");
+AccountLoginAccountEdit.text = "Ryan";
 
 -- load both files on the stub client
 local ok1, err1 = pcall(dofile, glue.."TemucraftCharCreate.lua");
@@ -267,15 +337,69 @@ local ok4, err4 = pcall(function() CharacterSelect:Show(); end);
 check("select shows", ok4 or print(err4));
 check("stock list hidden", not CharacterSelectCharacterFrame:IsVisible() and TemucraftCharSelectFrame:IsVisible());
 check("cards", TemucraftSelectCard1:IsShown() and TemucraftSelectCard3:IsShown() and not TemucraftSelectCard4:IsShown());
-check("card zone bracket", TemucraftSelectCard2.zone.text == "Dalaran (Northrend)");
+local function cardNames() local t = {}; for n = 1, 3 do t[n] = _G["TemucraftSelectCard"..n].name.text; end return table.concat(t, ","); end
+check("cards in the saved order, new ones after", cardNames() == "Jaina,Thrall,Lorewalker");
+check("cards keep the client's index", TemucraftSelectCard1.id == 2 and TemucraftSelectCard2.id == 1 and TemucraftSelectCard3.id == 3);
+check("card zone bracket", TemucraftSelectCard1.zone.text == "Dalaran (Wrath of the Lich King)" and TemucraftSelectCard2.zone.text == "Orgrimmar");
+local z = TemucraftSelectCard3.zone.text;
+check("long zone cut to one line", string.sub(z, -3) == "..." and string.len(z) * 6 <= 212 and string.find(z, "^The Jade Forest"));
 check("card crest", TemucraftSelectCard3.crest.shown);
+check("AccountLogin sees only its accounts", GetSavedAccountList() == "tc1:"..tcHide("ryan\t"));
 TemucraftSelectSearch:SetText("horde");
 check("search filters cards", TemucraftSelectCard2:IsShown() and not TemucraftSelectCard3:IsShown() and TemucraftSelectCard1.name.text == "Thrall");
 TemucraftSelectSearch:SetText("");
-TemucraftSelectCard2:Click();
-check("card selects", state.selected == 2);
-TemucraftSelectCard2.scripts.OnDoubleClick(TemucraftSelectCard2);
-check("double click enters", state.entered);
+TemucraftSelectCard1:Click();
+check("card selects by the client's index", state.selected == 2);
+check("arrows on the selected card only", TemucraftSelectCard1Up:IsShown() and not TemucraftSelectCard2Up:IsShown() and TemucraftSelectCard1Up.enabled == false and TemucraftSelectCard1Down.enabled);
+TemucraftSelectCard1.scripts.OnDoubleClick(TemucraftSelectCard1);
+check("double click enters", state.entered and state.selected == 2);
+state.entered = nil;
+TemucraftSelectCard3:Click();
+TemucraftSelectCard3Up:Click();
+check("arrow up moves the selected card", cardNames() == "Jaina,Lorewalker,Thrall" and state.selected == 3 and CharacterSelect.selectedIndex == 3);
+check("order saved for the account and realm", table.concat(S.GetOrder(savedList, "ryan", "Temucraft"), ",") == "Jaina,Lorewalker,Thrall");
+TemucraftSelectCard2Down:Click();
+check("arrow down", cardNames() == "Jaina,Thrall,Lorewalker");
+-- AccountLogin.lua saving its accounts (tcSave) keeps the order
+SetSavedAccountList("tc1:"..tcHide("ryan\tpw"));
+check("saving accounts keeps the order", GetSavedAccountList() == "tc1:"..tcHide("ryan\tpw") and table.concat(S.GetOrder(savedList, "ryan", "Temucraft"), ",") == "Jaina,Thrall,Lorewalker");
+SetSavedAccountList("");
+check("forgetting every account keeps the order", GetSavedAccountList() == "" and S.GetOrder(savedList, "ryan", "Temucraft"));
+-- drag Lorewalker (card 3) onto Jaina (card 1)
+for n = 1, 9 do local b = _G["TemucraftSelectCard"..n]; b.top = 700 - (n - 1) * 58; b.bottom = b.top - 54; end
+state.selected = 1; CharacterSelect.selectedIndex = 1;
+TemucraftSelectCard3.scripts.OnMouseDown(TemucraftSelectCard3);
+TemucraftSelectCard3.scripts.OnDragStart(TemucraftSelectCard3);
+check("dragged card fades, arrows hide", TemucraftSelectCard3.alpha < 1 and not TemucraftSelectCard2Up:IsShown());
+cursorY = 680;
+TemucraftSelectCard3.scripts.OnDragStop(TemucraftSelectCard3);
+TemucraftSelectCard1:Click();   -- the mouse-up that ends the drag
+check("drag moves the card", cardNames() == "Lorewalker,Jaina,Thrall");
+check("ending a drag does not select or enter", state.selected == 1 and not state.entered and TemucraftSelectCard1.alpha == 1);
+TemucraftSelectCard3.scripts.OnMouseDown(TemucraftSelectCard3);
+TemucraftSelectCard3:Click();
+check("a click after a drag selects again", state.selected == 1 and TemucraftSelectCard3.id == 1);
+cursorY = 700 - 58 - 20;   -- drop on Jaina (card 2) from card 3 (Thrall)
+TemucraftSelectCard3.scripts.OnDragStart(TemucraftSelectCard3);
+TemucraftSelectCard3.scripts.OnDragStop(TemucraftSelectCard3);
+check("drag up one", cardNames() == "Lorewalker,Thrall,Jaina");
+cursorY = 10;   -- below every card: the last place
+TemucraftSelectCard1.scripts.OnDragStart(TemucraftSelectCard1);
+TemucraftSelectCard1.scripts.OnDragStop(TemucraftSelectCard1);
+check("drag below the cards: last", cardNames() == "Thrall,Jaina,Lorewalker");
+-- arrow keys follow the cards
+CharacterSelect.selectedIndex = 2; state.selected = 2;   -- Jaina, card 2
+CharacterSelect_OnKeyDown(CharacterSelect, "DOWN");
+check("key down: next card", state.selected == 3);
+CharacterSelect_OnKeyDown(CharacterSelect, "DOWN");
+check("key down wraps", state.selected == 1);
+CharacterSelect_OnKeyDown(CharacterSelect, "ENTER");
+check("other keys: the client's", state.stockKey == "ENTER");
+-- a deleted character drops out, a new one goes last
+table.remove(roster, 2); table.insert(roster, { "Newbie", "Orc", "Warrior", 1, "Durotar" });
+GetSelectBackgroundModel = function(i) return ({ "Orc", "HordePandaren", "Orc" })[i]; end
+UpdateCharacterList();
+check("deleted drop out, new at the end", cardNames() == "Thrall,Lorewalker,Newbie" and TemucraftSelectCard3.id == 3 and TemucraftSelectCard2.id == 2);
 TemucraftSelectEye:Click();
 check("eye hides the interface", not TemucraftCharSelectFrame:IsVisible() and not CharSelectEnterWorldButton:IsVisible() and TemucraftSelectEye:IsShown());
 TemucraftSelectEye:Click();

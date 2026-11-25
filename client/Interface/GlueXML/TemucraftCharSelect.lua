@@ -9,6 +9,11 @@
 	background is the client's too: each character's race scene (SetBackgroundModel in GlueParent.lua, which also
 	applies the player's own picks from Interface\TemucraftScenes.lua).
 
+	The cards can be put in any order: drag one onto another, or use the arrows on the selected card. The order is kept
+	per account and realm in the client's saved account list (Config.wtf accountList, which AccountLogin.lua already
+	uses for the saved accounts) as its own segment after a "~" (see Logic.SplitSaved). The cards always hand the
+	client its own character index (c.id), whatever their order on screen.
+
 	TEMUCRAFT_LOGIN_UI = "classic" (Interface\TemucraftScenes.lua) keeps the old screen.
 --]]
 
@@ -74,8 +79,8 @@ function Logic.Faction(raceName, raceFile)
 	return Logic.RACE_NAMES[string.lower(raceName or "")];
 end
 
--- "Dalaran" -> "Dalaran (Northrend)": the client only gives the zone's name, so a name used more than once gets the
--- bracket of its first row (see docs/zone-brackets.md)
+-- "Dalaran" -> "Dalaran (Wrath of the Lich King)": the client only gives the zone's name, so only names whose zones
+-- are on more than one map get a bracket, the one of their first row (see docs/zone-brackets.md)
 function Logic.ZoneText(zone)
 	if ( not zone or zone == "" ) then
 		return "";
@@ -131,6 +136,186 @@ function Logic.Filter(list, query)
 	return out;
 end
 
+-- Character order -------------------------------------------------------------------------------------------------
+-- The cards in the saved order (a list of names); characters not in it (new ones) come after, in the client's order.
+-- Names in it that are gone (deleted, renamed) are skipped.
+function Logic.ApplyOrder(chars, names)
+	if ( not names or #names == 0 ) then
+		return chars;
+	end
+	local byName, used, out = {}, {}, {};
+	for _, c in ipairs(chars) do
+		if ( c.name and not byName[c.name] ) then byName[c.name] = c; end
+	end
+	for _, name in ipairs(names) do
+		local c = byName[name];
+		if ( c and not used[c] ) then
+			used[c] = true;
+			table.insert(out, c);
+		end
+	end
+	for _, c in ipairs(chars) do
+		if ( not used[c] ) then
+			used[c] = true;
+			table.insert(out, c);
+		end
+	end
+	return out;
+end
+
+function Logic.Names(chars)
+	local out = {};
+	for i, c in ipairs(chars) do out[i] = c.name; end
+	return out;
+end
+
+-- Put chars[from] where chars[to] is (the others move up or down one). Returns true if something moved.
+function Logic.Move(chars, from, to)
+	if ( not from or not to or from == to or not chars[from] or not chars[to] ) then
+		return false;
+	end
+	local c = table.remove(chars, from);
+	table.insert(chars, to, c);
+	return true;
+end
+
+function Logic.IndexOf(chars, id)
+	for i, c in ipairs(chars) do
+		if ( c.id == id ) then return i; end
+	end
+	return nil;
+end
+
+-- The saved account list holds AccountLogin.lua's saved accounts ("tc1:" and hex, or the client's own "name|!name|"),
+-- then "~" and the orders. The orders use only the letters g-v (two per byte), so AccountLogin's hex reader and the
+-- client's own "[%w!]+" reader of that string never mix them up with theirs.
+Logic.ORDER_MARK = "~";
+Logic.ACCOUNTS_TAG = "tc1:";
+Logic.MAX_ORDERS, Logic.MAX_NAMES, Logic.MAX_SAVED = 10, 60, 3000;
+
+function Logic.SplitSaved(raw)
+	raw = raw or "";
+	local at = string.find(raw, Logic.ORDER_MARK, 1, true);
+	if ( not at ) then
+		return raw, "";
+	end
+	return string.sub(raw, 1, at - 1), string.sub(raw, at + 1);
+end
+
+function Logic.JoinSaved(accounts, orders)
+	accounts = accounts or "";
+	if ( not orders or orders == "" ) then
+		return accounts == Logic.ACCOUNTS_TAG and "" or accounts;
+	end
+	if ( accounts == "" ) then
+		accounts = Logic.ACCOUNTS_TAG;   -- keeps the client from reading the orders as its own list of names
+	end
+	return accounts..Logic.ORDER_MARK..orders;
+end
+
+-- what AccountLogin.lua (and the client) get from GetSavedAccountList: the saved accounts only
+function Logic.AccountsPart(raw)
+	local accounts = Logic.SplitSaved(raw);
+	if ( accounts == Logic.ACCOUNTS_TAG ) then
+		return "";
+	end
+	return accounts;
+end
+
+function Logic.Encode(text)
+	return (string.gsub(text, ".", function(ch)
+		local b = string.byte(ch);
+		return string.char(103 + math.floor(b / 16), 103 + b % 16);
+	end));
+end
+
+function Logic.Decode(code)
+	local out = {};
+	for hi, lo in string.gmatch(code or "", "([g-v])([g-v])") do
+		out[#out + 1] = string.char((string.byte(hi) - 103) * 16 + string.byte(lo) - 103);
+	end
+	return table.concat(out);
+end
+
+function Logic.OrderKey(account, realm)
+	return string.upper(account or "").."\t"..(realm or "");
+end
+
+-- orders: { keys = { key, ... } (latest first), [key] = { name, ... } }
+function Logic.ParseOrders(code)
+	local orders = { keys = {} };
+	for line in string.gmatch(Logic.Decode(code), "([^\n]+)") do
+		local account, realm, rest = string.match(line, "^([^\t]*)\t([^\t]*)\t?(.*)$");
+		if ( account ) then
+			local key = Logic.OrderKey(account, realm);
+			if ( not orders[key] ) then
+				local names = {};
+				for name in string.gmatch(rest, "([^\t]+)") do table.insert(names, name); end
+				orders[key] = names;
+				table.insert(orders.keys, key);
+			end
+		end
+	end
+	return orders;
+end
+
+function Logic.SerializeOrders(orders)
+	local lines = {};
+	for _, key in ipairs(orders.keys) do
+		if ( #lines >= Logic.MAX_ORDERS ) then break; end
+		local names = orders[key];
+		if ( names and #names > 0 ) then
+			local keep = {};
+			for i = 1, math.min(#names, Logic.MAX_NAMES) do keep[i] = names[i]; end
+			table.insert(lines, key.."\t"..table.concat(keep, "\t"));
+		end
+	end
+	local code = Logic.Encode(table.concat(lines, "\n"));
+	while ( string.len(code) > Logic.MAX_SAVED and #lines > 1 ) do   -- the oldest go first
+		table.remove(lines);
+		code = Logic.Encode(table.concat(lines, "\n"));
+	end
+	return code;
+end
+
+-- the order saved for an account and realm, from the whole saved account list
+function Logic.GetOrder(raw, account, realm)
+	local _, code = Logic.SplitSaved(raw);
+	return Logic.ParseOrders(code)[Logic.OrderKey(account, realm)];
+end
+
+-- the whole saved account list with this order for an account and realm (it becomes the latest)
+function Logic.SetOrder(raw, account, realm, names)
+	local accounts, code = Logic.SplitSaved(raw);
+	local orders = Logic.ParseOrders(code);
+	local key = Logic.OrderKey(account, realm);
+	for i = #orders.keys, 1, -1 do
+		if ( orders.keys[i] == key ) then table.remove(orders.keys, i); end
+	end
+	local clean = {};
+	for _, name in ipairs(names or {}) do
+		if ( name ~= "" and not string.find(name, "[\t\n]") ) then table.insert(clean, name); end
+	end
+	orders[key] = clean;
+	table.insert(orders.keys, 1, key);
+	return Logic.JoinSaved(accounts, Logic.SerializeOrders(orders));
+end
+
+-- Cut a text to n characters (UTF-8), for the one-line zone
+function Logic.Utf8Sub(text, n)
+	local out, k = {}, 0;
+	for ch in string.gmatch(text or "", "[%z\1-\127\192-\253][\128-\191]*") do
+		k = k + 1;
+		if ( k > n ) then break; end
+		out[k] = ch;
+	end
+	return table.concat(out), k;
+end
+function Logic.Utf8Len(text)
+	local _, n = string.gsub(text or "", "[%z\1-\127\192-\253]", "");
+	return n;
+end
+
 ---------------------------------------------------------------------------------------------------------------------
 -- The screen (only in the client)
 ---------------------------------------------------------------------------------------------------------------------
@@ -139,11 +324,48 @@ if ( not CharacterSelect or not CreateFrame ) then
 end
 
 local CARD_HEIGHT, CARD_WIDTH, VISIBLE = 58, 270, 9;
+local ZONE_WIDTH, ZONE_WIDTH_SELECTED = CARD_WIDTH - 58, CARD_WIDTH - 80;   -- the zone line ends before the crest (and the order arrows)
 local root, holder, cards, eye, menu = nil, nil, {}, nil, nil;
 local list, shown, offset, lastQuery = {}, {}, 0, nil;
 local hiddenByEye;
 local returnToSelect = false;
 local throttle = 0;
+local dragging, dragEnded, dragFrame, dragTick = nil, false, nil, 0;
+
+-- The saved account list: everyone else (AccountLogin.lua's saved accounts, the client's own code) sees it without
+-- the character orders, and keeps them when it writes it (see Logic.SplitSaved)
+local rawGetSaved, rawSetSaved = GetSavedAccountList, SetSavedAccountList;
+if ( rawGetSaved and rawSetSaved ) then
+	GetSavedAccountList = function(...)
+		return Logic.AccountsPart(rawGetSaved(...));
+	end
+	SetSavedAccountList = function(text, ...)
+		if ( type(text) == "string" and not string.find(text, Logic.ORDER_MARK, 1, true) ) then
+			local _, code = Logic.SplitSaved(rawGetSaved() or "");
+			text = Logic.JoinSaved(text, code);
+		end
+		return rawSetSaved(text, ...);
+	end
+end
+
+local function CurrentAccount()
+	local name = AccountLoginAccountEdit and AccountLoginAccountEdit.GetText and AccountLoginAccountEdit:GetText();
+	if ( (not name or name == "") and GetSavedAccountName ) then
+		name = GetSavedAccountName();
+	end
+	return name or "";
+end
+local function CurrentRealm()
+	return GetServerName and GetServerName() or "";
+end
+local function LoadOrder()
+	if ( not rawGetSaved ) then return nil; end
+	return Logic.GetOrder(rawGetSaved() or "", CurrentAccount(), CurrentRealm());
+end
+local function SaveOrder()
+	if ( not rawSetSaved ) then return; end
+	rawSetSaved(Logic.SetOrder(rawGetSaved() or "", CurrentAccount(), CurrentRealm(), Logic.Names(list)));
+end
 
 local function Active()
 	return TEMUCRAFT_LOGIN_UI ~= "classic";
@@ -191,6 +413,7 @@ local function ReadCharacters()
 			});
 		end
 	end
+	list = Logic.ApplyOrder(list, LoadOrder());
 end
 
 local Refresh;
@@ -209,6 +432,116 @@ local function ShowSelected()
 	Clamp();
 end
 
+-- Put character <id> where character <targetId> is, in the saved order
+local function MoveCharacter(id, targetId)
+	if ( Logic.Move(list, Logic.IndexOf(list, id), Logic.IndexOf(list, targetId)) ) then
+		SaveOrder();
+		return true;
+	end
+	return false;
+end
+
+-- The arrows on the selected card: one place up (-1) or down (1) among the cards on screen
+local function MoveSelected(delta)
+	local sel = CharacterSelect.selectedIndex or 0;
+	local i = Logic.IndexOf(shown, sel);
+	local target = i and shown[i + delta];
+	if ( target ) then
+		MoveCharacter(sel, target.id);
+		PlaySound("igMainMenuOptionCheckBoxOn");
+	end
+	Refresh();
+end
+
+-- One line: cut with "..." when it is wider than the card leaves room for
+local function SetOneLine(fs, text, width)
+	fs:SetText(text);
+	if ( not fs.GetStringWidth or (fs:GetStringWidth() or 0) <= width ) then
+		return;
+	end
+	local lo, hi = 0, Logic.Utf8Len(text);
+	while ( lo < hi ) do
+		local mid = math.floor((lo + hi + 1) / 2);
+		fs:SetText(Logic.Utf8Sub(text, mid).."...");
+		if ( (fs:GetStringWidth() or 0) <= width ) then lo = mid; else hi = mid - 1; end
+	end
+	fs:SetText(Logic.Utf8Sub(text, lo).."...");
+end
+
+-- Dragging a card: the card under the cursor, and whether the cursor is above the first or below the last card
+local function CardUnderCursor()
+	if ( not GetCursorPosition ) then return nil; end
+	local _, y = GetCursorPosition();
+	local first, last;
+	for n = 1, VISIBLE do
+		local b = cards[n];
+		if ( b and b:IsShown() and b.id ) then
+			local scale = (b.GetEffectiveScale and b:GetEffectiveScale()) or 1;
+			local top, bottom = b:GetTop(), b:GetBottom();
+			if ( top and bottom and y ) then
+				local cy = y / scale;
+				local gap = (CARD_HEIGHT - (top - bottom)) / 2 + 1;
+				if ( cy <= top + gap and cy >= bottom - gap ) then
+					return b;
+				end
+				if ( not first ) then first = b; if ( cy > top ) then return b, "above"; end end
+				last = b;
+			end
+		end
+	end
+	if ( last ) then
+		return last, "below";
+	end
+	return nil;
+end
+
+local function DragUpdate(_, elapsed)
+	if ( not dragging ) then return; end
+	local b, edge = CardUnderCursor();
+	dragTick = dragTick + (elapsed or 0);
+	if ( edge and dragTick > 0.15 ) then   -- held above or below the cards: scroll
+		dragTick = 0;
+		offset = offset + ((edge == "above") and -1 or 1);
+		Clamp();
+		Refresh(true);
+	end
+	local line = root.dropLine;
+	if ( b and b.id and b.id ~= dragging ) then
+		local from, to = Logic.IndexOf(list, dragging), Logic.IndexOf(list, b.id);
+		line:ClearAllPoints();
+		if ( from and to and to > from ) then
+			line:SetPoint("TOP", b, "BOTTOM", 0, 1);
+		else
+			line:SetPoint("BOTTOM", b, "TOP", 0, -1);
+		end
+		line:Show();
+	else
+		line:Hide();
+	end
+end
+
+local function StartDrag(self)
+	if ( not self.id or #list < 2 ) then return; end
+	dragging, dragTick = self.id, 0;
+	HideTooltip();
+	dragFrame:Show();
+	Refresh(true);
+end
+
+local function StopDrag(self)
+	if ( not dragging ) then return; end
+	local id = dragging;
+	local target = CardUnderCursor();
+	dragging = nil;
+	dragEnded = true;   -- the click that ends a drag does not select
+	dragFrame:Hide();
+	root.dropLine:Hide();
+	if ( target and target.id and target.id ~= id and MoveCharacter(id, target.id) ) then
+		PlaySound("igMainMenuOptionCheckBoxOn");
+	end
+	Refresh(true);
+end
+
 local function MakeCard(n)
 	local b = CreateFrame("Button", "TemucraftSelectCard"..n, root.list);
 	b:SetWidth(CARD_WIDTH); b:SetHeight(CARD_HEIGHT - 4);
@@ -222,7 +555,7 @@ local function MakeCard(n)
 	b.info:SetPoint("TOPLEFT", b.name, "BOTTOMLEFT", 0, -2);
 	b.zone = b:CreateFontString(nil, "OVERLAY", "GlueFontDisableSmall");
 	b.zone:SetPoint("TOPLEFT", b.info, "BOTTOMLEFT", 0, -2);
-	b.zone:SetWidth(CARD_WIDTH - 60); b.zone:SetJustifyH("LEFT");
+	b.zone:SetWidth(ZONE_WIDTH); b.zone:SetJustifyH("LEFT");   -- one line: SetOneLine cuts it to fit
 	b.crest = b:CreateTexture(nil, "ARTWORK");
 	b.crest:SetWidth(36); b.crest:SetHeight(36);
 	b.crest:SetPoint("RIGHT", b, "RIGHT", -6, 0);
@@ -237,7 +570,13 @@ local function MakeCard(n)
 	hl:SetBlendMode("ADD");
 	hl:SetAlpha(0.5);
 	hl:SetAllPoints(b.selected);
+	-- c.id is the client's own index of the character, whatever the card's place on screen
+	b:SetScript("OnMouseDown", function() dragEnded = false; end);
 	b:SetScript("OnClick", function(self)
+		if ( dragEnded ) then
+			dragEnded = false;
+			return;
+		end
 		if ( self.id and self.id ~= CharacterSelect.selectedIndex ) then
 			if ( CharacterSelectUI ) then CharacterSelectUI.id = self.id; end
 			CharacterSelect_SelectCharacter(self.id);
@@ -245,11 +584,34 @@ local function MakeCard(n)
 		Refresh();
 	end);
 	b:SetScript("OnDoubleClick", function(self)
+		if ( dragEnded or dragging ) then
+			return;
+		end
 		if ( self.id and self.id ~= CharacterSelect.selectedIndex ) then
 			CharacterSelect_SelectCharacter(self.id);
 		end
 		CharacterSelect_EnterWorld();
 	end);
+	if ( b.RegisterForDrag ) then
+		b:RegisterForDrag("LeftButton");
+		b:SetScript("OnDragStart", StartDrag);
+		b:SetScript("OnDragStop", StopDrag);
+	end
+	-- the order arrows (selected card only)
+	for _, dir in ipairs({ { "up", -1, "Up", 8 }, { "down", 1, "Down", -8 } }) do
+		local a = CreateFrame("Button", "TemucraftSelectCard"..n..dir[3], b);
+		a:SetWidth(20); a:SetHeight(20);
+		a:SetPoint("RIGHT", b, "RIGHT", -44, dir[4]);
+		a:SetNormalTexture("Interface\\Buttons\\UI-ScrollBar-Scroll"..dir[3].."Button-Up");
+		a:SetPushedTexture("Interface\\Buttons\\UI-ScrollBar-Scroll"..dir[3].."Button-Down");
+		a:SetDisabledTexture("Interface\\Buttons\\UI-ScrollBar-Scroll"..dir[3].."Button-Disabled");
+		a:SetHighlightTexture("Interface\\Buttons\\UI-ScrollBar-Scroll"..dir[3].."Button-Highlight", "ADD");
+		a:SetScript("OnClick", function() MoveSelected(dir[2]); end);
+		a:SetScript("OnEnter", function(self) Tooltip(self, (dir[2] < 0) and "Move up" or "Move down"); end);
+		a:SetScript("OnLeave", HideTooltip);
+		a:Hide();
+		b[dir[1]] = a;
+	end
 	-- paid customization / race / faction change
 	b.paid = CreateFrame("Button", nil, b);
 	b.paid:SetWidth(28); b.paid:SetHeight(28);
@@ -302,7 +664,9 @@ function Refresh(keepOffset)
 			else
 				b.info:SetText("Level "..c.level.." "..class);
 			end
-			b.zone:SetText(c.zone);
+			local width = (c.id == sel) and ZONE_WIDTH_SELECTED or ZONE_WIDTH;
+			b.zone:SetWidth(width);
+			SetOneLine(b.zone, c.zone or "", width);
 			if ( c.faction == "Alliance" or c.faction == "Horde" ) then
 				b.crest:SetTexture("Interface\\TargetingFrame\\UI-PVP-"..c.faction);
 				b.crest:SetTexCoord(0, 0.625, 0, 0.625);
@@ -312,6 +676,11 @@ function Refresh(keepOffset)
 			end
 			if ( c.paid ) then b.paid:Show(); else b.paid:Hide(); end
 			if ( c.id == sel ) then b.selected:Show(); else b.selected:Hide(); end
+			local pos = (c.id == sel and not dragging and #shown > 1) and (offset + n) or nil;
+			if ( pos ) then b.up:Show(); b.down:Show(); else b.up:Hide(); b.down:Hide(); end
+			if ( pos == 1 ) then b.up:Disable(); else b.up:Enable(); end
+			if ( pos == #shown ) then b.down:Disable(); else b.down:Enable(); end
+			b:SetAlpha((dragging and c.id == dragging) and 0.45 or 1);
 			b:Show();
 		else
 			b:Hide();
@@ -460,6 +829,13 @@ local function Build()
 		b:SetPoint("TOP", root.list, "TOP", 0, -52 - (n - 1) * CARD_HEIGHT);
 		cards[n] = b;
 	end
+	root.dropLine = root.list:CreateTexture(nil, "OVERLAY");
+	root.dropLine:SetTexture(1, 0.82, 0, 0.9);
+	root.dropLine:SetWidth(CARD_WIDTH - 8); root.dropLine:SetHeight(2);
+	root.dropLine:Hide();
+	dragFrame = CreateFrame("Frame", nil, root);
+	dragFrame:SetScript("OnUpdate", DragUpdate);
+	dragFrame:Hide();
 	root.empty = root.list:CreateFontString(nil, "OVERLAY", "GlueFontDisableSmall");
 	root.empty:SetPoint("TOP", root.list, "TOP", 0, -70);
 	root.create = SmallButton("TemucraftSelectCreate", root.list, CREATE_NEW_CHARACTER or "Create New Character", 180, function()
@@ -538,6 +914,23 @@ for _, name in ipairs({ "UpdateCharacterList", "UpdateCharacterSelection" }) do
 			end
 			return r;
 		end
+	end
+end
+
+-- The arrow keys go through the cards in their order on screen (the client's own go by its index)
+local oldKeyDown = CharacterSelect_OnKeyDown;
+if ( oldKeyDown ) then
+	CharacterSelect_OnKeyDown = function(self, key, ...)
+		local step = (key == "UP" or key == "LEFT") and -1 or ((key == "DOWN" or key == "RIGHT") and 1) or nil;
+		if ( step and Active() and root and root:IsShown() and #shown > 1 ) then
+			local i = Logic.IndexOf(shown, CharacterSelect.selectedIndex or 0);
+			local c = i and shown[(i - 1 + step) % #shown + 1] or shown[1];
+			if ( CharacterSelectUI ) then CharacterSelectUI.id = c.id; end
+			CharacterSelect_SelectCharacter(c.id);
+			Refresh();
+			return;
+		end
+		return oldKeyDown(self, key, ...);
 	end
 end
 
