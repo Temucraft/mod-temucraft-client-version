@@ -108,9 +108,12 @@ the "Classic spellbook" checkbox) and `/ttf classic` (the "Classic talents" chec
   (stock tree art, role, description, preferred weapon, primary stat, two sample abilities); "Active" is the tree with the
   most points in the active talent group and Activate switches talent groups (dual spec). The Talents tab shows the
   three trees side by side and works through the client's talent preview (`previewTalents` is turned on): clicks add
-  preview points, "Apply Changes" learns them, "Reset Preview" drops them. Search lights up matching talents. Loadouts
-  save the build to a name and load one into the preview (learned points still need a respec or the other talent
-  group). Glyph sockets along the bottom (use a glyph, click a socket; shift-right-click removes). The tooltip under the
+  preview points, "Apply Changes" learns them, "Reset Preview" drops them. Search lights up matching talents. The Loadouts
+  menu lists the server's loadout slots ([mod-temucraft-loadouts](https://github.com/Temucraft/mod-temucraft-loadouts),
+  addon prefix `TLO`): each slot can be loaded (the server swaps the build, its glyphs and action bars into the active
+  talent group, no gold cost), saved to, renamed, or unlocked for Temucraft Tokens or gold (with a confirm dialog);
+  `.loadout` does the same from chat (for DragonUI's talent window). "Preview builds" are the older client-side builds
+  that only load into the preview; without the server module they are the whole menu. Glyph sockets along the bottom (use a glyph, click a socket; shift-right-click removes). The tooltip under the
   mouse updates after each click. Some Temucraft talents sit between a talent and its prerequisite in the same column:
   the stock `TalentFrame_DrawLines` broke on those (its "blocked vertically" message indexes the wrong cell), so the
   classic frame failed, and once Blizzard_TalentUI was loaded so did every preview click here. This file replaces it
@@ -282,7 +285,7 @@ hidden holder and ours sit on top. The "Classic" choice here is `TEMUCRAFT_LOGIN
 Stub tests (no client; run from the module folder with Lua 5.1) for the grouping, search, paging, collection and
 loadout logic, the player UI, the login screens and the protocols: `lua5.1 client/tests/spellbook_test.lua`,
 `collections_test.lua`, `interface_test.lua`, `taxi_test.lua`, `issues_test.lua`, `guild_test.lua`,
-`reputation_test.lua`, `glue_test.lua` and `dragonui_test.lua` (the DragonUI step-aside switch; all in `client/tests/`). Also check every file with `luac5.1 -p`.
+`reputation_test.lua`, `glue_test.lua`, `loadouts_test.lua` (the server loadouts protocol) and `dragonui_test.lua` (the DragonUI step-aside switch; all in `client/tests/`). Also check every file with `luac5.1 -p`.
 
 ## Also in this module
 

@@ -5,9 +5,11 @@
 --     around this tree (or is still empty).
 --   Talents: the three trees side by side on their backgrounds, with the points spent and left. Clicks go to the
 --     client's own talent preview (previewTalents): left click adds a point, right click takes one back, nothing is
---     learned until "Apply Changes". A search box lights up the talents whose name or tooltip match. Loadouts save the
---     build to a name (per character, TemucraftStore) and load one back into the preview; learned points can only be
---     taken back by a respec at a trainer or by switching talent groups. The glyph sockets are along the bottom.
+--     learned until "Apply Changes". A search box lights up the talents whose name or tooltip match. The Loadouts
+--     menu lists the server's loadout slots (mod-temucraft-loadouts: save, load, rename, unlock; loading swaps the
+--     build, its glyphs and action bars into the active talent group with no gold cost). The older "Preview builds"
+--     save a build to a name (per character, TemucraftStore) and load it back into the preview only; without the
+--     server module they are the whole menu. The glyph sockets are along the bottom.
 -- Applying, resetting and switching talent groups are refused in combat, like the stock frame.
 -- loadouts: "name=ranks.ranks.ranks@name=...", one digit per talent (per character)
 TemucraftTalentsLogic = {};
@@ -31,6 +33,84 @@ end
 function TemucraftTalentsLogic.CleanName(name)
 	name = string.gsub(name or "", "[^%w %-_']", "");
 	return string.sub(strtrim and strtrim(name) or name, 1, 24);
+end
+
+-- Server loadouts (mod-temucraft-loadouts, addon prefix TLO): up to 10 slots kept by the server, each with the
+-- talents, glyphs and action bars of the active talent group; loading swaps one into the active group (no gold).
+-- The server sends S~enabled~slots~castMs~cooldown~actions~glyphs~tokenItem, L~n~state~tokens~gold~a/b/c~name per
+-- slot, E; C~n~ms (loading), X~n (interrupted), D~n (loaded). Slot states: 0 locked, 1 locked and next to buy,
+-- 2 needs dual spec, 3 empty, 4 saved. Without the module (no answer) the menu keeps the local preview builds.
+TemucraftLoadoutsLogic = { PREFIX = "TLO", server = nil, slots = {}, loading = nil };
+local LO = TemucraftLoadoutsLogic;
+function LO.Fields(text, max)
+	local out, pos = {}, 1;
+	while ( true ) do
+		if ( max and #out == max - 1 ) then table.insert(out, string.sub(text, pos)); break; end
+		local at = string.find(text, "~", pos, true);
+		if ( not at ) then table.insert(out, string.sub(text, pos)); break; end
+		table.insert(out, string.sub(text, pos, at - 1));
+		pos = at + 1;
+	end
+	return out;
+end
+-- returns the record kind
+function LO.OnMessage(text)
+	local kind = string.match(text or "", "^[^~]*");
+	if ( kind == "S" ) then
+		local f = LO.Fields(text, 8);
+		LO.pending = { enabled = f[2] == "1", count = tonumber(f[3]) or 0, castMs = tonumber(f[4]) or 0,
+			cooldown = tonumber(f[5]) or 0, actions = f[6] == "1", glyphs = f[7] == "1", tokenItem = tonumber(f[8]) or 0 };
+		LO.pendingSlots = {};
+	elseif ( kind == "L" and LO.pending ) then
+		local f = LO.Fields(text, 7);
+		local n = tonumber(f[2]);
+		if ( n ) then
+			LO.pendingSlots[n] = { slot = n, state = tonumber(f[3]) or 0, tokens = tonumber(f[4]) or 0, gold = tonumber(f[5]) or 0,
+				trees = f[6] or "0/0/0", name = f[7] or ("Loadout "..n) };
+		end
+	elseif ( kind == "E" and LO.pending ) then
+		LO.server, LO.slots = LO.pending, LO.pendingSlots;
+		LO.pending, LO.pendingSlots = nil, nil;
+	elseif ( kind == "C" ) then
+		local f = LO.Fields(text, 3);
+		LO.loading = { slot = tonumber(f[2]), ms = tonumber(f[3]) or 0 };
+	elseif ( kind == "X" or kind == "D" ) then
+		LO.loading = nil;
+	end
+	return kind;
+end
+function LO.Active() return LO.server ~= nil and LO.server.enabled; end
+function LO.Unlocked(s) return s and (s.state == 3 or s.state == 4); end
+function LO.Gold(n)
+	local s = tostring(n or 0);
+	while ( true ) do
+		local k;
+		s, k = string.gsub(s, "^(%d+)(%d%d%d)", "%1,%2");
+		if ( k == 0 ) then break; end
+	end
+	return s.." gold";
+end
+function LO.Cost(s)
+	if ( s.tokens == 0 and s.gold == 0 ) then return "free"; end
+	local parts = {};
+	if ( s.tokens > 0 ) then table.insert(parts, s.tokens.." Temucraft Token"..(s.tokens == 1 and "" or "s")); end
+	if ( s.gold > 0 ) then table.insert(parts, LO.Gold(s.gold)); end
+	return table.concat(parts, " or ");
+end
+function LO.Label(s)
+	if ( s.state == 4 ) then return s.slot..". "..s.name.."  |cff999999("..s.trees..")|r"; end
+	if ( s.state == 3 ) then return s.slot..". "..s.name.."  |cff999999(empty)|r"; end
+	if ( s.state == 2 ) then return "|cff999999"..s.slot..". Needs Dual Talent Specialization|r"; end
+	if ( s.state == 1 ) then return "|cff999999"..s.slot..". Locked|r  |cffffd100"..LO.Cost(s).."|r"; end
+	return "|cff666666"..s.slot..". Locked|r";
+end
+-- a request to the server; nil when the record is not valid
+function LO.Request(kind, slot, extra)
+	if ( kind == "HELLO" or kind == "LIST" or kind == "CANCEL" ) then return kind; end
+	if ( not tonumber(slot) ) then return nil; end
+	local text = kind.."~"..slot;
+	if ( extra ) then text = text.."~"..string.gsub(extra, "[~|\t]", " "); end
+	return string.sub(text, 1, 240);
 end
 if ( not CreateFrame ) then return; end   -- tests load only the logic
 local P = TemucraftTalentsLogic;
@@ -593,41 +673,144 @@ StaticPopupDialogs["TEMUCRAFT_SAVE_LOADOUT"] = {
 	hideOnEscape = 1, timeout = 0, exclusive = 1, whileDead = 1,
 };
 
+-- the server loadouts (mod-temucraft-loadouts)
+local function SendLoadouts(kind, slot, extra)
+	local text = LO.Request(kind, slot, extra);
+	if ( text ) then SendAddonMessage(LO.PREFIX, text, "WHISPER", UnitName("player")); end
+end
+StaticPopupDialogs["TEMUCRAFT_LOADOUT_UNLOCK"] = {
+	text = "Unlock loadout slot %s for %s?", button1 = YES or "Yes", button2 = NO or "No",
+	OnAccept = function(self, data) SendLoadouts("UNLOCK", data.slot, data.currency); end,
+	hideOnEscape = 1, timeout = 0, exclusive = 1, whileDead = 1,
+};
+StaticPopupDialogs["TEMUCRAFT_LOADOUT_OVERWRITE"] = {
+	text = "Save your learned talents, glyphs and action bars to loadout %s (%s)? This replaces what it holds.",
+	button1 = SAVE or "Save", button2 = CANCEL,
+	OnAccept = function(self, data) SendLoadouts("SAVE", data); end,
+	hideOnEscape = 1, timeout = 0, exclusive = 1, whileDead = 1,
+};
+StaticPopupDialogs["TEMUCRAFT_LOADOUT_RENAME"] = {
+	text = "Name of loadout %s:", button1 = ACCEPT or "Accept", button2 = CANCEL,
+	hasEditBox = 1, maxLetters = 24,
+	OnShow = function(self) _G[self:GetName().."EditBox"]:SetText(""); _G[self:GetName().."EditBox"]:SetFocus(); end,
+	OnAccept = function(self, data)
+		local name = strtrim(_G[self:GetName().."EditBox"]:GetText() or "");
+		if ( name ~= "" ) then SendLoadouts("RENAME", data, name); end
+	end,
+	EditBoxOnEnterPressed = function(self)
+		local parent = self:GetParent();
+		StaticPopupDialogs["TEMUCRAFT_LOADOUT_RENAME"].OnAccept(parent, parent.data);
+		parent:Hide();
+	end,
+	EditBoxOnEscapePressed = function(self) self:GetParent():Hide(); end,
+	hideOnEscape = 1, timeout = 0, exclusive = 1, whileDead = 1,
+};
+
 local dropdown = CreateFrame("Frame", "TemucraftTalentsLoadoutDropDown", talents, "UIDropDownMenuTemplate");
 dropdown:SetPoint("TOPLEFT", 0, -12);
 UIDropDownMenu_SetWidth(dropdown, 170);
-UIDropDownMenu_Initialize(dropdown, function(self, level)
-	local info;
-	if ( level == 2 ) then
+local function Button(level, text, func, disabled, tooltip)
+	local info = UIDropDownMenu_CreateInfo();
+	info.text = text; info.notCheckable = 1; info.func = func; info.disabled = disabled;
+	if ( tooltip ) then info.tooltipTitle = text; info.tooltipText = tooltip; end
+	UIDropDownMenu_AddButton(info, level);
+end
+-- the local preview builds (per character, TemucraftStore); with the server loadouts they are a submenu
+local function LocalMenu(level, deleteLevel)
+	if ( UIDROPDOWNMENU_MENU_VALUE == "localdel" and level == deleteLevel ) then
 		for k, l in ipairs(Loadouts()) do
-			info = UIDropDownMenu_CreateInfo();
-			info.text = l.name; info.notCheckable = 1;
-			info.func = function()
-				local list = Loadouts(); table.remove(list, k); SaveLoadouts(list); CloseDropDownMenus();
-			end;
-			UIDropDownMenu_AddButton(info, level);
+			Button(level, l.name, function() local list = Loadouts(); table.remove(list, k); SaveLoadouts(list); CloseDropDownMenus(); end);
 		end
 		return;
 	end
 	local list = Loadouts();
 	for _, l in ipairs(list) do
-		info = UIDropDownMenu_CreateInfo();
-		info.text = l.name; info.notCheckable = 1;
-		info.tooltipTitle = l.name; info.tooltipText = "Loads it into the preview; press Apply Changes to learn it.";
-		info.func = function() LoadBuild(l); end;
+		Button(level, l.name, function() LoadBuild(l); end, nil, "Loads it into the preview; press Apply Changes to learn it.");
+	end
+	Button(level, "Save current talents...", function() StaticPopup_Show("TEMUCRAFT_SAVE_LOADOUT"); end);
+	if ( #list > 0 ) then
+		local info = UIDropDownMenu_CreateInfo();
+		info.text = "Delete"; info.notCheckable = 1; info.hasArrow = 1; info.value = "localdel";
 		UIDropDownMenu_AddButton(info, level);
+	end
+end
+local function SlotMenu(level, s)
+	if ( LO.Unlocked(s) ) then
+		local busy = LO.loading ~= nil or InCombatLockdown();
+		Button(level, "Load", function() CloseDropDownMenus(); SendLoadouts("LOAD", s.slot); end, s.state ~= 4 or busy,
+			"Swaps this build into your active talent group (no gold cost). Stand still for a moment, out of combat.");
+		Button(level, "Save current talents here", function()
+			CloseDropDownMenus();
+			if ( s.state == 4 ) then StaticPopup_Show("TEMUCRAFT_LOADOUT_OVERWRITE", s.slot, s.name, s.slot);
+			else SendLoadouts("SAVE", s.slot); end
+		end, LO.loading ~= nil, "Learned talents only: apply your preview first.");
+		Button(level, "Rename...", function() CloseDropDownMenus(); StaticPopup_Show("TEMUCRAFT_LOADOUT_RENAME", s.slot, nil, s.slot); end);
+	elseif ( s.state == 1 ) then
+		local function Unlock(currency, cost)
+			CloseDropDownMenus();
+			StaticPopup_Show("TEMUCRAFT_LOADOUT_UNLOCK", s.slot, cost, { slot = s.slot, currency = currency });
+		end
+		if ( s.tokens == 0 and s.gold == 0 ) then
+			Button(level, "Unlock (free)", function() Unlock("token", "free"); end);
+		end
+		if ( s.tokens > 0 ) then
+			local cost = s.tokens.." Temucraft Token"..(s.tokens == 1 and "" or "s");
+			Button(level, "Unlock for "..cost, function() Unlock("token", cost); end);
+		end
+		if ( s.gold > 0 ) then
+			Button(level, "Unlock for "..LO.Gold(s.gold), function() Unlock("gold", LO.Gold(s.gold)); end);
+		end
+	elseif ( s.state == 2 ) then
+		Button(level, "Learn Dual Talent Specialization at your class trainer", nil, 1);
+	else
+		Button(level, "Unlock the slots before it first", nil, 1);
+	end
+end
+UIDropDownMenu_Initialize(dropdown, function(self, level)
+	level = level or 1;
+	if ( not LO.Active() ) then LocalMenu(level, 2); return; end
+	if ( level >= 2 ) then
+		local value = UIDROPDOWNMENU_MENU_VALUE;
+		if ( value == "local" or value == "localdel" ) then LocalMenu(level, 3); return; end
+		if ( LO.slots[value] ) then SlotMenu(level, LO.slots[value]); end
+		return;
+	end
+	local info = UIDropDownMenu_CreateInfo();
+	info.text = "Talent loadouts"; info.isTitle = 1; info.notCheckable = 1;
+	UIDropDownMenu_AddButton(info, level);
+	for n = 1, LO.server.count do
+		local s = LO.slots[n];
+		if ( s ) then
+			info = UIDropDownMenu_CreateInfo();
+			info.text = LO.Label(s); info.notCheckable = 1; info.hasArrow = 1; info.value = n;
+			UIDropDownMenu_AddButton(info, level);
+		end
 	end
 	info = UIDropDownMenu_CreateInfo();
-	info.text = "Save current talents..."; info.notCheckable = 1;
-	info.func = function() StaticPopup_Show("TEMUCRAFT_SAVE_LOADOUT"); end;
+	info.text = "Preview builds"; info.notCheckable = 1; info.hasArrow = 1; info.value = "local";
+	info.tooltipTitle = info.text; info.tooltipText = "Builds kept by this client, loaded into the preview only.";
 	UIDropDownMenu_AddButton(info, level);
-	if ( #list > 0 ) then
-		info = UIDropDownMenu_CreateInfo();
-		info.text = "Delete"; info.notCheckable = 1; info.hasArrow = 1;
-		UIDropDownMenu_AddButton(info, level);
-	end
 end);
 UIDropDownMenu_SetText(dropdown, "Loadouts");
+local function LoadoutText()
+	local l = LO.loading and LO.slots[LO.loading.slot];
+	UIDropDownMenu_SetText(dropdown, l and ("Loading "..l.name.."...") or "Loadouts");
+end
+local loadoutEvents = CreateFrame("Frame");
+loadoutEvents:RegisterEvent("CHAT_MSG_ADDON");
+loadoutEvents:RegisterEvent("PLAYER_ENTERING_WORLD");
+loadoutEvents:SetScript("OnEvent", function(self, event, prefix, text, channel, sender)
+	if ( event == "PLAYER_ENTERING_WORLD" ) then
+		if ( not self.asked ) then self.asked = true; SendLoadouts("HELLO"); end
+		return;
+	end
+	if ( prefix ~= LO.PREFIX or channel ~= "WHISPER" or sender ~= UnitName("player") ) then return; end
+	local kind = LO.OnMessage(text);
+	if ( kind == "E" or kind == "C" or kind == "X" or kind == "D" ) then
+		LoadoutText();
+		if ( kind == "E" and UIDROPDOWNMENU_OPEN_MENU == dropdown ) then CloseDropDownMenus(); end
+	end
+end);
 
 local classic = CreateFrame("CheckButton", "TemucraftTalentsClassicCheck", talents, "UICheckButtonTemplate");
 classic:SetWidth(24); classic:SetHeight(24);
@@ -643,6 +826,7 @@ end);
 TemucraftPlayerSpells_AddPanel(TAB_TALENTS, talents, function()
 	-- the retail way: nothing is learned until Apply Changes
 	if ( not GetCVarBool("previewTalents") ) then SetCVar("previewTalents", "1"); end
+	if ( LO.server ) then SendLoadouts("LIST"); end
 	UpdateTalents();
 end);
 
