@@ -22,6 +22,14 @@ Temucraft interface into the client so module windows behave like Blizzard's own
   ([mod-temucraft-expeditions](https://github.com/Temucraft/mod-temucraft-expeditions)). The file is the same as the AddOns copy in mod-temucraft-expeditions, which steps aside when this one is loaded.
 - [`Interface\FrameXML\Temucraft\TemucraftSpellInfo.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftSpellInfo.lua): extra lines on your spell tooltips (spell book and action bars): your bonuses (damage, cooldown, cost, cast time), the base and the real values (damage, healing, cost, cast, cooldown, range, duration; green better, red worse), one line per talent, glyph or other effect with its rank and what it does to the spell ("Improved Wrath (5/5): -0.5 sec cast time"), its crit chance and crit damage, and what Temucraft changed from stock 3.3.5, answered by [mod-temucraft-classes](https://github.com/Temucraft/mod-temucraft-classes) (addon messages `TSI`).
 - [`Interface\FrameXML\Temucraft\TemucraftTaxi.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftTaxi.lua): retail-style flight map: the flight points on the way to the ones you know (sent by [mod-temucraft-travel](https://github.com/Temucraft/mod-temucraft-travel), addon messages `TTX`) are small grey route dots that can't be picked; hovering one says it is on the way.
+- [`Interface\FrameXML\Temucraft\TemucraftIssues.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftIssues.lua): the retail-style Issue Reporter ([mod-temucraft-issues](https://github.com/Temucraft/mod-temucraft-issues), addon messages `TIR`):
+  a bug button above the action bars (Shift-drag moves it; menu Zone Bug / General Bug / Feedback / Suggestion, also
+  `/issue`), "Press F6 to submit an issue for this Spell" (Item, Quest, Creature) at the bottom of tooltips, quest log
+  titles, quest tracker lines and world map quest POIs, and a dialog per spell, item, quest or creature. Reports go
+  out with the stock `ReportBug` / `ReportSuggestion` as FeedbackUI-format JSON (the client adds its own system
+  block), so they land in `bugreport` for the AzerothCore dashboard. Shown only while the server says reporting is on.
+  The key is a click binding (`CLICK TemucraftIssueKeyButton:LeftButton`; this patch has no `Bindings.xml` of its
+  own): F6 when free, `/issuekey <key>` or `/issuekey none` to change it. `TemucraftIssueBug.blp` is its icon.
 - `FrameXML.toc` and `GlueXML.toc`: the client's own lists (copies in `client/base/`) with those files added. They
   come from the highest-priority patches of the client (FrameXML.toc from patch-enUS-3.MPQ, GlueXML.toc from
   patch-enUS-C.MPQ); refresh `client/base/` if another patch changes them.
@@ -142,7 +150,8 @@ Interface Options > Temucraft (or `/tui`) has a "Classic" box for each piece and
 
 Tests of the grouping, search, paging, collection and loadout logic, and of the player UI logic:
 `lua5.1 client/tests/spellbook_test.lua`, `lua5.1 client/tests/collections_test.lua`,
-`lua5.1 client/tests/interface_test.lua` and `lua5.1 client/tests/taxi_test.lua` (from the module folder).
+`lua5.1 client/tests/interface_test.lua`, `lua5.1 client/tests/taxi_test.lua` and
+`lua5.1 client/tests/issues_test.lua` (from the module folder).
 
 ## Also in this module
 
