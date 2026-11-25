@@ -35,9 +35,14 @@ FRAME_FILES = ["Temucraft\\TemucraftCore.lua", "Temucraft\\TemucraftMissions.lua
                "Temucraft\\TemucraftExpeditions.lua", "Temucraft\\TemucraftSpellInfo.lua",
                # after TemucraftSpellTabs.lua (the spell flags) and TemucraftAutoLearn.lua (the Train button)
                "Temucraft\\TemucraftStore.lua", "Temucraft\\TemucraftPlayerSpells.lua",
-               "Temucraft\\TemucraftSpellBook.lua", "Temucraft\\TemucraftTalentsData.lua",
+               "Temucraft\\TemucraftFlyouts.lua", "Temucraft\\TemucraftSpellBook.lua", "Temucraft\\TemucraftTalentsData.lua",
                "Temucraft\\TemucraftTalents.lua", "Temucraft\\TemucraftCollectionsData.lua",
-               "Temucraft\\TemucraftCollections.lua"]
+               "Temucraft\\TemucraftCollections.lua",
+               # the player UI overhaul (after the spellbook and collections they open)
+               "Temucraft\\TemucraftInterface.lua", "Temucraft\\TemucraftTooltips.lua",
+               "Temucraft\\TemucraftCharacter.lua", "Temucraft\\TemucraftMicroMenu.lua",
+               "Temucraft\\TemucraftAddOns.lua", "Temucraft\\TemucraftChangelog.lua",
+               "Temucraft\\TemucraftGameMenu.lua"]
 GLUE_FILES = ["TemucraftVersion.lua"]
 # Interface\\<file> (listed as ..\\<file> in GlueXML.toc, like LoginUI.lua): the launcher writes its own loose copy
 ROOT_GLUE_FILES = ["TemucraftScenes.lua"]

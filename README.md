@@ -106,8 +106,42 @@ the "Classic spellbook" checkbox) and `/ttf classic` (the "Classic talents" chec
   loadouts (per character) and the classic / new choice (per account) are kept by mod-temucraft-account-wide (prefix
   `TUS`, table `mod_temucraft_ui_store`). Without it they last until logout.
 
-Tests of the grouping, search, paging, collection and loadout logic: `lua5.1 client/tests/spellbook_test.lua` and
-`lua5.1 client/tests/collections_test.lua` (from the module folder).
+## Player UI (retail look, each with a Classic option)
+Interface Options > Temucraft (or `/tui`) has a "Classic" box for each piece and the tooltip ID option
+([`TemucraftInterface.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftInterface.lua); per account in the store, keys `ui.classicchar`,
+`ui.classicmicro`, `ui.classicmenu`, `ui.tooltipids`).
+
+- **Character panel** ([`TemucraftCharacter.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftCharacter.lua), C, `/tchar`, `/tchar classic|new`):
+  the stock item slots (they move into the window while it is open, so clicking, Alt flyouts and the equipment manager
+  work as always) down both sides and the weapons at the bottom, a bigger model on the race's backdrop (drag to turn,
+  wheel to zoom), a Titles menu, and on the right the item level (average of the 17 slots, a two-hander counts twice)
+  and the stats: Attributes, Enhancements (by role: melee, ranged or caster; hybrids by their main talent tree) and
+  Defense. Tabs Character / Pet / Reputation / Currency; the last three open the stock frame on that tab.
+- **Micro menu** ([`TemucraftMicroMenu.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftMicroMenu.lua)): a row at the bottom right (smaller
+  if need be, or above the main bar when there's no room beside it): Character, Spellbook & Talents (right click:
+  talents), Achievements, Quest Log, Guild (right click: friends), Group Finder (right click: PvP), Collections, Shop,
+  Game Menu (latency / memory tooltip), Help. Each calls what its stock button calls and copies its stock button's
+  state (pushed, disabled below its level); the stock buttons are hidden, and come back on vehicle bars.
+- **Game menu** ([`TemucraftGameMenu.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftGameMenu.lua)): the stock GameMenuFrame laid out again:
+  Options (opens System / Sound / Interface / Key Bindings under it), Shop, What's New (`TemucraftChangelog.lua`:
+  add a block with each release), AddOns, Edit Mode (placeholder), Support (the stock help / ticket frame), Macros,
+  Log Out, Exit Game, Return to Game. Shop is a placeholder until a shop window defines `TemucraftShop_Show`.
+- **AddOns** ([`TemucraftAddOns.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftAddOns.lua), `/addons`): every addon with a checkbox
+  (`EnableAddOn` / `DisableAddOn`, on the next UI load), its state, memory, and CPU when the "CPU profiling" box
+  (CVar `scriptProfile`) is on; Enable All / Disable All / Reload UI.
+- **Tooltips** ([`TemucraftTooltips.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftTooltips.lua)): SpellID on spell tooltips (spellbook,
+  bars, links, auras) and ItemID on items, each with the icon's texture name (3.3.5's interface only gets the icon's
+  path, never the SpellIcon / file id); "Cooldown remaining: N sec"; "You haven't added this to your action bars" on
+  the new spellbook's and the flyouts' spells that no bar (or macro) has.
+- **Spellbook flyouts** ([`TemucraftFlyouts.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftFlyouts.lua)): the class's teleports, its portals
+  (2 or more) and the Temucraft helper items in your bags are one entry each in the book; a click opens a row of
+  `SecureActionButtonTemplate` buttons beside it (cast in combat). The book's buttons are wrapped with
+  `SecureHandlerWrapScript` (header `TemucraftFlyoutHeader`) so the row opens and closes in combat too; what a row
+  holds changes only out of combat. Groups: `TemucraftFlyoutLogic.FLYOUTS`, `TELEPORT_IDS`, `PORTAL_IDS`, `HELPER_ITEMS`.
+
+Tests of the grouping, search, paging, collection and loadout logic, and of the player UI logic:
+`lua5.1 client/tests/spellbook_test.lua`, `lua5.1 client/tests/collections_test.lua` and
+`lua5.1 client/tests/interface_test.lua` (from the module folder).
 
 ## Also in this module
 

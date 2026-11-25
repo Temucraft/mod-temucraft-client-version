@@ -8,6 +8,8 @@
 -- The buttons are SecureActionButtons (type "spell", the spell's id): click casts, drag puts it on an action bar, in
 -- and out of combat. They are laid out and given their spells only out of combat; a change in combat waits for it to
 -- end. What a spell is (racial, profession, guild perk) comes from TemucraftSpellTabs.lua (server prefix TSB).
+-- Flyouts (TemucraftFlyouts.lua): the class's teleports / portals and the Temucraft helper items are one entry each,
+-- which opens a row of them beside it (secure, so it works in combat).
 
 ----------------------------------------------------------------------------------------------------------------------
 -- The logic (no frames: tests/spellbook_test.lua runs it with stubs)
@@ -250,6 +252,11 @@ local pageFrames, buttons, headers = {}, {}, {};
 local scan = CreateFrame("GameTooltip", "TemucraftSpellBookScanTooltip", nil, "GameTooltipTemplate");
 
 local function Describe(e)
+	if ( e.flyout ) then
+		local names = {};
+		for _, m in ipairs(e.flyout.members) do table.insert(names, m.name or ""); end
+		return string.lower(table.concat(names, " "));
+	end
 	if ( not e.id ) then return ""; end
 	if ( not described[e.id] ) then
 		scan:SetOwner(WorldFrame, "ANCHOR_NONE");
@@ -312,14 +319,23 @@ local function MakeButton(side, i)
 	b:SetAttribute("shift-type2", "tclink");
 	b.tclink = LinkSpell;
 	b:SetScript("OnDragStart", function(self)
-		if ( self.slot ) then PickupSpell(self.slot, BOOKTYPE_SPELL); end
+		if ( self.slot and not self.flyout ) then PickupSpell(self.slot, BOOKTYPE_SPELL); end
 	end);
 	b:SetScript("OnEnter", function(self)
+		if ( self.flyout ) then
+			GameTooltip:SetOwner(self, "ANCHOR_RIGHT");
+			GameTooltip:SetText(self.flyout.title);
+			for _, m in ipairs(self.flyout.members) do GameTooltip:AddLine(m.name, 1, 1, 1); end
+			GameTooltip:AddLine("Click to open.", 0.4, 0.78, 1);
+			GameTooltip:Show();
+			return;
+		end
 		if ( not self.slot ) then return; end
 		GameTooltip:SetOwner(self, "ANCHOR_RIGHT");
 		GameTooltip:SetSpell(self.slot, BOOKTYPE_SPELL);
 	end);
 	b:SetScript("OnLeave", function() GameTooltip:Hide(); end);
+	if ( TemucraftFlyouts_WrapButton ) then TemucraftFlyouts_WrapButton(b); end
 	b:Hide();
 	return b;
 end
@@ -387,6 +403,7 @@ local function Read()
 			end
 		end
 	end
+	if ( TemucraftFlyouts_Collapse ) then list = TemucraftFlyouts_Collapse(list); end
 	local trees = {};
 	for t = 1, GetNumTalentTabs() do
 		local name = GetTalentTabInfo(t);
@@ -396,7 +413,7 @@ local function Read()
 end
 
 local function SetButton(b, e)
-	b.slot, b.spellId, b.passive, b.spellName = e.slot, e.id, e.passive, e.name;
+	b.slot, b.spellId, b.passive, b.spellName, b.flyout = e.slot, e.id, e.passive, e.name, e.flyout;
 	b.icon:SetTexture(e.icon);
 	b.label:SetText(e.name);
 	b.sub:SetText(e.subtitle or "");
@@ -410,16 +427,25 @@ local function SetButton(b, e)
 		b.border:SetVertexColor(1, 1, 1);
 		b.highlight:SetTexture("Interface\\Buttons\\ButtonHilight-Square");
 		b.label:SetTextColor(HIGHLIGHT_FONT_COLOR.r, HIGHLIGHT_FONT_COLOR.g, HIGHLIGHT_FONT_COLOR.b);
-		b:SetAttribute("type", "spell");
-		b:SetAttribute("spell", e.id or e.name);
+		if ( e.flyout ) then
+			b:SetAttribute("type", nil);
+			b:SetAttribute("spell", nil);
+		else
+			b:SetAttribute("type", "spell");
+			b:SetAttribute("spell", e.id or e.name);
+		end
 	end
+	if ( TemucraftFlyouts_Attach ) then TemucraftFlyouts_Attach(b, e.flyout); end
 	UpdateCooldown(b);
 	b:Show();
 end
 
 local function Draw(side, items, number)
 	local p = pageFrames[side];
-	for _, b in ipairs(buttons[side]) do b:Hide(); b.slot = nil; end
+	for _, b in ipairs(buttons[side]) do
+		b:Hide(); b.slot, b.flyout = nil, nil;
+		if ( TemucraftFlyouts_Attach ) then TemucraftFlyouts_Attach(b, nil); end
+	end
 	for _, h in ipairs(headers[side]) do h:Hide(); h.line:Hide(); end
 	if ( not items ) then p.number:SetText(""); return; end
 	p.number:SetText(number);
@@ -446,6 +472,7 @@ end
 
 local function Render()
 	pending = false;
+	if ( TemucraftFlyouts_HideAll ) then TemucraftFlyouts_HideAll(); end
 	combatNote:Hide();
 	books = Read();
 	local sections = L.Filter(books[book], query, Describe);
