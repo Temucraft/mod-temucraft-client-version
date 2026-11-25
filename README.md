@@ -12,6 +12,7 @@ locale patch, and patch-5 has its own FrameXML.toc, so as a locale patch our Fra
 ran. `^` ranks above every other Data patch with interface files. It holds:
 
 - [`Interface\GlueXML\TemucraftVersion.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/GlueXML/TemucraftVersion.lua): the login screen shows "Temucraft 1.5.0 (3.3.5a build 12340)".
+- [`Interface\FrameXML\Temucraft\TemucraftDragonUI.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftDragonUI.lua): which of our windows step aside for DragonUI (see *DragonUI* below).
 - [`Interface\FrameXML\Temucraft\TemucraftCore.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftCore.lua): after login the client whispers its version to the server
   (addon message `TCV`, `HELLO~1.0.0`) and shows a popup when the server says it is out of date.
 - [`Interface\FrameXML\Temucraft\TemucraftDisguise.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftDisguise.lua): the rogue Disguise button and menu ([mod-temucraft-rogue-disguise](https://github.com/Temucraft/mod-temucraft-rogue-disguise)).
@@ -212,6 +213,32 @@ sat on their bottom tabs), except the spellbook and talents.
   `SecureHandlerWrapScript` (header `TemucraftFlyoutHeader`) so the row opens and closes in combat too; what a row
   holds changes only out of combat. Groups: `TemucraftFlyoutLogic.FLYOUTS`, `TELEPORT_IDS`, `PORTAL_IDS`, `HELPER_ITEMS`.
 
+## DragonUI
+
+[DragonUI](https://github.com/NeticSoul/DragonUI) (our fork: Temucraft/DragonUI-Temucraft, PTR first) is the base of
+the in-game interface. [`TemucraftDragonUI.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftDragonUI.lua)
+reads at login (`PLAYER_LOGIN`; DragonUI's AceDB is in by then) whether DragonUI runs (`IsAddOnLoaded("DragonUI")`,
+its addon table `_G.DragonUI`) and which of its modules are on (`DragonUI:IsModuleEnabled(<module>)`, i.e.
+`DragonUIDB.profiles[<profile>].modules.<module>.enabled`). Where one of them covers one of our windows, ours steps
+aside: `TemucraftUI_IsClassic(which)` and `TemucraftPlayerSpells_IsClassic(which)` answer true, so the stock frame
+opens and DragonUI replaces or dresses it. The saved Classic choices are not touched (`TemucraftUI_IsSavedClassic`);
+Interface > Temucraft greys those boxes with "DragonUI's ... is used". DragonUI's modules load once, so a change (a
+module or DragonUI off) takes a `/reload`, after which our windows are back.
+
+| Ours | DragonUI module | |
+|---|---|---|
+| character panel (`char`), currency (`currency`) | `characterpanel` | DragonUI's |
+| micro menu (`micro`) | `micromenu` | DragonUI's (our micro menu doesn't touch the stock buttons) |
+| spellbook (`book`), talents (`talents`) | `spellbook`, `talents` | DragonUI's; the Train button and auto-learn box follow DragonUI's book (`TemucraftAutoLearn_Ask`) |
+| gossip icons (`gossip`) | `questdialog` | DragonUI's |
+| AddOns list (`addons`) | `addonmanager` | DragonUI's: our Esc menu's AddOns row and `/addons` open it |
+
+Ours stay: reputation and Renown (the Reputation tab and U still open ours), guild, guild bank, collections
+(`ToggleCollectionsJournal` is defined, so DragonUI's Pets & Mounts button opens ours), the flight map, the Issue
+Reporter and the Esc menu, which takes DragonUI's settings button and an Edit Mode row (DragonUI's editor) as rows. The
+fixes and defaults that live in DragonUI itself (custom races, in-column talents, route-only flight points, Temucraft
+defaults) are patches in `_dev/dragonui/` for the fork.
+
 ## Login screens (GlueXML)
 
 The client's own CharacterCreate.lua / CharacterSelect.lua still run and do the work; their frames are moved into a
@@ -255,7 +282,7 @@ hidden holder and ours sit on top. The "Classic" choice here is `TEMUCRAFT_LOGIN
 Stub tests (no client; run from the module folder with Lua 5.1) for the grouping, search, paging, collection and
 loadout logic, the player UI, the login screens and the protocols: `lua5.1 client/tests/spellbook_test.lua`,
 `collections_test.lua`, `interface_test.lua`, `taxi_test.lua`, `issues_test.lua`, `guild_test.lua`,
-`reputation_test.lua` and `glue_test.lua` (all in `client/tests/`). Also check every file with `luac5.1 -p`.
+`reputation_test.lua`, `glue_test.lua` and `dragonui_test.lua` (the DragonUI step-aside switch; all in `client/tests/`). Also check every file with `luac5.1 -p`.
 
 ## Also in this module
 

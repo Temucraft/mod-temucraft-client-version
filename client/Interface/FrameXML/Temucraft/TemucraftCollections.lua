@@ -440,6 +440,12 @@ function TemucraftCollections_Toggle(index)
 	Select(index or current);
 end
 
+-- DragonUI's Pets & Mounts micro button opens a server's own window when there is a ToggleCollectionsJournal
+-- (modules/collections/window.lua): ours, with the server's collections
+if ( not ToggleCollectionsJournal ) then
+	function ToggleCollectionsJournal() TemucraftCollections_Toggle(); end
+end
+
 SLASH_TEMUCRAFTCOLLECTIONS1 = "/collections";
 SLASH_TEMUCRAFTCOLLECTIONS2 = "/tcol";
 SlashCmdList["TEMUCRAFTCOLLECTIONS"] = function(msg)

@@ -6,6 +6,8 @@ local state = { enabled = false, on = false, choose = false, cost = false };
 local missing, pending, total = {}, nil, 0;
 
 local function Send(text) SendAddonMessage(PREFIX, text, "WHISPER", UnitName("player")); end
+-- asks the server for the list again (TemucraftDragonUI.lua: when DragonUI's spellbook opens)
+function TemucraftAutoLearn_Ask() Send("LIST"); end
 
 local function Money(copper)
 	if ( not copper or copper == 0 ) then return "free"; end

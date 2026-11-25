@@ -154,8 +154,10 @@ frame:SetScript("OnHide", function()
 	if ( UpdateMicroButtons ) then UpdateMicroButtons(); end
 end);
 
--- classic or new: account-wide choice (TemucraftStore), "1" = the stock frame
+-- classic or new: account-wide choice (TemucraftStore), "1" = the stock frame; also the stock frame (which DragonUI
+-- then replaces) while DragonUI's spellbook / talents module is on (TemucraftDragonUI.lua), the saved choice untouched
 function TemucraftPlayerSpells_IsClassic(which)
+	if ( TemucraftDragonUI_Owns and TemucraftDragonUI_Owns(which) ) then return true; end
 	return TemucraftStore_Get and TemucraftStore_Get("A", "ui.classic"..which) == "1";
 end
 function TemucraftPlayerSpells_SetClassic(which, on)

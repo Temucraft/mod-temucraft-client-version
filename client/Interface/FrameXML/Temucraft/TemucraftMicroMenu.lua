@@ -187,6 +187,8 @@ end
 -- where the stock buttons are: the main bar, a vehicle bar or nowhere (this menu)
 local vehicleSkin = nil;
 local function Apply()
+	-- DragonUI's micro menu has the stock buttons: leave them where and as it put them
+	if ( TemucraftDragonUI_Owns and TemucraftDragonUI_Owns("micro") ) then bar:Hide(); return; end
 	local useOurs = not TemucraftUI_IsClassic("micro") and not vehicleSkin;
 	for _, name in ipairs(STOCK) do
 		local b = _G[name];

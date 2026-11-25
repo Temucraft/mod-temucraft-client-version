@@ -37,7 +37,9 @@ FRAME_FILES = ["Temucraft\\TemucraftCore.lua", "Temucraft\\TemucraftMissions.lua
                "Temucraft\\TemucraftVanity.lua",
                "Temucraft\\TemucraftExpeditions.lua", "Temucraft\\TemucraftSpellInfo.lua",
                # after TemucraftSpellTabs.lua (the spell flags) and TemucraftAutoLearn.lua (the Train button)
-               "Temucraft\\TemucraftStore.lua", "Temucraft\\TemucraftPlayerSpells.lua",
+               "Temucraft\\TemucraftStore.lua",
+               # what DragonUI has taken over (before everything that asks: TemucraftPlayerSpells.lua, TemucraftInterface.lua)
+               "Temucraft\\TemucraftDragonUI.lua", "Temucraft\\TemucraftPlayerSpells.lua",
                "Temucraft\\TemucraftFlyouts.lua", "Temucraft\\TemucraftSpellBook.lua", "Temucraft\\TemucraftTalentsData.lua",
                "Temucraft\\TemucraftTalents.lua", "Temucraft\\TemucraftCollectionsData.lua",
                "Temucraft\\TemucraftCollections.lua",

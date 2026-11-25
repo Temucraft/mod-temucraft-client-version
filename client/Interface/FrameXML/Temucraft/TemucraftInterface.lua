@@ -3,7 +3,9 @@
 -- spellbook's "ui.classicbook", and "ui.<option>"). A "Temucraft" page in Interface Options has the checkboxes; /tui
 -- opens it.
 --   TemucraftUI_IsClassic(which)            "char", "micro", "menu", "guild", "gbank", "rep", "currency", "gossip" (and "book",
---                                           "talents" of TemucraftPlayerSpells.lua)
+--                                           "talents" of TemucraftPlayerSpells.lua): the saved choice, or DragonUI has
+--                                           that piece (TemucraftDragonUI.lua)
+--   TemucraftUI_IsSavedClassic(which)       the player's own choice only
 --   TemucraftUI_SetClassic(which, on)       saves it and tells the piece (TemucraftUI_OnChange)
 --   TemucraftUI_GetOption(key, default)     true / false ("1" / "0" in the store)
 --   TemucraftUI_SetOption(key, on)
@@ -24,8 +26,13 @@ local function Notify(which, value)
 	for _, func in ipairs(listeners[which] or {}) do func(value); end
 end
 
-function TemucraftUI_IsClassic(which)
+function TemucraftUI_IsSavedClassic(which)
 	return TemucraftStore_Get ~= nil and TemucraftStore_Get("A", "ui.classic"..which) == "1";
+end
+
+-- DragonUI's module for this piece is on: ours steps aside (the saved choice stays as it is)
+function TemucraftUI_IsClassic(which)
+	return TemucraftUI_IsSavedClassic(which) or (TemucraftDragonUI_Owns ~= nil and TemucraftDragonUI_Owns(which));
 end
 
 function TemucraftUI_SetClassic(which, on)
@@ -64,16 +71,16 @@ subtitle:SetText("The new (retail-style) windows, or the classic 3.3.5 ones. Sav
 
 -- { label, get, set }
 local CHECKS = {
-	{ "Classic character panel", function() return TemucraftUI_IsClassic("char"); end, function(on) TemucraftUI_SetClassic("char", on); end },
-	{ "Classic micro menu", function() return TemucraftUI_IsClassic("micro"); end, function(on) TemucraftUI_SetClassic("micro", on); end },
-	{ "Classic game menu (Esc)", function() return TemucraftUI_IsClassic("menu"); end, function(on) TemucraftUI_SetClassic("menu", on); end },
-	{ "Classic spellbook", function() return TemucraftUI_IsClassic("book"); end, function(on) TemucraftUI_SetClassic("book", on); end },
-	{ "Classic talent window", function() return TemucraftUI_IsClassic("talents"); end, function(on) TemucraftUI_SetClassic("talents", on); end },
-	{ "Classic guild window (J)", function() return TemucraftUI_IsClassic("guild"); end, function(on) TemucraftUI_SetClassic("guild", on); end },
-	{ "Classic guild bank", function() return TemucraftUI_IsClassic("gbank"); end, function(on) TemucraftUI_SetClassic("gbank", on); end },
-	{ "Classic reputation window", function() return TemucraftUI_IsClassic("rep"); end, function(on) TemucraftUI_SetClassic("rep", on); end },
-	{ "Classic currency window", function() return TemucraftUI_IsClassic("currency"); end, function(on) TemucraftUI_SetClassic("currency", on); end },
-	{ "Classic gossip window (small NPC option icons)", function() return TemucraftUI_IsClassic("gossip"); end, function(on) TemucraftUI_SetClassic("gossip", on); end },
+	{ "Classic character panel", function() return TemucraftUI_IsSavedClassic("char"); end, function(on) TemucraftUI_SetClassic("char", on); end, "char" },
+	{ "Classic micro menu", function() return TemucraftUI_IsSavedClassic("micro"); end, function(on) TemucraftUI_SetClassic("micro", on); end, "micro" },
+	{ "Classic game menu (Esc)", function() return TemucraftUI_IsSavedClassic("menu"); end, function(on) TemucraftUI_SetClassic("menu", on); end, "menu" },
+	{ "Classic spellbook", function() return TemucraftUI_IsSavedClassic("book"); end, function(on) TemucraftUI_SetClassic("book", on); end, "book" },
+	{ "Classic talent window", function() return TemucraftUI_IsSavedClassic("talents"); end, function(on) TemucraftUI_SetClassic("talents", on); end, "talents" },
+	{ "Classic guild window (J)", function() return TemucraftUI_IsSavedClassic("guild"); end, function(on) TemucraftUI_SetClassic("guild", on); end, "guild" },
+	{ "Classic guild bank", function() return TemucraftUI_IsSavedClassic("gbank"); end, function(on) TemucraftUI_SetClassic("gbank", on); end, "gbank" },
+	{ "Classic reputation window", function() return TemucraftUI_IsSavedClassic("rep"); end, function(on) TemucraftUI_SetClassic("rep", on); end, "rep" },
+	{ "Classic currency window", function() return TemucraftUI_IsSavedClassic("currency"); end, function(on) TemucraftUI_SetClassic("currency", on); end, "currency" },
+	{ "Classic gossip window (small NPC option icons)", function() return TemucraftUI_IsSavedClassic("gossip"); end, function(on) TemucraftUI_SetClassic("gossip", on); end, "gossip" },
 	{ "Show recent guild chat in the chat window at login",
 		function() return TemucraftUI_GetOption("guildloginchat", true); end, function(on) TemucraftUI_SetOption("guildloginchat", on); end },
 	{ "Show SpellID / ItemID and icon names in tooltips",
@@ -89,10 +96,42 @@ for i, c in ipairs(CHECKS) do
 		PlaySound(self:GetChecked() and "igMainMenuOptionCheckBoxOn" or "igMainMenuOptionCheckBoxOff");
 		c[3](self:GetChecked() and true or false);
 	end);
+	local text = _G[check:GetName().."Text"];
+	text.temucraftColor = { text:GetTextColor() };
 	checks[i] = check;
 end
+-- what DragonUI has taken over (its module is on): greyed, with a note; the saved choice is kept for when it's off
+local dragonNote = panel:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall");
+dragonNote:SetPoint("TOPLEFT", checks[#checks], "BOTTOMLEFT", 2, -12);
+dragonNote:SetPoint("RIGHT", panel, "RIGHT", -16, 0);
+dragonNote:SetJustifyH("LEFT");
+dragonNote:Hide();
 panel:SetScript("OnShow", function()
-	for i, c in ipairs(CHECKS) do checks[i]:SetChecked(c[2]()); end
+	for i, c in ipairs(CHECKS) do
+		local check, text = checks[i], _G[checks[i]:GetName().."Text"];
+		check:SetChecked(c[2]());
+		local note = c[4] and TemucraftDragonUI_Note and TemucraftDragonUI_Note(c[4]);
+		if ( note ) then
+			check:Disable();
+			text:SetWidth(560);
+			text:SetText(c[1].."  |cff888888- "..note.." is used (/dui to turn it off, then /reload)|r");
+			text:SetTextColor(0.5, 0.5, 0.5);
+		else
+			check:Enable();
+			text:SetWidth(360);
+			text:SetText(c[1]);
+			text:SetTextColor(unpack(text.temucraftColor));
+		end
+	end
+	if ( TemucraftDragonUI_IsLoaded and TemucraftDragonUI_IsLoaded() ) then
+		local more = TemucraftDragonUI_Note("addons");
+		dragonNote:SetText("DragonUI is the base of the interface: where its module is on, the window above is DragonUI's."
+			..(more and (" "..more.." is the AddOns list (Esc > AddOns, /addons).") or "")
+			.." Ours stay: reputation and Renown, guild, guild bank, collections, flight map, Issue Reporter and the Esc menu.");
+		dragonNote:Show();
+	else
+		dragonNote:Hide();
+	end
 end);
 -- the boxes apply at once: OK / Cancel / Defaults have nothing to do
 panel.okay = function() end;
@@ -109,6 +148,15 @@ end
 
 SLASH_TEMUCRAFTUI1 = "/tui";
 SlashCmdList["TEMUCRAFTUI"] = function() TemucraftUI_OpenOptions(); end;
+
+-- once DragonUI's modules are known (login), the pieces it has step aside (and come back with it off after /reload)
+if ( TemucraftDragonUI_OnChange ) then
+	TemucraftDragonUI_OnChange(function()
+		for which in pairs(TemucraftDragonUILogic.TAKEOVER) do
+			if ( TemucraftDragonUI_Owns(which) ) then Notify("classic"..which, true); end
+		end
+	end);
+end
 
 -- once the server's values are in, every piece applies its choice
 if ( TemucraftStore_OnReady ) then
