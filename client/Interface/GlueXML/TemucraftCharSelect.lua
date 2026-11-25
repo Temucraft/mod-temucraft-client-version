@@ -422,6 +422,9 @@ local function Build()
 		CharacterSelect_ChangeRealm();
 	end);
 	root.realms:SetPoint("LEFT", root.menuButton, "RIGHT", 6, 0);
+	-- Temucraft: Live or PTR is chosen in the launcher (it writes realmName), so no realm list in game.
+	-- Set TEMUCRAFT_SHOW_REALMS = true (e.g. in TemucraftScenes.lua) to bring the button back.
+	if ( not TEMUCRAFT_SHOW_REALMS ) then root.realms:Hide(); end
 	root.realm = root.top:CreateFontString(nil, "OVERLAY", "GlueFontNormal");
 	root.realm:SetPoint("CENTER", root.top, "CENTER", 0, 0);
 	BuildMenu();
