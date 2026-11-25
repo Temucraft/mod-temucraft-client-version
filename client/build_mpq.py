@@ -44,7 +44,7 @@ FRAME_FILES = ["Temucraft\\TemucraftCore.lua", "Temucraft\\TemucraftMissions.lua
                "Temucraft\\TemucraftInterface.lua", "Temucraft\\TemucraftTooltips.lua",
                "Temucraft\\TemucraftCharacter.lua", "Temucraft\\TemucraftMicroMenu.lua",
                "Temucraft\\TemucraftAddOns.lua", "Temucraft\\TemucraftChangelog.lua",
-               "Temucraft\\TemucraftGameMenu.lua"]
+               "Temucraft\\TemucraftGameMenu.lua", "Temucraft\\TemucraftTaxi.lua"]
 # after the client's own glue files (CharacterCreate / CharacterSelect), so they can sit on top of them
 GLUE_FILES = ["TemucraftVersion.lua", "TemucraftGlueData.lua", "TemucraftCharCreate.lua", "TemucraftCharSelect.lua"]
 # Interface\\<file> (listed as ..\\<file> in GlueXML.toc, like LoginUI.lua): the launcher writes its own loose copy

@@ -21,6 +21,7 @@ Temucraft interface into the client so module windows behave like Blizzard's own
 - [`Interface\FrameXML\Temucraft\TemucraftExpeditions.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftExpeditions.lua): the expedition window (current run, powers, relics, Wayfinder's Ledger; addon messages `TEX`)
   ([mod-temucraft-expeditions](https://github.com/Temucraft/mod-temucraft-expeditions)). The file is the same as the AddOns copy in mod-temucraft-expeditions, which steps aside when this one is loaded.
 - [`Interface\FrameXML\Temucraft\TemucraftSpellInfo.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftSpellInfo.lua): extra lines on your spell tooltips (spell book and action bars): your bonuses (damage, cooldown, cost, cast time), the base and the real values (damage, healing, cost, cast, cooldown, range, duration; green better, red worse), one line per talent, glyph or other effect with its rank and what it does to the spell ("Improved Wrath (5/5): -0.5 sec cast time"), its crit chance and crit damage, and what Temucraft changed from stock 3.3.5, answered by [mod-temucraft-classes](https://github.com/Temucraft/mod-temucraft-classes) (addon messages `TSI`).
+- [`Interface\FrameXML\Temucraft\TemucraftTaxi.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftTaxi.lua): retail-style flight map: the flight points on the way to the ones you know (sent by [mod-temucraft-travel](https://github.com/Temucraft/mod-temucraft-travel), addon messages `TTX`) are small grey route dots that can't be picked; hovering one says it is on the way.
 - `FrameXML.toc` and `GlueXML.toc`: the client's own lists (copies in `client/base/`) with those files added. They
   come from the highest-priority patches of the client (FrameXML.toc from patch-enUS-3.MPQ, GlueXML.toc from
   patch-enUS-C.MPQ); refresh `client/base/` if another patch changes them.
@@ -140,8 +141,8 @@ Interface Options > Temucraft (or `/tui`) has a "Classic" box for each piece and
   holds changes only out of combat. Groups: `TemucraftFlyoutLogic.FLYOUTS`, `TELEPORT_IDS`, `PORTAL_IDS`, `HELPER_ITEMS`.
 
 Tests of the grouping, search, paging, collection and loadout logic, and of the player UI logic:
-`lua5.1 client/tests/spellbook_test.lua`, `lua5.1 client/tests/collections_test.lua` and
-`lua5.1 client/tests/interface_test.lua` (from the module folder).
+`lua5.1 client/tests/spellbook_test.lua`, `lua5.1 client/tests/collections_test.lua`,
+`lua5.1 client/tests/interface_test.lua` and `lua5.1 client/tests/taxi_test.lua` (from the module folder).
 
 ## Also in this module
 
