@@ -294,7 +294,7 @@ sat on their bottom tabs), except the spellbook and talents.
   and the key bindings), **Close** (settings apply as they change). Game: **Gameplay** (Controls, Interface, Action
   Bars, Combat, Social, Keybindings, Nameplates), **Accessibility** (General, Colors), **System** (Graphics, Audio,
   Languages, Network); each page has its title, Defaults, white sub-headers and rows: gold label, then a checkbox,
-  a < value > selector or a < slider > with its real min and max under its ends and its value in a box you can type in (Enter); sub-options indented and greyed while their parent is off.
+  a < value > selector or a < slider > (its name left and its value right on a line above the bar, the value a box you can type in (Enter), the real min and max under its ends); sub-options indented and greyed while their parent is off.
   The pages are rebuilt, but each row drives the stock control underneath (`InterfaceOptions*`, `VideoOptions*`,
   `AudioOptions*`: same CVars, setFuncs, dependent controls, sound restarts), so the stock windows stay in step.
   Graphics applies at once except what needs a display restart (resolution, refresh rate, multisampling, vsync,
@@ -671,16 +671,25 @@ hidden holder and ours sit on top. The "Classic" choice here is `TEMUCRAFT_LOGIN
     its own lights. `TEMUCRAFT_EVEN_LIGHT = false` turns it off. Character select uses the same. `TEMUCRAFT_CREATE_SCENES = "race"` shows each race's own scene; `TEMUCRAFT_SCENE_PICKS`
   the player's picks.
 - **Options** (`TemucraftGlueOptions.lua`): one window in place of the stock chooser (Video / Sound / Reset User
-  Options) and its two windows, from Menu > Options and the login screen's Options. Left the pages (Graphics: the
-  stock Display and Effects pages and Frame Rate; Audio: the stock Sound page and More Sound), right the page; Defaults
-  (this page, the stock All / Current Settings confirm), Classic (the stock chooser), Apply, Cancel, Okay. The stock
-  pages are the stock panels, moved in while the window is open, and Okay / Apply / Cancel run the stock frames' own
-  code (restarts and alerts included). Frame Rate (`maxFPS`, `maxFPSBk`) and More Sound (`Sound_ListenerAtCharacter`,
-  `Sound_ZoneMusicNoDelay`, and Reset All Settings, the stock Reset User Options) are ours, the same rows as in the
-  in-game window. Every slider shows its real min and max at its ends (0% / 100% for 0-1 sliders) and its value in
-  a box you can type in (Enter; clamped and snapped to the step). The empty Refresh Rate menu of windowed mode says
-  "Set by the display (windowed)". If the window fails the stock chooser opens; `TEMUCRAFT_GLUE_OPTIONS = "classic"`
-  always uses it.
+  Options) and its two windows, from Menu > Options and the login screen's Options. Left two pages, **Graphics** and
+  **Audio**; each is one scrolling list with section headers like retail's: Graphics = Display (resolution, refresh
+  rate, multisampling, windowed / maximized / disable resize, vsync, triple buffering, hardware cursor, reduce input
+  lag, desktop gamma, gamma), Quality (the video quality preset and every detail slider), Effects (specular, full
+  screen glow, death effect, projected textures), Frame Rate (`maxFPS`, `maxFPSBk`); Audio = Volume (master, sound,
+  music, ambience), Playback (every sound check), Output (device, channels, hardware, quality), Other
+  (`Sound_ListenerAtCharacter`, `Sound_ZoneMusicNoDelay`). Bottom: Defaults (the stock All / Current Settings confirm;
+  both reset the whole page here, our rows too), Reset User Options (the stock button and its confirm), Classic,
+  Apply, Cancel, Okay. The controls are the stock panels' own, laid out in the list while the window is open (every
+  anchor, size and shown state is put back on close), and Okay / Apply / Cancel run the stock frames' own code
+  (restarts and alerts included). Every slider: name left and value right on one line above the bar (the value a box
+  you can type in: Enter, clamped and snapped to the step), the real min and max under its ends (0% / 100% for 0-1
+  sliders). Multisampling shows None / 2x / 4x / 8x (the colour / depth format in its tooltip, and in the name only
+  when two formats share the samples). The empty Refresh Rate menu of windowed mode says "Set by the display
+  (windowed)". **Classic** opens the stock chooser and keeps it; the chooser and the stock Video and Sound windows get
+  a "Use the new Options window" button that switches back. The choice is saved in the CVar `temucraftOptionsStyle`,
+  which the in-game interface registers (glue code can't make CVars; Config.wtf keeps it from the first login on,
+  until then the choice lasts while the game runs). If the window fails the stock chooser opens;
+  `TEMUCRAFT_GLUE_OPTIONS = "classic"` always uses it.
 - **Glue safety** (`TemucraftGlueSafety.lua`, loaded first): `GetAvailableRaces`, `GetAvailableClasses` and
   `GetClassesForRace` push 3 values per race or class without growing the Lua stack; with 20-30 races the stock
   Wow.exe wrote past it ("Not enough memory" crash picking Zandalari). They are wrapped to run from a Lua function

@@ -466,10 +466,14 @@ end
 
 if ( not CreateFrame ) then return; end   -- tests load only the logic
 
+-- The login screens' Options window keeps its style (Classic / new) in this CVar; only the in-game code can make one,
+-- and Config.wtf keeps it for the glue from then on (TemucraftGlueOptions.lua)
+if ( RegisterCVar ) then pcall(RegisterCVar, "temucraftOptionsStyle", "new"); end
+
 -- [[ the window ]] --
 local W, H, LIST_W = 900, 620, 206;
 local CONTROL_X, ROW_H = 330, 26;
-local SLIDER_ROW_H = 34;   -- slider rows: room for the min / max numbers under the bar
+local SLIDER_ROW_H = 52;   -- slider rows: name and value on a line above the bar, the min / max numbers under it
 local GOLD, WHITE, GREY = { 1, 0.82, 0 }, { 1, 1, 1 }, { 0.5, 0.5, 0.5 };
 
 local f = CreateFrame("Frame", "TemucraftOptionsFrame", UIParent);
@@ -802,7 +806,11 @@ local sliderCount = 0;
 local function SliderWidget(r, spec, c)
 	sliderCount = sliderCount + 1;
 	local prev, nextB = ArrowButton(r, -1), ArrowButton(r, 1);
-	prev:SetPoint("LEFT", CONTROL_X - 4, 4);   -- a little up: the min / max numbers go under the bar
+	-- every slider the same: the name left and the value right on the top line, the bar under them, the min / max
+	-- numbers under the bar's ends
+	r.label:ClearAllPoints();
+	r.label:SetPoint("TOPLEFT", spec.sub and 40 or 22, -4);
+	prev:SetPoint("TOPLEFT", CONTROL_X - 4, -20);
 	local s = CreateFrame("Slider", "TemucraftOptionsSlider"..sliderCount, r);
 	s:SetOrientation("HORIZONTAL");
 	s:SetWidth(170); s:SetHeight(17);
@@ -817,11 +825,11 @@ local function SliderWidget(r, spec, c)
 	local highText = r:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall");
 	highText:SetPoint("TOPRIGHT", s, "BOTTOMRIGHT", -2, 1);
 	local value = CreateFrame("EditBox", "TemucraftOptionsSlider"..sliderCount.."Value", r);
-	value:SetWidth(58); value:SetHeight(18);
-	value:SetPoint("LEFT", nextB, "RIGHT", 6, 0);
+	value:SetWidth(58); value:SetHeight(16);
+	value:SetPoint("BOTTOMRIGHT", nextB, "TOPRIGHT", 0, 1);
 	value:SetFontObject(GameFontHighlightSmall);
 	value:SetAutoFocus(false);
-	value:SetJustifyH("LEFT");
+	value:SetJustifyH("RIGHT");
 	value:SetTextInsets(4, 4, 0, 0);
 	local vbg = value:CreateTexture(nil, "BACKGROUND");
 	vbg:SetTexture(0, 0, 0, 0.5);
