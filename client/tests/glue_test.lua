@@ -80,6 +80,40 @@ check("name short", C.NameStatus("A") == "short");
 check("name letters", C.NameStatus("Thr4ll") == "letters" and C.NameStatus("Two Words") == "letters");
 check("name accents", C.NameStatus("Jaína") == "ok");
 check("name long", C.NameStatus(string.rep("a", 48)) == "long");
+-- the server's rules (CheckPlayerName, MinPlayerName 2, StrictPlayerNames 0, 12 letters)
+local function st(n, r) return (C.CheckName(n, r)); end
+check("name: 12 letters ok, 13 too long", st("Abcdefghijkl") == "ok" and st("Abcdefghijklm") == "long" and select(2, C.CheckName("Abcdefghijklm")) == "Too long (max 12)");
+check("name: utf-8 counts letters, not bytes", st("Jaínajaínaja") == "ok" and st("Жанна") == "ok");
+check("name: too short", st("A") == "short" and select(2, C.CheckName("A")) == "Too short (min 2)" and st("A", { min = 3, max = 12, strict = 0 }) == "short" and st("Ab", { min = 3 }) == "short");
+check("name: no spaces, digits, symbols, apostrophes", st("Two Words") == "letters" and st("Thr4ll") == "letters" and st("Mal'Ganis") == "letters" and st("Thrall-") == "letters");
+check("name: one alphabet", st("Thrаll") == "mixed" and st("ЖаннаJ") == "mixed" and st("Élodie") == "ok" and st("Łukasz") == "letters");
+check("name: no letter three times in a row (any case)", st("Aaab") == "three" and st("AaAb") == "three" and st("Aabb") == "ok" and st("Жжжа") == "three");
+check("name: strict 1 = a-z only", st("Élodie", { strict = 1 }) == "latin" and st("Elodie", { strict = 1 }) == "ok");
+check("name: as the server saves it", select(3, C.CheckName("tHRALL")) == "Thrall" and select(3, C.CheckName("éLODIE")) == "Élodie" and select(3, C.CheckName("жАННА")) == "Жанна");
+check("name: case never fails", st("tHRALL") == "ok" and st("thrall") == "ok");
+check("name: bad utf-8", st("Ab\255c") == "letters");
+local errEnv = { CHAR_CREATE_NAME_IN_USE = "That name is unavailable", CHAR_NAME_PROFANE = "That name contains mature language" };
+check("name: server answers about the name", C.NameServerError("That name is unavailable", errEnv) and C.NameServerError("That name contains mature language", errEnv)
+	and not C.NameServerError("Character created", errEnv) and not C.NameServerError(nil, errEnv));
+-- tooltip lines: title gold, the rest white whatever colour codes the text has
+local tlines = C.TooltipLines("Dracthyr", "|cffffd100 Created by Neltharion the Earth-Warden in an experiment that combined the cleverness of the mortals with the power of the dragons.", "|cffff0000Unavailable|r");
+local tok = tlines[1].text == "Dracthyr" and tlines[1].color == "gold" and #tlines >= 4 and tlines[#tlines].color == "red" and tlines[#tlines].text == "Unavailable";
+for i = 2, #tlines - 1 do if ( tlines[i].color ~= "white" or string.find(tlines[i].text, "|c", 1, true) ) then tok = false; end end
+check("tooltip lines: gold title, white body (codes stripped), red error", tok);
+-- even light: every race the same brightness
+local hm = { { 1, 0, -0.48073, 0.71827, -0.50297, 1.0, 0, 0, 0, 2.0, 0.65, 0.397645, 0.2727 }, { 1, 0, -0.49767, -0.78677, 0.36513, 1.0, 0, 0, 0, 1.0, 0.6, 0.47059, 0.32471 } };
+local ne = { { 1, 0, 0, 0, -1, 1.0, 0.0902, 0.0902, 0.1702, 1.0, 0, 0, 0 } };
+local be = { { 1, 0, -0.82249, -0.54912, -0.14822, 1.0, 0, 0, 0, 2.0, 0.581175, 0.50588, 0.42588 }, { 1, 0, 0, 0, -1, 1.0, 0.60392, 0.6149, 0.7, 1.0, 0, 0, 0 }, { 1, 0, 0.02575, 0.86518, -0.50081, 1.0, 0, 0, 0, 1.0, 0.59137, 0.51745, 0.63471 } };
+local function near(a, b) return math.abs(a - b) < 0.03; end
+local lightsOk = true;
+for _, set in ipairs({ hm, ne, be, {} }) do
+	local even = C.EvenLights(set);
+	local a, d = C.LightTotals(even);
+	if ( not near(a, C.LIGHT_AMBIENT) or not near(d, C.LIGHT_DIRECT) or #even > 4 ) then lightsOk = false; print("  lights", a, d, #even); end
+end
+check("even light: same ambient and direct for every scene, at most 4 lights", lightsOk);
+local hmEven = C.EvenLights(hm);
+check("even light: keeps the scene's warm tint and directions", hmEven[1][7] > hmEven[1][9] and hmEven[2][3] == -0.48073 and #C.EvenLights(ne) == 3);
 
 -- select: search
 local chars = {
@@ -203,9 +237,10 @@ check("delete instructions", S.DeleteInstructions("enUS", "DELETE", "Type \"DELE
 	and string.find(S.DeleteInstructions("deDE", nil, nil), "\"LÖSCHEN\"", 1, true) and string.find(S.DeleteInstructions("deDE", nil, nil), "(or DELETE)", 1, true));
 
 -- select: card style, money, tooltip
-local on, off = S.CardStyle(true), S.CardStyle(false);
-check("card style: selected gold, crest in colour", on.glow and not on.crestDesaturated and on.crestAlpha == 1 and on.bg[1] > on.bg[3] and on.border[2] > 0.7);
-check("card style: others dark, crest grey", not off.glow and off.crestDesaturated and off.crestAlpha < 1 and off.bg[1] < 0.3);
+local on, off, hov = S.CardStyle(true), S.CardStyle(false), S.CardStyle(false, true);
+check("card style: selected = gold border and glow on the same dark card", on.glow and on.border[1] == 1 and on.border[2] > 0.7 and on.bg[1] == off.bg[1] and on.bg[1] < 0.2 and on.bg[4] == off.bg[4]);
+check("card style: same name colour in every state", on.name[1] == off.name[1] and on.name[2] == off.name[2] and on.name[3] == off.name[3]);
+check("card style: crest in colour everywhere, dimmed only when not selected", not on.crestDesaturated and not off.crestDesaturated and on.crestAlpha == 1 and off.crestAlpha < 1 and off.crestAlpha >= 0.5 and hov.crestAlpha == 1 and not off.glow);
 check("money", S.Money(162575561) == "16,257 g 55 s 61 c" and S.Money(61) == "61 c" and S.Money(5501) == "55 s 1 c" and S.Money(1234567890000) == "123,456,789 g 0 s 0 c");
 check("money icons", string.find(S.Money(10000, true), "UI-GoldIcon", 1, true) ~= nil);
 local druid = { name = "Malfurion", class = "Druid", classFile = "DRUID", level = 85, zone = "Moonglade" };
@@ -267,6 +302,11 @@ function W:GetEffectiveScale() return 1; end
 function W:SetAlpha(a) self.alpha = a; end
 function W:GetStringWidth() return string.len(self.text or "") * 6; end   -- 6 px a byte
 function W:SetDesaturated(d) self.desaturated = d and true or false; end
+function W:SetTextColor(r, g, b) self.color = { r, g, b }; end
+function W:ClearAllPoints() self.points = {}; end
+function W:SetPoint(...) self.points = self.points or {}; table.insert(self.points, { ... }); end
+function W:SetWidth(w) self.width = w; end
+function W:SetHeight(h) self.height = h; end
 function W:SetFocus() self.focus = true; end
 function W:CreateTexture() local r = new("Texture"); table.insert(self.regions, r); return r; end
 function W:CreateFontString() local r = new("FontString"); table.insert(self.regions, r); return r; end
@@ -357,8 +397,21 @@ CharacterSelect.selectedIndex, CharacterSelect.createIndex = 1, 4;
 CharacterSelectUI = CreateFrame("Frame", "CharacterSelectUI", CharacterSelect);
 CharacterSelectCharacterFrame = CreateFrame("Frame", "CharacterSelectCharacterFrame", CharacterSelectUI);
 CharSelectEnterWorldButton = CreateFrame("Button", "CharSelectEnterWorldButton", CharacterSelectUI);
+CharacterSelectBackButton = CreateFrame("Button", "CharacterSelectBackButton", CharacterSelectUI);
 AccountLoginAccountEdit = CreateFrame("EditBox", "AccountLoginAccountEdit");
 AccountLoginAccountEdit.text = "Ryan";
+
+function CharacterCreate_OnKeyDown(key) state.createKey = key; if ( key == "ESCAPE" ) then CharacterCreate_Back(); end end
+CHAR_CREATE_NAME_IN_USE = "That name is unavailable";
+function GlueDialog_Show(which, text) state.dialog = text; end
+LIGHT_LIVE = 0;
+backgroundLights = 0;
+function TemucraftApplyLights(model)
+	model:AddCharacterLight(0, 1, 0, -0.48073, 0.71827, -0.50297, 1.0, 0, 0, 0, 2.0, 0.65, 0.397645, 0.2727);
+	model:AddCharacterLight(0, 1, 0, -0.49767, -0.78677, 0.36513, 1.0, 0, 0, 0, 1.0, 0.6, 0.47059, 0.32471);
+	model:AddLight(0, 1, 0, 0, 0, -1, 1.0, 0.2, 0.2, 0.2, 0, 0, 0, 0);
+	backgroundLights = backgroundLights + 1;
+end
 
 -- load both files on the stub client
 local ok1, err1 = pcall(dofile, glue.."TemucraftCharCreate.lua");
@@ -389,23 +442,106 @@ check("gender", state.sex == SEX_FEMALE);
 TemucraftCreateNext:Click();
 check("to customize", CharacterCreateFrame.state == "CUSTOMIZATION" and TemucraftCreateOption1:IsShown());
 state.class = 1; TemucraftCharCreate_Refresh();
-check("counter text", string.find(TemucraftCreateOption2.text.text, "1 / 15", 1, true) ~= nil);
+check("counter text: name left, count right", TemucraftCreateOption2.label.text == "Face" and TemucraftCreateOption2.count.text == "1 / 15");
 TemucraftCreateOption2Left:Click();
-check("counter wraps back", string.find(TemucraftCreateOption2.text.text, "15 / 15", 1, true) ~= nil and state.cycles[2] == -1);
+check("counter wraps back", TemucraftCreateOption2.count.text == "15 / 15" and state.cycles[2] == -1);
+CHAR_CUSTOMIZATION1_DESC = "Couleur de peau tres longue a lire";
+TemucraftCharCreate_Refresh();
+check("long option name cut before the count", string.sub(TemucraftCreateOption1.label.text, -3) == "..." and string.len(TemucraftCreateOption1.label.text) * 6 + 6 + string.len(TemucraftCreateOption1.count.text) * 6 <= 170 - 16
+	and TemucraftCreateOption1.count.text ~= "");
+CHAR_CUSTOMIZATION1_DESC = "Skin Color";
+TemucraftCharCreate_Refresh();
 state.cycles = {};
 TemucraftCreateRandomize:Click();
 local tot = C.Totals("HUMAN", false, false);
 local good = true;
 for id = 1, 5 do
-	local shownPos = tonumber(string.match(_G["TemucraftCreateOption"..id].text.text, "(%d+) / "));
+	local shownPos = tonumber(string.match(_G["TemucraftCreateOption"..id].count.text, "(%d+) / "));
 	local start = (id == 2) and 15 or 1;   -- face was clicked back to 15 above
 	if ( shownPos ~= C.Step(start, tot[id], state.cycles[id] or 0) ) then good = false; end
 end
 check("randomize keeps the counters right", good);
 TemucraftCreateNameDice:Click();
 check("random name", CharacterCreateNameEdit:GetText() == "Randomname");
+check("name check: green with the saved name", TemucraftCreateNameCheck:IsShown() and TemucraftCreateNameCheck.ok and TemucraftCreateNameCheck.title == "Randomname");
+CharacterCreateNameEdit:SetText("Aaa");
+check("name check: red with the reason", TemucraftCreateNameCheck:IsShown() and not TemucraftCreateNameCheck.ok and TemucraftCreateNameCheck.text == "No letter three times in a row");
+CharacterCreateNameEdit:SetText("");
+check("name check: empty box, no mark", not TemucraftCreateNameCheck:IsShown());
+CharacterCreateNameEdit:SetText("Thrall");
+GlueDialog_Show("OKAY", CHAR_CREATE_NAME_IN_USE);
+check("name check: the server's answer turns it red", not TemucraftCreateNameCheck.ok and TemucraftCreateNameCheck.text == CHAR_CREATE_NAME_IN_USE and state.dialog == CHAR_CREATE_NAME_IN_USE);
+CharacterCreateNameEdit:SetText("Thrallo");
+check("name check: a new name clears it", TemucraftCreateNameCheck.ok);
+check("name box centred, dice left, check right", TemucraftCreateNameBar.points[1][1] == "BOTTOM" and TemucraftCreateNameBar.points[1][4] == 0
+	and TemucraftCreateNameDice.points[1][1] == "RIGHT" and TemucraftCreateNameDice.points[1][3] == "LEFT" and TemucraftCreateNameCheck.points[1][1] == "LEFT" and TemucraftCreateNameCheck.points[1][3] == "RIGHT");
+-- tooltips one after the other: each laid out from scratch, one anchor
+local function tipOk(owner, title)
+	local t = TemucraftCharCreate_Tooltip();
+	return t and t.shown and #t.points == 1 and t.points[1][2] == owner and t.lines[1].text == title and t.lines[1].color[1] == 1 and t.lines[1].color[3] == 0;
+end
+TemucraftCreateBack:Click();
+TemucraftCreateRace2.scripts.OnEnter(TemucraftCreateRace2);
+local raceTip = tipOk(TemucraftCreateRace2, "ORC");
+TemucraftCreateClass1.scripts.OnEnter(TemucraftCreateClass1);
+local classTip = tipOk(TemucraftCreateClass1, "Warrior");
+TemucraftCreatemale.scripts.OnEnter(TemucraftCreatemale);
+local maleTip = tipOk(TemucraftCreatemale, "Male") and TemucraftCharCreate_Tooltip().height < 40 and TemucraftCharCreate_Tooltip().width < 120;
+TemucraftCreateNameDice.scripts.OnEnter(TemucraftCreateNameDice);
+local diceTip = tipOk(TemucraftCreateNameDice, "Random name");
+TemucraftCreateNameCheck.scripts.OnEnter(TemucraftCreateNameCheck);
+local checkTip = tipOk(TemucraftCreateNameCheck, "Thrallo");
+TemucraftCreateNameCheck.scripts.OnLeave(TemucraftCreateNameCheck);
+check("tooltips: race, class, gender, dice, name check each fresh", raceTip and classTip and maleTip and diceTip and checkTip and not TemucraftCharCreate_Tooltip().shown);
+-- every race: title gold, description white (the description's own colour codes don't leak)
+local oldFlavor = GetFlavorText;
+GetFlavorText = function(key) return "|cffffd100 Lore of "..key.." that is long enough to need a second line in the tooltip box.|r"; end
+TemucraftCharCreate_Refresh();
+local racesOk = true;
+for n = 1, 30 do
+	local b = _G["TemucraftCreateRace"..n];
+	b.scripts.OnEnter(b);
+	local t = TemucraftCharCreate_Tooltip();
+	if ( t.lines[1].color[3] ~= 0 ) then racesOk = false; end
+	for i = 2, #t.lines do
+		if ( t.lines[i].shown and (t.lines[i].color[3] ~= 1 or string.find(t.lines[i].text, "|c", 1, true)) ) then racesOk = false; print("  race", n, i, t.lines[i].text); end
+	end
+end
+GetFlavorText = oldFlavor;
+check("race tooltips: gold title, white text, all races", racesOk);
 TemucraftCreateNext:Click();
-check("finish creates", state.created == "Randomname");
+TemucraftCreateNext:Click();
+check("finish creates", state.created == "Thrallo");
+-- arrow keys turn, Alt-Z hides
+state.facing = 0;
+CharacterCreate_OnKeyDown("LEFT");
+TemucraftCharCreateFrame.keysFrame = nil;
+for _, f in ipairs(frames) do if ( f.parent == CharacterCreate and f.scripts.OnUpdate and not f.name ) then f.scripts.OnUpdate(f, 0.02); end end
+local turned = state.facing < 0;
+CharacterCreate.scripts.OnKeyUp(CharacterCreate, "LEFT");
+local f0 = state.facing;
+for _, f in ipairs(frames) do if ( f.parent == CharacterCreate and f.scripts.OnUpdate and not f.name ) then f.scripts.OnUpdate(f, 0.02); end end
+check("arrow keys turn the character while held", turned and state.facing == f0);
+function IsAltKeyDown() return true; end
+CharacterCreate_OnKeyDown("Z");
+check("Alt-Z hides the create screen", TemucraftCharCreate_IsHidden() and not TemucraftCharCreateFrame:IsShown() and TemucraftCreateEye:IsShown() and TemucraftCreateShowUI:IsShown());
+function IsAltKeyDown() return false; end
+local screenBefore = state.screen;
+CharacterCreate_OnKeyDown("ESCAPE");
+check("Escape brings it back (not Back)", not TemucraftCharCreate_IsHidden() and TemucraftCharCreateFrame:IsShown() and state.screen == screenBefore);
+TemucraftCreateEye:Click();
+TemucraftCreateShowUI:Click();
+check("eye hides, a click shows", not TemucraftCharCreate_IsHidden() and TemucraftCharCreateFrame:IsShown());
+-- even light through GlueParent's TemucraftApplyLights
+local added = {};
+local lmt = { __index = { AddCharacterLight = function(self, set, ...) table.insert(added, { set, ... }); end, AddLight = function() end } };
+local model = setmetatable({}, lmt);
+TemucraftApplyLights(model);
+local la, ld = 0, 0;
+local caughtLights = {};
+for _, a in ipairs(added) do table.insert(caughtLights, { select(2, unpack(a)) }); end
+la, ld = C.LightTotals(caughtLights);
+check("even light applied to the character set", #added >= 2 and near(la, C.LIGHT_AMBIENT) and near(ld, C.LIGHT_DIRECT) and rawget(model, "AddCharacterLight") == nil and backgroundLights == 1);
 
 -- character select
 local ok4, err4 = pcall(function() CharacterSelect:Show(); end);
@@ -488,6 +624,17 @@ SetGlueScreen("login");
 check("credits come back to select", state.screen == "charselect");
 TemucraftSelectRealms:Click();
 check("realms", state.realms);
+check("Back in the top bar, the stock one put away", TemucraftSelectBackButton:IsVisible() and TemucraftSelectBackButton.parent == TemucraftCharSelectFrame.top
+	and TemucraftSelectBackButton.points[1][1] == "RIGHT" and not CharacterSelectBackButton:IsVisible());
+TemucraftSelectBackButton:Click();
+check("Back goes back to the login screen", state.screen == "login");
+state.screen = "charselect";
+function IsAltKeyDown() return true; end
+CharacterSelect_OnKeyDown(CharacterSelect, "Z");
+local eyeHidden = not TemucraftCharSelectFrame:IsVisible();
+function IsAltKeyDown() return false; end
+CharacterSelect_OnKeyDown(CharacterSelect, "ESCAPE");
+check("Alt-Z hides select, Escape shows it (no exit)", eyeHidden and TemucraftCharSelectFrame:IsVisible() and state.screen == "charselect");
 TemucraftSelectCreate:Click();
 check("create", state.screen == "charcreate");
 
@@ -497,8 +644,12 @@ TemucraftSelectSearch:SetText("");
 TemucraftCharSelect_Refresh();
 local function cardByName(name) for n = 1, 8 do local b = _G["TemucraftSelectCard"..n]; if ( b:IsShown() and b.char and b.char.name == name ) then return b; end end end
 local thrallCard, loreCard = cardByName("Thrall"), cardByName("Lorewalker");
-check("selected card gold, crest in colour; others grey", thrallCard.isSelected and thrallCard.selected.shown and thrallCard.crest.desaturated == false
-	and not loreCard.isSelected and not loreCard.selected.shown and loreCard.crest.desaturated == true and loreCard.crest.alpha < 1);
+check("selected card: gold border and glow; others: crest in colour, dimmed", thrallCard.isSelected and thrallCard.selected.shown and thrallCard.crest.desaturated == false
+	and not loreCard.isSelected and not loreCard.selected.shown and loreCard.crest.desaturated == false and loreCard.crest.alpha < 1);
+loreCard.scripts.OnEnter(loreCard);
+local hoverCrest = loreCard.crest.alpha;
+loreCard.scripts.OnLeave(loreCard);
+check("hover: crest at full strength", hoverCrest == 1 and loreCard.crest.alpha < 1);
 check("default group header", TemucraftSelectHeader1:IsShown() and TemucraftSelectHeader1.text.text == "Characters" and TemucraftSelectHeader1.count.text == "(3)");
 check("plus, delete and restore buttons", TemucraftSelectPlus and TemucraftSelectDelete.enabled and TemucraftSelectRestore and TemucraftSelectRestore:IsShown());
 -- delete

@@ -570,8 +570,10 @@ hidden holder and ours sit on top. The "Classic" choice here is `TEMUCRAFT_LOGIN
     "Characters"; the default group can only be renamed) / New group...; left-click a header opens or closes it.
     Drag a card onto a card (it takes that place, in that card's group) or onto a header (last in that group).
   - **Cards**: "1." small and grey, the name in gold, "Level 80 Mage" (class in its colour), the zone on one line with
-    the short version bracket, the faction crest on the right (in colour on the selected card, grey and dim on the
-    others); the selected card has a gold background, border and glow. Double-click enters the world. The paid service
+    the short version bracket, the faction crest on the right (full colour on the selected and the hovered card, a little
+    dimmed on the others). Every card has the same dark background and fonts; the selected one gets a bright gold border
+    and a soft gold glow (the stock list's gold sweep, faint), a hovered one a faint light bar (`UI-Listbox-Highlight2`).
+    Group headers light up with a faint gold bar; their hint sits left of the list. Double-click enters the world. The paid service
     button and an unread mail badge sit on the card's left edge.
   - **Card tooltip** (left of the list): name, realm, spec + class in class colour, level, zone, professions, gold
     (coin icons). The character list only has name, class, level and zone; spec, professions, gold and mail come from
@@ -586,9 +588,11 @@ hidden holder and ours sit on top. The "Classic" choice here is `TEMUCRAFT_LOGIN
     the word for the client's language (ruRU УДАЛИТЬ, deDE LÖSCHEN, frFR SUPPRIMER, esES/esMX BORRAR, koKR 삭제,
     zhCN 删除, zhTW 刪除), always the English DELETE, and Latin spellings (UDALIT, LOESCHEN / LOSCHEN); non-English
     clients show "(or DELETE)". Cyrillic and Latin-1 upper case is done by `Logic.Upper` (Lua's only knows a-z).
-  - A top bar with Menu (a gold-bordered panel of red buttons: Options, AddOns, Credits, Cinematics, Exit) and the
-    realm's name; the PTR client on a realm that isn't the PTR gets a red warning and Enter World off. The eye button
-    hides the interface. The Realms button is hidden (Live or PTR is picked in the launcher).
+  - A top bar with Menu (a gold-bordered panel of red buttons: Options, AddOns, Credits, Cinematics, Exit) on the left,
+    the realm's name in the middle and Back on the right (the client's `CharacterSelect_Exit`, as Escape; the stock
+    Back button is put away); the PTR client on a realm that isn't the PTR gets a red warning and Enter World off. The
+    eye button (or Alt-Z) hides the interface; Escape or Alt-Z brings it back. The Realms button is hidden (Live or PTR
+    is picked in the launcher).
   - Groups and order are kept per account and realm in Config.wtf's `accountList` as a segment after `~`
     (`GetSavedAccountList` / `SetSavedAccountList` are wrapped so AccountLogin.lua still sees only the saved
     accounts). An entry is a name or a group header `#` + kind (`*` default, `=` the player's) + state (`+` open,
@@ -597,9 +601,26 @@ hidden holder and ours sit on top. The "Classic" choice here is `TEMUCRAFT_LOGIN
   - Not doable: retail's camp with up to four characters in the scene. The 3.3.5 glue screen has one character model
     (the CharacterSelect ModelFFX), so only the selected character stands in the scene.
 - **Character create** (`TemucraftCharCreate.lua`): Alliance races in two columns on the left, Horde on the right,
-  classes along the bottom, male / female at the top; step 2 Customize with the name and random-name dice, option
-  arrows with "Face 3 / 9" counters (totals from the DBCs in `TemucraftGlueData.lua`, made by `gen_glue_data.py`),
-  Randomize Appearance. `TEMUCRAFT_CREATE_SCENES = "race"` shows each race's own scene; `TEMUCRAFT_SCENE_PICKS`
+  classes along the bottom, male / female at the top. Race buttons are round portraits with a thin gold ring (the glue
+  screen's own ring art, centred on the portrait), the selected race the ring bright with a soft glow; class buttons
+  are square with a thin gold edge, the stock gold square glow when selected and the square highlight on hover.
+  Tooltips are our own (title gold, text white, reasons red, left-aligned, laid out fresh each time). Step 2 Customize:
+  the name box in the middle of the screen with the random-name dice on its left and a name check on its right (green
+  tick / red cross, hover for why); option rows with the name left and "3 / 9" right in each bar (totals from the DBCs
+  in `TemucraftGlueData.lua`, made by `gen_glue_data.py`; long names are cut before the count), Randomize Appearance.
+  The name check uses the server's rules (AzerothCore `CheckPlayerName` with the worldserver.conf defaults
+  `MinPlayerName = 2`, `StrictPlayerNames = 0`, 12 letters max: letters only, one alphabet, no letter three times in a
+  row; the tooltip shows the name as the server saves it, "Thrall"); `TEMUCRAFT_NAME_RULES = { min, max, strict }`
+  changes them. Taken, reserved and profane names are only known after Finish (3.3.5 has no name query): the server's
+  answer turns the check red until the name changes. Left / Right arrow keys turn the character (held), the eye or
+  Alt-Z hides the interface (a click, Escape or Alt-Z brings it back). Zoom is not possible here: the scene's camera
+  belongs to the scene model (moving or scaling the model moves the camera with it) and the glue API can't move the
+  character inside the scene.
+  - Even light: GlueParent.lua's `TemucraftApplyLights` (patch-~) gives the character the light of the scene shown,
+    which left races on another race's scene dark (Highmountain Tauren on the Horde scene had no ambient light). The
+    character's light set is now rebuilt with the scene's directions and tint but the same totals for every race
+    (`Logic.EvenLights`: ambient 0.42, direct 1.35; a key and fill light when a scene has none). The background keeps
+    its own lights. `TEMUCRAFT_EVEN_LIGHT = false` turns it off. Character select uses the same. `TEMUCRAFT_CREATE_SCENES = "race"` shows each race's own scene; `TEMUCRAFT_SCENE_PICKS`
   the player's picks.
 - **Glue safety** (`TemucraftGlueSafety.lua`, loaded first): `GetAvailableRaces`, `GetAvailableClasses` and
   `GetClassesForRace` push 3 values per race or class without growing the Lua stack; with 20-30 races the stock

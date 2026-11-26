@@ -3,10 +3,12 @@
 	"Search") with an (i) tooltip and a square "+" (Create Character) beside it; below, the characters in groups
 	("Characters" by default, the player can add, rename and delete groups) with collapsible headers; each card has
 	the place number, the name in gold, "Level 80 Mage" (class in its colour), the zone on one line (short version
-	bracket) and the faction crest (in colour on the selected card, grey on the others). At the bottom a red Create
+	bracket) and the faction crest (full colour on the selected card, a little dimmed on the others). Cards are always
+	dark; the selected one gets a gold border and a soft gold glow, a hovered one a faint light bar. At the bottom a red Create
 	Character button, a square Delete Character (trash) and a square Restore Deleted Character button. A top bar with
-	Menu (Options, AddOns, Credits, Cinematics, Exit) and the realm name; an eye button hides the interface. Enter World,
-	Back and the rotate buttons stay the client's own.
+	Menu (Options, AddOns, Credits, Cinematics, Exit) on the left, the realm name in the middle and Back on the right
+	(the client's CharacterSelect_Exit); an eye button (or Alt-Z) hides the interface. Enter World and the rotate
+	buttons stay the client's own.
 
 	The client's CharacterSelect.lua (patch-<locale>-C) still runs: its character list is only moved into a hidden
 	holder, and the cards call its functions (CharacterSelect_SelectCharacter, CharacterSelect_EnterWorld ...). The
@@ -649,12 +651,17 @@ function Logic.DeleteInstructions(locale, localized, stock)
 end
 
 -- Cards and their tooltip ------------------------------------------------------------------------------------------
--- the selected card: gold background and border, its crest in colour; the others dark, the crest grey and dim
-function Logic.CardStyle(selected)
+-- Retail's list: every card has the same dark background and the same fonts; the selected one only gets a bright gold
+-- border, a soft gold glow and its crest at full strength; hovered cards a faint light highlight (see MakeCard). The
+-- crest keeps its faction colour on every card, a little dimmed on the ones not selected.
+function Logic.CardStyle(selected, hovered)
+	local st = { bg = { 0.10, 0.10, 0.12, 0.94 }, crestDesaturated = false, name = { 1, 0.82, 0 } };
 	if ( selected ) then
-		return { bg = { 0.62, 0.47, 0.12, 0.95 }, border = { 1, 0.82, 0, 1 }, crestDesaturated = false, crestAlpha = 1, glow = true };
+		st.border, st.glow, st.crestAlpha = { 1, 0.82, 0.18, 1 }, true, 1;
+	else
+		st.border, st.glow, st.crestAlpha = { 0.42, 0.42, 0.46, 0.9 }, false, hovered and 1 or 0.65;
 	end
-	return { bg = { 0.17, 0.17, 0.19, 0.92 }, border = { 0.42, 0.42, 0.46, 0.9 }, crestDesaturated = true, crestAlpha = 0.5, glow = false };
+	return st;
 end
 
 function Logic.Thousands(n)
@@ -744,8 +751,9 @@ local ART = {
 	edge = "Interface\\Tooltips\\UI-Tooltip-Border",
 	card = "Interface\\AchievementFrame\\UI-Achievement-Parchment-Horizontal-Desaturated",
 	header = "Interface\\AchievementFrame\\UI-Achievement-Category-Background",
-	headerHighlight = "Interface\\AchievementFrame\\UI-Achievement-Category-Highlight",
-	selected = "Interface\\Glues\\CharacterSelect\\Glue-CharacterSelect-Highlight",
+	listHighlight = "Interface\\Buttons\\UI-Listbox-Highlight",     -- gold bar (header hover, selected card's glow)
+	listHighlight2 = "Interface\\Buttons\\UI-Listbox-Highlight2",   -- light grey bar (card hover)
+	selected = "Interface\\Glues\\CharacterSelect\\Glues-CharacterSelect-Highlight",   -- gold, fading to the right
 	buttonUp = "Interface\\Glues\\Common\\Glue-Panel-Button-Up",
 	buttonDown = "Interface\\Glues\\Common\\Glue-Panel-Button-Down",
 	buttonHighlight = "Interface\\Glues\\Common\\Glue-Panel-Button-Highlight",
@@ -762,7 +770,8 @@ local ART = {
 
 -- 3.3.5 has no restore of deleted characters at character select. On Temucraft the Curator (mod-temucraft-shop)
 -- brings them back in game, for tokens (CharDelete.Method = 1 keeps them), so the button says where.
-local RESTORE_TEXT = "Restore Deleted Character\n|cffff4040Deleted characters can't be restored here: the Temucraft Curator|r\n|cffff4040(in game, the shop) brings them back for tokens.|r";
+local HEADER_HINT = "Click: open or close\nRight-click: rename or delete";
+local RESTORE_TEXT ="Restore Deleted Character\n|cffff4040Deleted characters can't be restored here: the Temucraft Curator|r\n|cffff4040(in game, the shop) brings them back for tokens.|r";
 
 -- The saved account list: everyone else (AccountLogin.lua's saved accounts, the client's own code) sees it without
 -- the character orders, and keeps them when it writes it (see Logic.SplitSaved)
@@ -807,9 +816,17 @@ local function Active()
 end
 TemucraftCharSelect_Active = Active;
 
-local function Tooltip(owner, text)
-	if ( text and GlueTooltip_SetOwner ) then
-		GlueTooltip_SetOwner(owner);
+-- GlueTooltip_SetOwner only adds a point (it never clears the old ones): a tooltip shown with another anchor before
+-- stretched between both. So the points are cleared first; point/relTo/relPoint/x/y anchor it somewhere else.
+local function Tooltip(owner, text, point, relTo, relPoint, x, y)
+	if ( text and GlueTooltip_SetOwner and GlueTooltip ) then
+		GlueTooltip:ClearAllPoints();
+		if ( point ) then
+			GlueTooltip:SetPoint(point, relTo or owner, relPoint or point, x or 0, y or 0);
+			GlueTooltip:Show();
+		else
+			GlueTooltip_SetOwner(owner);
+		end
 		GlueTooltip_SetText(text);
 	end
 end
@@ -1447,11 +1464,13 @@ local function MakeHeader(n)
 	h.bg:SetTexCoord(0, 0.6640625, 0, 1);
 	h.bg:SetAllPoints(h);
 	h.bg:SetVertexColor(0.55, 0.55, 0.6);
+	-- hover: a faint gold bar (the achievement category highlight is green)
 	local hl = h:CreateTexture(nil, "HIGHLIGHT");
-	hl:SetTexture(ART.headerHighlight);
-	hl:SetTexCoord(0, 0.6640625, 0, 1);
+	hl:SetTexture(ART.listHighlight);
 	hl:SetBlendMode("ADD");
-	hl:SetAllPoints(h);
+	hl:SetAlpha(0.3);
+	hl:SetPoint("TOPLEFT", h, "TOPLEFT", 4, -3);
+	hl:SetPoint("BOTTOMRIGHT", h, "BOTTOMRIGHT", -4, 3);
 	h.text = h:CreateFontString(nil, "OVERLAY", "GlueFontNormal");
 	h.text:SetPoint("LEFT", h, "LEFT", 12, 0);
 	h.count = h:CreateFontString(nil, "OVERLAY", "GlueFontDisableSmall");
@@ -1471,10 +1490,14 @@ local function MakeHeader(n)
 		SaveOrder();
 		Refresh(true);
 	end);
+	-- the hint left of the list (like the card tooltips), not over the card above
 	h:SetScript("OnEnter", function(self)
-		if ( not dragging ) then Tooltip(self, "Click to open or close, right-click to rename or delete"); end
+		self.text:SetTextColor(1, 1, 1);
+		if ( not dragging ) then
+			Tooltip(self, HEADER_HINT, "TOPRIGHT", root.list, "TOPLEFT", -24, (self:GetTop() and root.list:GetTop()) and (self:GetTop() - root.list:GetTop()) or 0);
+		end
 	end);
-	h:SetScript("OnLeave", HideTooltip);
+	h:SetScript("OnLeave", function(self) self.text:SetTextColor(1, 0.82, 0); HideTooltip(); end);
 	h:EnableMouseWheel(true);
 	h:SetScript("OnMouseWheel", function(_, delta) offset = offset - delta; Clamp(); Refresh(true); end);
 	headers[n] = h;
@@ -1491,15 +1514,26 @@ local function MakeCard(n)
 	b.bg:SetTexture(ART.card);
 	b.bg:SetPoint("TOPLEFT", b, "TOPLEFT", 3, -3);
 	b.bg:SetPoint("BOTTOMRIGHT", b, "BOTTOMRIGHT", -3, 3);
+	-- selected: a soft gold glow on the dark card (the gold sweep of the stock list, faint) and a lighter top; the
+	-- border turns bright gold (FillCard). Never a fill: the text stays on the dark background.
 	b.selected = b:CreateTexture(nil, "BORDER");
 	b.selected:SetTexture(ART.selected);
 	b.selected:SetBlendMode("ADD");
+	b.selected:SetAlpha(0.28);
 	b.selected:SetAllPoints(b.bg);
 	b.selected:Hide();
+	b.shine = b:CreateTexture(nil, "BORDER");
+	b.shine:SetTexture(1, 1, 1, 1);
+	b.shine:SetBlendMode("ADD");
+	b.shine:SetPoint("TOPLEFT", b.bg, "TOPLEFT", 0, 0);
+	b.shine:SetPoint("BOTTOMRIGHT", b.bg, "RIGHT", 0, 0);
+	if ( b.shine.SetGradientAlpha ) then b.shine:SetGradientAlpha("VERTICAL", 1, 1, 1, 0, 1, 1, 1, 0.07); else b.shine:SetAlpha(0.04); end
+	b.shine:Hide();
+	-- hover: a faint light bar
 	local hl = b:CreateTexture(nil, "HIGHLIGHT");
-	hl:SetTexture(ART.selected);
+	hl:SetTexture(ART.listHighlight2);
 	hl:SetBlendMode("ADD");
-	hl:SetAlpha(0.35);
+	hl:SetAlpha(0.18);
 	hl:SetAllPoints(b.bg);
 	-- "1." small and grey, then the name in gold
 	b.num = b:CreateFontString(nil, "OVERLAY", "GlueFontDisableSmall");
@@ -1539,8 +1573,16 @@ local function MakeCard(n)
 			end
 		end
 	end);
-	b:SetScript("OnEnter", function(self) ShowCardTip(self); end);
-	b:SetScript("OnLeave", HideCardTip);
+	b:SetScript("OnEnter", function(self)
+		self.hovered = true;
+		self.crest:SetAlpha(Logic.CardStyle(self.isSelected, true).crestAlpha);
+		ShowCardTip(self);
+	end);
+	b:SetScript("OnLeave", function(self)
+		self.hovered = nil;
+		self.crest:SetAlpha(Logic.CardStyle(self.isSelected, false).crestAlpha);
+		HideCardTip();
+	end);
 	b:SetScript("OnClick", function(self, button)
 		if ( dragEnded ) then
 			dragEnded = false;
@@ -1638,12 +1680,13 @@ local function FillCard(b, c, sel)
 	b.zone:SetWidth(ZONE_WIDTH);
 	SetOneLine(b.zone, c.zone or "", ZONE_WIDTH);
 	local isSel = (c.id == sel);
-	local st = Logic.CardStyle(isSel);
+	local st = Logic.CardStyle(isSel, b.hovered);
 	b.isSelected = isSel;
 	b.bg:SetVertexColor(st.bg[1], st.bg[2], st.bg[3]);
 	b.bg:SetAlpha(st.bg[4]);
 	b:SetBackdropBorderColor(st.border[1], st.border[2], st.border[3], st.border[4]);
-	if ( st.glow ) then b.selected:Show(); else b.selected:Hide(); end
+	b.name:SetTextColor(st.name[1], st.name[2], st.name[3]);
+	if ( st.glow ) then b.selected:Show(); b.shine:Show(); else b.selected:Hide(); b.shine:Hide(); end
 	if ( c.faction == "Alliance" or c.faction == "Horde" ) then
 		b.crest:SetTexture("Interface\\TargetingFrame\\UI-PVP-"..c.faction);
 		b.crest:SetTexCoord(0, 0.625, 0, 0.625);
@@ -1844,6 +1887,13 @@ local function Build()
 	-- Temucraft: Live or PTR is chosen in the launcher (it writes realmName), so no realm list in game.
 	-- Set TEMUCRAFT_SHOW_REALMS = true (e.g. in TemucraftScenes.lua) to bring the button back.
 	if ( not TEMUCRAFT_SHOW_REALMS ) then root.realms:Hide(); end
+	-- Back sits at the right of the top bar, as Menu at its left (the stock one is put away in HideStock): the client's
+	-- own CharacterSelect_Exit, as the stock button and Escape do
+	root.back = SmallButton("TemucraftSelectBackButton", root.top, BACK or "Back", 110, function()
+		if ( menu ) then menu:Hide(); end
+		CharacterSelect_Exit();
+	end);
+	root.back:SetPoint("RIGHT", root.top, "RIGHT", -14, 0);
 	root.realm = root.top:CreateFontString(nil, "OVERLAY", "GlueFontNormal");
 	root.realm:SetPoint("CENTER", root.top, "CENTER", 0, 0);
 	root.realmWarning = root:CreateFontString(nil, "OVERLAY", "GlueFontNormalLarge");
@@ -1928,7 +1978,7 @@ local function Build()
 	eye.icon:SetAllPoints(eye);
 	eye:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD");
 	eye:SetScript("OnClick", ToggleEye);
-	eye:SetScript("OnEnter", function(self) Tooltip(self, hiddenByEye and "Show the interface" or "Hide the interface"); end);
+	eye:SetScript("OnEnter", function(self) Tooltip(self, (hiddenByEye and "Show the interface" or "Hide the interface").."\n|cff9d9d9dAlt-Z|r"); end);
 	eye:SetScript("OnLeave", HideTooltip);
 
 	root:SetScript("OnUpdate", function(_, elapsed)
@@ -1941,7 +1991,8 @@ local function Build()
 end
 
 local function HideStock()
-	for _, f in ipairs({ CharacterSelectCharacterFrame, CharacterSelectDeleteButton, CharacterSelectAddonsButton }) do
+	for _, name in ipairs({ "CharacterSelectCharacterFrame", "CharacterSelectDeleteButton", "CharacterSelectAddonsButton", "CharacterSelectBackButton" }) do
+		local f = _G[name];
 		if ( f ) then f:SetParent(holder); end
 	end
 end
@@ -2017,6 +2068,11 @@ if ( oldKeyDown ) then
 			if ( popupBlocker and popupBlocker:IsShown() ) then
 				if ( key == "ESCAPE" ) then ClosePopups(); return; end
 			end
+		end
+		-- Alt-Z hides / shows the interface (as in game); with it hidden, Escape brings it back
+		if ( Active() and root and eye and ((key == "Z" and IsAltKeyDown and IsAltKeyDown()) or (key == "ESCAPE" and hiddenByEye)) ) then
+			ToggleEye();
+			return;
 		end
 		local step = (key == "UP" or key == "LEFT") and -1 or ((key == "DOWN" or key == "RIGHT") and 1) or nil;
 		if ( step and Active() and root and root:IsShown() and #shown > 1 ) then

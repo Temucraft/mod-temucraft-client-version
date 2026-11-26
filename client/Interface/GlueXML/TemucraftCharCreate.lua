@@ -113,31 +113,216 @@ function Logic.RandomClicks(totals, random)
 	return clicks;
 end
 
--- The name check mark: "ok", or why not ("empty", "short", "long", "letters"). Letters only (UTF-8 letters count as
--- letters), at least MIN_CHAR_NAME_LENGTH, at most 47 bytes (the server's limit, see NameLength_CharacterCreate.lua).
-Logic.MAX_NAME_BYTES = 47;
-function Logic.NameStatus(text)
-	text = text or "";
-	if ( text == "" ) then
-		return "empty";
-	end
-	if ( string.find(text, "[%z\1-\64\91-\96\123-\127]") ) then
-		return "letters";
-	end
-	local letters = 0;
-	for i = 1, string.len(text) do
+-- The name check: the server's own rules (AzerothCore ObjectMgr::CheckPlayerName, worldserver.conf MinPlayerName = 2,
+-- StrictPlayerNames = 0, MAX_PLAYER_NAME = 12), checked while typing. 3.3.5 has no "is this name free" request and the
+-- glue screen no addon channel, so taken / reserved / profane names are only known after Finish (the server's answer
+-- turns the mark red, see NameServerError). TEMUCRAFT_NAME_RULES = { min =, max =, strict = } overrides the defaults.
+-- StrictPlayerNames 0: every letter Latin (with the Latin-1 and Latin Extended-A accents), or every letter Cyrillic, or
+-- every letter East Asian; 1 (bit 1): basic Latin a-z only. The realm-language bit (2) is treated as 0.
+Logic.NAME_RULES = { min = 2, max = 12, strict = 0 };
+Logic.NAME_REASONS = {
+	empty = "Enter a name", short = "Too short (min %d)", long = "Too long (max %d)",
+	letters = "Only letters (no spaces, digits or symbols)", mixed = "Only one alphabet (don't mix Latin and Cyrillic)",
+	three = "No letter three times in a row", latin = "Only the letters a-z",
+};
+
+-- UTF-8 -> code points, or nil when the text isn't valid UTF-8
+function Logic.Utf8Codes(text)
+	local out, i, n = {}, 1, string.len(text or "");
+	while ( i <= n ) do
 		local b = string.byte(text, i);
-		if ( b < 128 or b >= 192 ) then
-			letters = letters + 1;
+		local len, cp = 1, b;
+		if ( b >= 240 and b <= 244 ) then len, cp = 4, b - 240;
+		elseif ( b >= 224 ) then len, cp = 3, b - 224;
+		elseif ( b >= 192 ) then len, cp = 2, b - 192;
+		elseif ( b >= 128 ) then return nil; end
+		if ( i + len - 1 > n ) then return nil; end
+		for k = 1, len - 1 do
+			local c = string.byte(text, i + k);
+			if ( c < 128 or c > 191 ) then return nil; end
+			cp = cp * 64 + (c - 128);
+		end
+		table.insert(out, cp);
+		i = i + len;
+	end
+	return out;
+end
+
+local function BasicLatin(c) return (c >= 65 and c <= 90) or (c >= 97 and c <= 122); end
+local function ExtendedLatin(c)
+	return BasicLatin(c) or (c >= 0xC0 and c <= 0xD6) or (c >= 0xD8 and c <= 0xDE) or c == 0xDF or (c >= 0xE0 and c <= 0xF6)
+		or (c >= 0xF8 and c <= 0xFE) or (c >= 0x100 and c <= 0x12F) or c == 0x1E9E;
+end
+local function Cyrillic(c) return (c >= 0x410 and c <= 0x44F) or c == 0x401 or c == 0x451; end
+local function EastAsian(c)
+	return (c >= 0x1100 and c <= 0x11F9) or (c >= 0x3041 and c <= 0x30FF) or (c >= 0x3131 and c <= 0x318E)
+		or (c >= 0x31F0 and c <= 0x31FF) or (c >= 0x3400 and c <= 0x4DB5) or (c >= 0x4E00 and c <= 0x9FC3)
+		or (c >= 0xAC00 and c <= 0xD7A3) or (c >= 0xFF01 and c <= 0xFFEE);
+end
+local function AllOf(codes, test)
+	for _, c in ipairs(codes) do if ( not test(c) ) then return false; end end
+	return true;
+end
+local function Lower(c)
+	if ( (c >= 65 and c <= 90) or (c >= 0xC0 and c <= 0xDE and c ~= 0xD7) or (c >= 0x410 and c <= 0x42F) ) then return c + 32; end
+	if ( c == 0x401 ) then return 0x451; end
+	if ( c >= 0x100 and c <= 0x12F and c % 2 == 0 ) then return c + 1; end
+	return c;
+end
+local function Upper(c)
+	if ( (c >= 97 and c <= 122) or (c >= 0xE0 and c <= 0xFE and c ~= 0xF7) or (c >= 0x430 and c <= 0x44F) ) then return c - 32; end
+	if ( c == 0x451 ) then return 0x401; end
+	if ( c >= 0x100 and c <= 0x12F and c % 2 == 1 ) then return c - 1; end
+	return c;
+end
+local function Utf8Char(c)
+	if ( c < 128 ) then return string.char(c); end
+	if ( c < 2048 ) then return string.char(192 + math.floor(c / 64), 128 + c % 64); end
+	if ( c < 65536 ) then return string.char(224 + math.floor(c / 4096), 128 + math.floor(c / 64) % 64, 128 + c % 64); end
+	return string.char(240 + math.floor(c / 262144), 128 + math.floor(c / 4096) % 64, 128 + math.floor(c / 64) % 64, 128 + c % 64);
+end
+
+-- "tHRALL" -> "Thrall": the name as the server saves it (normalizePlayerName: first letter upper, the rest lower)
+function Logic.SavedName(text)
+	local codes = Logic.Utf8Codes(text);
+	if ( not codes ) then return text; end
+	local out = {};
+	for i, c in ipairs(codes) do out[i] = Utf8Char((i == 1) and Upper(c) or Lower(c)); end
+	return table.concat(out);
+end
+
+-- status ("ok", "empty", "short", "long", "letters", "mixed", "three", "latin"), the reason to show (nil when ok), the
+-- name as it will be saved
+function Logic.CheckName(text, rules)
+	rules = rules or TEMUCRAFT_NAME_RULES or Logic.NAME_RULES;
+	local min, max, strict = rules.min or 2, rules.max or 12, rules.strict or 0;
+	text = text or "";
+	if ( text == "" ) then return "empty", nil, ""; end
+	local codes = Logic.Utf8Codes(text);
+	if ( not codes ) then return "letters", Logic.NAME_REASONS.letters, text; end
+	local function fail(status, n) return status, string.format(Logic.NAME_REASONS[status], n or 0), Logic.SavedName(text); end
+	if ( #codes > max ) then return fail("long", max); end
+	if ( #codes < min ) then return fail("short", min); end
+	local function letter(c) return ExtendedLatin(c) or Cyrillic(c) or EastAsian(c); end
+	if ( not AllOf(codes, letter) ) then return fail("letters"); end
+	if ( strict % 2 == 1 and strict < 2 ) then
+		if ( not AllOf(codes, BasicLatin) ) then return fail("latin"); end
+	elseif ( not (AllOf(codes, ExtendedLatin) or AllOf(codes, Cyrillic) or AllOf(codes, EastAsian)) ) then
+		return fail("mixed");
+	end
+	for i = 3, #codes do
+		local a, b, c = Lower(codes[i - 2]), Lower(codes[i - 1]), Lower(codes[i]);
+		if ( a == b and b == c ) then return fail("three"); end
+	end
+	return "ok", nil, Logic.SavedName(text);
+end
+
+-- the old name of it ("ok", "empty", "short", "long", "letters" ...)
+function Logic.NameStatus(text)
+	return (Logic.CheckName(text));
+end
+
+-- The server's answers to Finish that are about the name (the client's own strings): the name mark turns red with it
+Logic.NAME_ERROR_STRINGS = {
+	"CHAR_CREATE_NAME_IN_USE", "CHAR_CREATE_INVALID_NAME", "CHAR_NAME_RESERVED", "CHAR_NAME_PROFANE", "CHAR_NAME_FAILURE",
+	"CHAR_NAME_INVALID_CHARACTER", "CHAR_NAME_MIXED_LANGUAGES", "CHAR_NAME_THREE_CONSECUTIVE", "CHAR_NAME_TOO_LONG",
+	"CHAR_NAME_TOO_SHORT", "CHAR_NAME_NO_NAME", "CHAR_NAME_INVALID_APOSTROPHE", "CHAR_NAME_MULTIPLE_APOSTROPHES",
+	"CHAR_NAME_INVALID_SPACE", "CHAR_NAME_RUSSIAN_CONSECUTIVE_SILENT_CHARACTERS",
+	"CHAR_NAME_RUSSIAN_SILENT_CHARACTER_AT_BEGINNING_OR_END", "CHAR_NAME_DECLENSION_DOESNT_MATCH_BASE_NAME",
+};
+function Logic.NameServerError(text, env)
+	env = env or _G;
+	if ( type(text) ~= "string" or text == "" ) then return nil; end
+	for _, key in ipairs(Logic.NAME_ERROR_STRINGS) do
+		local s = env[key];
+		if ( type(s) == "string" and s ~= "" and s == text ) then return text; end
+	end
+	return nil;
+end
+
+-- Tooltip lines: the title in gold, every other line white (their own colour codes taken out, so no colour leaks from
+-- the title or from the text), an error in red. { { text =, color = "gold"|"white"|"red" }, ... }
+function Logic.StripColors(text)
+	return (string.gsub(string.gsub(text or "", "|c%x%x%x%x%x%x%x%x", ""), "|r", ""));
+end
+function Logic.TooltipLines(title, body, err, width)
+	local out = {};
+	local function add(text, color)
+		for line in string.gmatch(Logic.Wrap(Logic.StripColors(text), width or 52).."\n", "(.-)\n") do
+			line = string.match(line, "^%s*(.-)%s*$");
+			if ( line ~= "" ) then table.insert(out, { text = line, color = color }); end
 		end
 	end
-	if ( letters < (MIN_CHAR_NAME_LENGTH or 2) ) then
-		return "short";
+	if ( title and title ~= "" ) then table.insert(out, { text = Logic.StripColors(title), color = "gold" }); end
+	if ( body and body ~= "" ) then add(body, "white"); end
+	if ( err and err ~= "" ) then add(err, "red"); end
+	return out;
+end
+
+-- Even light for the character (create and select): the scenes' lights were made for their own race, so a race on
+-- another race's (or the faction's) scene could stand almost unlit (Highmountain Tauren on the Horde scene: no ambient
+-- at all). The character's light set keeps the scene's directions and colours (warm on the Horde scenes, cool on the
+-- Alliance ones) but every race gets the same brightness: ambient and direct light scaled to the same totals, and a
+-- key and fill light from the front-left / back-right when the scene has none. Only the character set changes; the
+-- background keeps the scene's own lights. Light: { enabled, omni, dirX, dirY, dirZ, ambI, ambR, ambG, ambB, dirI, dirR, dirG, dirB }.
+Logic.LIGHT_AMBIENT, Logic.LIGHT_DIRECT = 0.42, 1.35;
+local function Lum(r, g, b) return 0.3 * (r or 0) + 0.59 * (g or 0) + 0.11 * (b or 0); end
+local function Tint(r, g, b, target)
+	local l = Lum(r, g, b);
+	if ( l <= 0.001 ) then return target, target, target; end
+	local k = target / l;
+	return math.min(1, r * k), math.min(1, g * k), math.min(1, b * k);
+end
+function Logic.LightTotals(lights)
+	local amb, dir = 0, 0;
+	for _, l in ipairs(lights or {}) do
+		if ( l[1] == 1 ) then
+			amb = amb + (l[6] or 0) * Lum(l[7], l[8], l[9]);
+			dir = dir + (l[10] or 0) * Lum(l[11], l[12], l[13]);
+		end
 	end
-	if ( string.len(text) > Logic.MAX_NAME_BYTES ) then
-		return "long";
+	return amb, dir;
+end
+function Logic.EvenLights(lights, ambientTarget, directTarget)
+	ambientTarget, directTarget = ambientTarget or Logic.LIGHT_AMBIENT, directTarget or Logic.LIGHT_DIRECT;
+	local amb, dir = Logic.LightTotals(lights);
+	-- the scene's tint: its ambient colour, else its direct colour, else neutral
+	local tr, tg, tb, tw, dr, dg, db, dw = 0, 0, 0, 0, 0, 0, 0, 0;
+	local directs = {};
+	for _, l in ipairs(lights or {}) do
+		if ( l[1] == 1 ) then
+			local a = (l[6] or 0) * Lum(l[7], l[8], l[9]);
+			if ( a > 0 ) then tr, tg, tb, tw = tr + l[7] * a, tg + l[8] * a, tb + l[9] * a, tw + a; end
+			local d = (l[10] or 0) * Lum(l[11], l[12], l[13]);
+			if ( d > 0 ) then
+				dr, dg, db, dw = dr + l[11] * d, dg + l[12] * d, db + l[13] * d, dw + d;
+				table.insert(directs, { l = l, d = d });
+			end
+		end
 	end
-	return "ok";
+	local ar, ag, ab = 1, 1, 1;
+	if ( tw > 0 ) then ar, ag, ab = tr / tw, tg / tw, tb / tw; elseif ( dw > 0 ) then ar, ag, ab = dr / dw, dg / dw, db / dw; end
+	ar, ag, ab = Tint(ar, ag, ab, ambientTarget);
+	local out = { { 1, 0, 0, 0, -1, 1.0, ar, ag, ab, 0.0, 0, 0, 0 } };
+	table.sort(directs, function(x, y) return x.d > y.d; end);
+	if ( #directs > 0 ) then
+		local k = directTarget / dir;
+		for i = 1, math.min(3, #directs) do
+			local l = directs[i].l;
+			-- the colour scaled first (up to white), the rest in the intensity
+			local want = directs[i].d * k;
+			local r, g, b = Tint(l[11], l[12], l[13], math.min(0.9, want));
+			local intensity = want / math.max(0.001, Lum(r, g, b));
+			table.insert(out, { 1, l[2] or 0, l[3], l[4], l[5], 1.0, 0, 0, 0, intensity, r, g, b });
+		end
+	else
+		local cr, cg, cb = dr, dg, db;
+		if ( dw > 0 ) then cr, cg, cb = dr / dw, dg / dw, db / dw; else cr, cg, cb = ar, ag, ab; end
+		local kr, kg, kb = Tint(cr, cg, cb, 0.45);
+		table.insert(out, { 1, 0, -0.64623469, 0.57582057, -0.50081086, 1.0, 0, 0, 0, directTarget * 0.7 / 0.45, kr, kg, kb });
+		table.insert(out, { 1, 0, -0.45756075, -0.58900136, -0.66611975, 1.0, 0, 0, 0, directTarget * 0.3 / 0.45, kr, kg, kb });
+	end
+	return out;
 end
 
 -- Breaks long text into lines of about `width` characters (the glue tooltip doesn't wrap: one long line would run
@@ -191,14 +376,15 @@ if ( not CharacterCreate or not CreateFrame ) then
 	return;
 end
 
-local NAME_HINTS = {
-	short = "Too short", long = "Too long", letters = "Letters only",
-};
 local OPTION_LABELS = { "Skin Color", "Face", "Hair Style", "Hair Color", "Facial Hair" };
+local OPTION_ROW_WIDTH, OPTION_ARROW = 230, 30;
+local OPTION_BAR_WIDTH, OPTION_PAD = OPTION_ROW_WIDTH - 2 * OPTION_ARROW, 8;
 local ICON_SIZE, ICON_STEP = 46, 54;
+local NAME_WIDTH = 220;
 local SIDE_MARGIN, TOP_MARGIN = 40, -96;
 
 local root, holder, raceButtons, classButtons, optionRows = nil, nil, {}, {}, {};
+local ToggleHidden;
 local positions = {};      -- ["NIGHTELF_FEMALE"] = { 1, 1, 1, 1, 1 }: the counters of each race and sex
 local lastDeathKnight;     -- the counters' skin / face reset when death knight is picked or dropped (other skins)
 local throttle = 0;
@@ -208,39 +394,63 @@ local function Active()
 end
 TemucraftCharCreate_Active = Active;
 
--- side: "right" puts the tooltip to the right of the button (Alliance column), "left" to its left (Horde column)
-local function Tooltip(owner, text, side)
-	if ( text and GlueTooltip_SetOwner and CharacterCreateTooltip ) then
-		GlueTooltip_SetOwner(owner, CharacterCreateTooltip, -3, -5);
-		-- one line at a time: the glue tooltip sizes itself by its longest line, and a text with line breaks in one
-		-- piece came out as a huge empty box
-		local lines = {};
-		for line in string.gmatch(Logic.Wrap(text).."\n", "(.-)\n") do table.insert(lines, line); end
-		if ( GlueTooltip_AddLine and #lines > 1 ) then
-			GlueTooltip_SetText(lines[1], CharacterCreateTooltip);
-			for i = 2, #lines do
-				GlueTooltip_AddLine(lines[i], CharacterCreateTooltip, 1, 1, 1);
-			end
-		else
-			GlueTooltip_SetText(Logic.Wrap(text), CharacterCreateTooltip);
-		end
-		if ( side ) then
-			CharacterCreateTooltip:ClearAllPoints();
-			if ( side == "top" ) then
-				CharacterCreateTooltip:SetPoint("BOTTOM", owner, "TOP", 0, 12);
-			elseif ( side == "left" ) then
-				CharacterCreateTooltip:SetPoint("TOPRIGHT", owner, "TOPLEFT", -10, 4);
-			else
-				CharacterCreateTooltip:SetPoint("TOPLEFT", owner, "TOPRIGHT", 10, 4);
-			end
-		end
+-- Our own tooltip: the stock CharacterCreateTooltip / GlueTooltip keep their old anchors (GlueTooltip_SetOwner only adds
+-- a point) and their old size, so one use could leave the next one a huge empty box (the gender buttons). This one is
+-- laid out from scratch every time: lines left-aligned, the title gold, the text white, errors red, sized to its lines,
+-- anchored only where asked. side: "right" / "left" / "top" / "bottom" of the owner.
+local tip;
+local TIP_COLORS = { gold = { 1, 0.82, 0 }, white = { 1, 1, 1 }, red = { 1, 0.25, 0.25 } };
+local function Tooltip(owner, title, side, body, err)
+	if ( not owner or not title ) then return; end
+	if ( not tip ) then
+		tip = CreateFrame("Frame", "TemucraftCreateTooltip", CharacterCreate);
+		tip:SetFrameStrata("TOOLTIP");
+		tip:SetBackdrop({ bgFile = "Interface\\Tooltips\\UI-Tooltip-Background", edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+			tile = true, tileSize = 16, edgeSize = 16, insets = { left = 4, right = 4, top = 4, bottom = 4 } });
+		tip:SetBackdropColor(0.03, 0.03, 0.05, 0.96);
+		tip:SetBackdropBorderColor(0.8, 0.65, 0.3, 1);
+		tip.lines = {};
 	end
+	local lines = Logic.TooltipLines(title, body, err);
+	local width, y = 60, -10;
+	for i, line in ipairs(lines) do
+		local fs = tip.lines[i];
+		if ( not fs ) then
+			fs = tip:CreateFontString(nil, "OVERLAY", "GlueFontHighlightSmall");
+			fs:SetJustifyH("LEFT");
+			tip.lines[i] = fs;
+		end
+		fs:SetFontObject((i == 1 and line.color == "gold") and GlueFontNormal or GlueFontHighlightSmall);
+		fs:ClearAllPoints();
+		fs:SetPoint("TOPLEFT", tip, "TOPLEFT", 11, y);
+		fs:SetText(line.text);
+		local c = TIP_COLORS[line.color] or TIP_COLORS.white;
+		fs:SetTextColor(c[1], c[2], c[3]);
+		fs:Show();
+		width = math.max(width, (fs:GetStringWidth() or 0) + 24);
+		y = y - ((i == 1) and 18 or 14);
+	end
+	for i = #lines + 1, #tip.lines do tip.lines[i]:Hide(); end
+	tip:SetWidth(width);
+	tip:SetHeight(-y + 8);
+	tip:ClearAllPoints();
+	if ( side == "top" ) then
+		tip:SetPoint("BOTTOM", owner, "TOP", 0, 10);
+	elseif ( side == "bottom" ) then
+		tip:SetPoint("TOP", owner, "BOTTOM", 0, -8);
+	elseif ( side == "left" ) then
+		tip:SetPoint("TOPRIGHT", owner, "TOPLEFT", -10, 4);
+	else
+		tip:SetPoint("TOPLEFT", owner, "TOPRIGHT", 10, 4);
+	end
+	tip:Show();
+	tip.owner = owner;
 end
 local function HideTooltip()
-	if ( CharacterCreateTooltip ) then
-		CharacterCreateTooltip:Hide();
-	end
+	if ( tip ) then tip:Hide(); end
+	if ( CharacterCreateTooltip ) then CharacterCreateTooltip:Hide(); end
 end
+TemucraftCharCreate_Tooltip = function() return tip; end
 
 -- The stock functions only ask a button whether it's enabled and tell it to check itself
 local proxy = { IsEnabled = function() return 1; end, SetChecked = function() end };
@@ -288,45 +498,108 @@ local function Counters()
 	return positions[key];
 end
 
-local function MakeIconButton(name, parent, size)
+-- One look for the race (round) and class (square) buttons: the same gold, the same glow strength.
+--   round:  a thin gold ring exactly around the portrait (the glue screen's own ring art, UI-CharacterCreatePatchwerk:
+--           its ring sits 1.5 / 0.5 px off the middle of its 82x82 cell and has a radius of 0.384 of it), the
+--           selected race the same ring bright with a soft glow, hover a lighter ring.
+--   square: a thin gold square border (four 1 px lines), the selected class the stock gold square glow
+--           (UI-GearManager-ItemButton-Highlight), hover the stock square highlight (ButtonHilight-Square).
+local GOLD, RING_DIM = { 1, 0.82, 0.3 }, { 0.72, 0.58, 0.32 };
+local GLOW_ALPHA = 0.55;
+local RING_FILE, RING_COORDS = "Interface\\Glues\\CharacterCreate\\UI-CharacterCreatePatchwerk", { 0.79296875, 0.953125, 0.00097656, 0.08105469 };
+local RING_RADIUS = 0.384;
+
+local function Ring(b, layer, size, blend)
+	local t = b:CreateTexture(nil, layer);
+	t:SetTexture(RING_FILE);
+	t:SetTexCoord(RING_COORDS[1], RING_COORDS[2], RING_COORDS[3], RING_COORDS[4]);
+	t:SetBlendMode(blend or "BLEND");
+	t:SetWidth(size); t:SetHeight(size);
+	t:SetPoint("CENTER", b, "CENTER", size * 1.5 / 82, -size * 0.5 / 82);
+	return t;
+end
+
+local function MakeIconButton(name, parent, size, shape)
 	local b = CreateFrame("CheckButton", name, parent);
 	b:SetWidth(size); b:SetHeight(size);
+	b.shape = shape or "round";
 	b.icon = b:CreateTexture(nil, "ARTWORK");
 	b.icon:SetAllPoints(b);
-	b.ring = b:CreateTexture(nil, "OVERLAY");
-	b.ring:SetTexture("Interface\\Glues\\CharacterCreate\\UI-CharacterCreatePatchwerk");
-	b.ring:SetTexCoord(0.79296875, 0.953125, 0.00097656, 0.08105469);
-	b.ring:SetBlendMode("ADD");
-	b.ring:SetWidth(size + 14); b.ring:SetHeight(size + 14);
-	b.ring:SetPoint("CENTER", b, "CENTER", 1, -1);
+	if ( b.shape == "round" ) then
+		local ringSize = (size / 2 + 1) / RING_RADIUS;   -- the ring just outside the portrait's edge
+		b.border = Ring(b, "OVERLAY", ringSize);
+		b.border:SetVertexColor(RING_DIM[1], RING_DIM[2], RING_DIM[3]);
+		b.ring = Ring(b, "OVERLAY", ringSize, "ADD");     -- selected: bright ring ...
+		b.ring:SetVertexColor(GOLD[1], GOLD[2], GOLD[3]);
+		b.glow = Ring(b, "BORDER", ringSize * 1.18, "ADD");   -- ... and a soft wider glow
+		b.glow:SetVertexColor(GOLD[1], GOLD[2], GOLD[3]);
+		b.glow:SetAlpha(GLOW_ALPHA);
+		local hl = Ring(b, "HIGHLIGHT", ringSize, "ADD");
+		hl:SetVertexColor(1, 0.95, 0.75);
+		hl:SetAlpha(0.45);
+	else
+		b.edges = {};
+		-- { point 1, x, y, point 2, x, y, vertical }: 1 px outside the icon
+		for i, p in ipairs({ { "TOPLEFT", -1, 1, "TOPRIGHT", 1, 1 }, { "BOTTOMLEFT", -1, -1, "BOTTOMRIGHT", 1, -1 },
+				{ "TOPLEFT", -1, 1, "BOTTOMLEFT", -1, -1, true }, { "TOPRIGHT", 1, 1, "BOTTOMRIGHT", 1, -1, true } }) do
+			local e = b:CreateTexture(nil, "OVERLAY");
+			e:SetTexture(1, 1, 1, 1);
+			e:SetVertexColor(RING_DIM[1], RING_DIM[2], RING_DIM[3]);
+			e:SetPoint(p[1], b, p[1], p[2], p[3]);
+			e:SetPoint(p[4], b, p[4], p[5], p[6]);
+			if ( p[7] ) then e:SetWidth(1); else e:SetHeight(1); end
+			b.edges[i] = e;
+		end
+		b.ring = b:CreateTexture(nil, "OVERLAY");   -- selected: the gold square glow (its square fills 49 of 64 px)
+		b.ring:SetTexture("Interface\\PaperDollInfoFrame\\UI-GearManager-ItemButton-Highlight");
+		b.ring:SetTexCoord(0, 0.765625, 0, 0.765625);
+		b.ring:SetBlendMode("ADD");
+		b.ring:SetVertexColor(GOLD[1], GOLD[2], GOLD[3]);
+		b.ring:SetWidth(size * 49 / 36); b.ring:SetHeight(size * 49 / 36);
+		b.ring:SetPoint("CENTER", b, "CENTER", 0, 0);
+		local hl = b:CreateTexture(nil, "HIGHLIGHT");
+		hl:SetTexture("Interface\\Buttons\\ButtonHilight-Square");
+		hl:SetBlendMode("ADD");
+		hl:SetAllPoints(b);
+	end
 	b.ring:Hide();
-	local hl = b:CreateTexture(nil, "HIGHLIGHT");
-	hl:SetTexture("Interface\\Glues\\CharacterCreate\\UI-CharacterCreatePatchwerk");
-	hl:SetTexCoord(0.79296875, 0.953125, 0.08300781, 0.16308594);
-	hl:SetBlendMode("ADD");
-	hl:SetWidth(size + 14); hl:SetHeight(size + 14);
-	hl:SetPoint("CENTER", b, "CENTER", 1, -1);
-	b:SetScript("OnEnter", function(self) Tooltip(self, self.tooltip, self.tooltipSide); end);
+	if ( b.glow ) then b.glow:Hide(); end
+	b:SetScript("OnEnter", function(self) Tooltip(self, self.tooltip, self.tooltipSide, self.tooltipBody, self.tooltipError); end);
 	b:SetScript("OnLeave", HideTooltip);
 	return b;
 end
 
--- A round frame around a race icon (the race art has none)
-local function AddRing(b, size)
-	b.border = b:CreateTexture(nil, "OVERLAY");
-	-- the stock round minimap-button border: the ring fills about the top left 58% of its 64x64 file
-	b.border:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder");
-	b.border:SetTexCoord(0, 0.58, 0, 0.58);
-	b.border:SetWidth(size * 1.36); b.border:SetHeight(size * 1.36);
-	b.border:SetPoint("CENTER", b, "CENTER", 1, -1);
-end
-
-
 local function SetIconState(b, selected, enabled)
 	if ( selected ) then b.ring:Show(); else b.ring:Hide(); end
+	if ( b.glow ) then if ( selected ) then b.glow:Show(); else b.glow:Hide(); end end
 	b.icon:SetDesaturated(not enabled);
 	b.icon:SetAlpha(enabled and 1 or 0.45);
+	if ( b.border ) then b.border:SetDesaturated(not enabled); b.border:SetAlpha(enabled and 1 or 0.5); end
+	for _, e in ipairs(b.edges or {}) do e:SetAlpha(enabled and 1 or 0.4); end
 	b.enabled = enabled;
+end
+
+-- One line: cut with "..." when it is wider than `width`
+local function Utf8Sub(text, n)
+	local out, k = {}, 0;
+	for ch in string.gmatch(text or "", "[%z\1-\127\192-\253][\128-\191]*") do
+		k = k + 1;
+		if ( k > n ) then break; end
+		out[k] = ch;
+	end
+	return table.concat(out);
+end
+local function SetOneLine(fs, text, width)
+	fs:SetText(text);
+	if ( not fs.GetStringWidth or (fs:GetStringWidth() or 0) <= width ) then return; end
+	local _, len = string.gsub(text or "", "[%z\1-\127\192-\253]", "");
+	local lo, hi = 0, len;
+	while ( lo < hi ) do
+		local mid = math.floor((lo + hi + 1) / 2);
+		fs:SetText(Utf8Sub(text, mid).."...");
+		if ( (fs:GetStringWidth() or 0) <= width ) then lo = mid; else hi = mid - 1; end
+	end
+	fs:SetText(Utf8Sub(text, lo).."...");
 end
 
 -- the retail panel (as on character select): dark, gold metal border (3.3.5's DialogFrame art)
@@ -379,8 +652,7 @@ local function RefreshRaces()
 		local p = placed[race.index];
 		local b = raceButtons[n];
 		if ( not b ) then
-			b = MakeIconButton("TemucraftCreateRace"..n, root.races, ICON_SIZE);
-			AddRing(b, ICON_SIZE);
+			b = MakeIconButton("TemucraftCreateRace"..n, root.races, ICON_SIZE, "round");
 			b.icon:SetTexture("Interface\\Glues\\CharacterCreate\\RyansRacesRound");
 			b:SetScript("OnClick", function(self)
 				self:SetChecked(nil);
@@ -394,10 +666,14 @@ local function RefreshRaces()
 		local enabled, stockTip = StockRaceEnabled(race.index, race.enabled);
 		local coords = GetSafeRaceIconCoords and GetSafeRaceIconCoords(race.file, gender)
 			or (RACE_ICON_TCOORDS and RACE_ICON_TCOORDS[string.upper(race.file).."_"..gender]) or { 0, 1, 0, 1 };
-		b.icon:SetTexCoord(coords[1], coords[2], coords[3], coords[4]);
+		-- the portrait's circle fills 58 of the 64 px of its cell: crop to it so it fills the button and the ring
+		local iu, iv = (coords[2] - coords[1]) * 3 / 64, (coords[4] - coords[3]) * 3 / 64;
+		b.icon:SetTexCoord(coords[1] + iu, coords[2] - iu, coords[3] + iv, coords[4] - iv);
 		b.raceIndex = race.index;
 		local info = GetFlavorText and GetFlavorText("RACE_INFO_"..string.upper(race.file), GetSelectedSex());
-		b.tooltip = enabled and (info and (race.name.."|n|cffffffff"..info.."|r") or race.name) or (stockTip or race.name);
+		b.tooltip = race.name;
+		b.tooltipBody = enabled and info or nil;
+		b.tooltipError = (not enabled) and stockTip ~= race.name and stockTip or nil;
 		b.tooltipSide = (p.side == "Alliance") and "right" or "left";
 		b:ClearAllPoints();
 		local x = SIDE_MARGIN + (p.column - 1) * ICON_STEP + ICON_SIZE / 2;
@@ -429,8 +705,8 @@ local function RefreshClasses()
 			n = n + 1;
 			local b = classButtons[n];
 			if ( not b ) then
-				b = MakeIconButton("TemucraftCreateClass"..n, root.classes, 40);
-			b.tooltipSide = "top";
+				b = MakeIconButton("TemucraftCreateClass"..n, root.classes, 40, "square");
+				b.tooltipSide = "top";
 				b.icon:SetTexture("Interface\\Glues\\CharacterCreate\\UI-CharacterCreate-Classes");
 				b:SetScript("OnClick", function(self)
 					self:SetChecked(nil);
@@ -455,7 +731,8 @@ local function RefreshClasses()
 				enabled = false;   -- paid services lock the class
 			end
 			b.classIndex = index;
-			b.tooltip = enabled and name or (name.."|n|cffff2020"..((stock and stock.tooltip) or CLASS_DISABLED or "").."|r");
+			b.tooltip = name;
+			b.tooltipError = (not enabled) and ((stock and stock.tooltip ~= name and stock.tooltip) or CLASS_DISABLED) or nil;
 			b:ClearAllPoints();
 			b:SetPoint("CENTER", root.classes, "CENTER", (n - (count + 1) / 2) * 50, 0);
 			SetIconState(b, index == selected, enabled);
@@ -489,12 +766,15 @@ local function RefreshOptions()
 		local _, label = OptionLabel(id);
 		if ( label and label ~= "" ) then
 			local total = totals[id];
+			-- the name on the left of the bar, "3 / 9" on its right; a long (translated) name is cut before the count
 			if ( total and total > 0 ) then
 				if ( counters[id] > total ) then counters[id] = total; end
-				row.text:SetText(label.."  |cffffffff"..counters[id].." / "..total.."|r");
+				row.count:SetText(counters[id].." / "..total);
 			else
-				row.text:SetText(label);
+				row.count:SetText("");
 			end
+			local room = OPTION_BAR_WIDTH - 2 * OPTION_PAD - ((row.count:GetText() or "") ~= "" and ((row.count:GetStringWidth() or 0) + 6) or 0);
+			SetOneLine(row.label, label, room);
 			row.total = total;
 			row:ClearAllPoints();
 			row:SetPoint("TOP", root.options, "TOP", 0, y);
@@ -509,19 +789,42 @@ local function RefreshOptions()
 	root.options:SetHeight(-y + 56);
 end
 
+-- The name check: the server's rules while typing; after Finish the server's own answer about the name (taken,
+-- reserved, mature language ...) until the name changes
+local serverNameError, serverErrorName;
 local function RefreshName()
-	local status = Logic.NameStatus(CharacterCreateNameEdit:GetText());
-	if ( status == "ok" ) then
-		root.nameMark:SetTexture("Interface\\Buttons\\UI-CheckBox-Check");
-		root.nameMark:Show();
+	local text = CharacterCreateNameEdit:GetText() or "";
+	local status, reason, saved = Logic.CheckName(text);
+	local check = root.nameCheck;
+	if ( serverNameError and text ~= serverErrorName ) then serverNameError = nil; end
+	if ( status == "empty" ) then
+		check:Hide();
 		root.nameHint:SetText("");
-	elseif ( status == "empty" ) then
-		root.nameMark:Hide();
+		return;
+	end
+	if ( status == "ok" and serverNameError ) then status, reason = "server", serverNameError; end
+	check.ok = (status == "ok");
+	check.status = status;
+	if ( check.ok ) then
+		root.nameMark:SetTexture("Interface\\RaidFrame\\ReadyCheck-Ready");
+		check.title = saved;
+		check.text = "Name looks good - the server checks if it's taken when you click "..(FINISH or "Finish")..".";
 		root.nameHint:SetText("");
 	else
-		root.nameMark:SetTexture("Interface\\Buttons\\UI-GroupLoot-Pass-Up");
-		root.nameMark:Show();
-		root.nameHint:SetText(NAME_HINTS[status] or "");
+		root.nameMark:SetTexture("Interface\\RaidFrame\\ReadyCheck-NotReady");
+		check.title = saved ~= "" and saved or text;
+		check.text = reason;
+		root.nameHint:SetText(reason or "");
+	end
+	check:Show();
+end
+
+-- The server's answer to Finish (the status dialog's text) when it is about the name
+local function CheckServerAnswer(text)
+	local err = Logic.NameServerError(text);
+	if ( err and root and root:IsShown() ) then
+		serverNameError, serverErrorName = err, CharacterCreateNameEdit:GetText() or "";
+		RefreshName();
 	end
 end
 
@@ -610,6 +913,29 @@ local function Randomize()
 end
 
 ---------------------------------------------------------------------------------------------------------------------
+-- Hide the interface, turn with the arrow keys
+---------------------------------------------------------------------------------------------------------------------
+local hidden, turning = false, nil;
+function ToggleHidden(show)
+	if ( not root ) then return; end
+	if ( show == nil ) then show = hidden; end
+	hidden = not show;
+	HideTooltip();
+	if ( hidden ) then
+		root:Hide();
+		root.catcher:Show();
+		root.eye.icon:SetDesaturated(1);
+	else
+		root.catcher:Hide();
+		root:Show();
+		root.eye.icon:SetDesaturated(nil);
+		Refresh();
+	end
+end
+TemucraftCharCreate_ToggleHidden = function(show) ToggleHidden(show); end
+TemucraftCharCreate_IsHidden = function() return hidden; end
+
+---------------------------------------------------------------------------------------------------------------------
 -- Building the screen
 ---------------------------------------------------------------------------------------------------------------------
 local function Build()
@@ -621,7 +947,8 @@ local function Build()
 
 	-- male / female
 	for _, sex in ipairs({ "male", "female" }) do
-		local b = MakeIconButton("TemucraftCreate"..sex, root, 40);
+		local b = MakeIconButton("TemucraftCreate"..sex, root, 40, "round");
+		b.tooltipSide = (sex == "male") and "left" or "right";
 		b.icon:SetTexture("Interface\\Glues\\CharacterCreate\\UI-CharacterCreate-Gender");
 		if ( sex == "male" ) then
 			b.icon:SetTexCoord(0, 0.5, 0, 1);
@@ -676,29 +1003,46 @@ local function Build()
 	root.classes:SetHeight(64);
 	root.classes:SetPoint("BOTTOM", root, "BOTTOM", 0, 28);
 
-	-- step 2: the name at the top, the options on the left
-	root.nameBar = CreateFrame("Frame", nil, root);
-	root.nameBar:SetWidth(320); root.nameBar:SetHeight(40);
-	root.nameBar:SetPoint("BOTTOM", root, "BOTTOM", 0, 32);
+	-- step 2: the name box exactly in the middle (under the "Race - Class" line), the random-name dice left of it and
+	-- the name check right of it, both hung on the box's edges so they never move it
+	root.nameBar = CreateFrame("Frame", "TemucraftCreateNameBar", root);
+	root.nameBar:SetWidth(NAME_WIDTH); root.nameBar:SetHeight(40);
+	root.nameBar:SetPoint("BOTTOM", root, "BOTTOM", 0, 34);
+	root.nameLabel = root.nameBar:CreateFontString(nil, "OVERLAY", "GlueFontNormal");
+	root.nameLabel:SetPoint("BOTTOM", root.nameBar, "TOP", 0, 1);
+	root.nameLabel:SetText(NAME or "Name");
 	root.dice = CreateFrame("Button", "TemucraftCreateNameDice", root.nameBar);
 	root.dice:SetWidth(32); root.dice:SetHeight(32);
 	root.dice:SetNormalTexture("Interface\\Buttons\\UI-GroupLoot-Dice-Up");
 	root.dice:SetPushedTexture("Interface\\Buttons\\UI-GroupLoot-Dice-Down");
 	root.dice:SetHighlightTexture("Interface\\Buttons\\UI-GroupLoot-Dice-Highlight", "ADD");
-	root.dice:SetPoint("RIGHT", root.nameBar, "RIGHT", 0, 0);
+	root.dice:SetPoint("RIGHT", root.nameBar, "LEFT", -6, -1);
 	root.dice.tooltip = RANDOMIZE or "Random name";
-	root.dice:SetScript("OnEnter", function(self) Tooltip(self, self.tooltip); end);
+	root.dice:SetScript("OnEnter", function(self) Tooltip(self, self.tooltip, "top"); end);
 	root.dice:SetScript("OnLeave", HideTooltip);
 	root.dice:SetScript("OnClick", function()
 		PlaySound("gsCharacterCreationLook");
 		CharacterCreateNameEdit:SetText(GetRandomName());
 		RefreshName();
 	end);
-	root.nameMark = root.nameBar:CreateTexture(nil, "OVERLAY");
-	root.nameMark:SetWidth(24); root.nameMark:SetHeight(24);
-	root.nameMark:SetPoint("RIGHT", root.dice, "LEFT", -2, 0);
+	-- the check: green tick / red cross (the ready check's), hover for why
+	root.nameCheck = CreateFrame("Button", "TemucraftCreateNameCheck", root.nameBar);
+	root.nameCheck:SetWidth(26); root.nameCheck:SetHeight(26);
+	root.nameCheck:SetPoint("LEFT", root.nameBar, "RIGHT", 6, -1);
+	root.nameMark = root.nameCheck:CreateTexture(nil, "ARTWORK");
+	root.nameMark:SetAllPoints(root.nameCheck);
+	root.nameCheck:SetScript("OnEnter", function(self)
+		if ( self.ok ) then
+			Tooltip(self, self.title, "top", self.text);
+		else
+			Tooltip(self, self.title, "top", nil, self.text);
+		end
+	end);
+	root.nameCheck:SetScript("OnLeave", HideTooltip);
+	root.nameCheck:Hide();
 	root.nameHint = root.nameBar:CreateFontString(nil, "OVERLAY", "GlueFontHighlightSmall");
-	root.nameHint:SetPoint("BOTTOM", root.nameBar, "TOP", -20, 2);
+	root.nameHint:SetTextColor(1, 0.25, 0.25);
+	root.nameHint:SetPoint("TOP", root.nameBar, "BOTTOM", 0, 2);
 
 	root.options = Panel(root);
 	root.options:SetWidth(270);
@@ -708,16 +1052,24 @@ local function Build()
 	head:SetText(CUSTOMIZE_OPTIONS or "Appearance");
 	for id = 1, NUM_CHAR_CUSTOMIZATIONS or 5 do
 		local row = CreateFrame("Button", "TemucraftCreateOption"..id, root.options);
-		row:SetWidth(230); row:SetHeight(34);
+		row:SetWidth(OPTION_ROW_WIDTH); row:SetHeight(34);
 		row:RegisterForClicks("LeftButtonUp", "RightButtonUp");
-		row.text = row:CreateFontString(nil, "OVERLAY", "GlueFontNormal");
-		row.text:SetPoint("CENTER", row, "CENTER", 0, 0);
+		-- a dark bar, as the group headers on select; only its bar (rows 4-24 of the 32 px art), so the bar's middle
+		-- is the row's middle and the text centres on it
 		local bg = row:CreateTexture(nil, "BACKGROUND");
-		bg:SetTexture("Interface\\AchievementFrame\\UI-Achievement-Category-Background");   -- a dark bar, as the group headers on select
-		bg:SetTexCoord(0, 0.6640625, 0, 1);
+		bg:SetTexture("Interface\\AchievementFrame\\UI-Achievement-Category-Background");
+		bg:SetTexCoord(0, 0.6640625, 4 / 32, 24 / 32);
 		bg:SetVertexColor(0.6, 0.6, 0.65);
-		bg:SetPoint("TOPLEFT", row, "TOPLEFT", 30, -3);
-		bg:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", -30, 3);
+		bg:SetPoint("TOPLEFT", row, "TOPLEFT", OPTION_ARROW, -5);
+		bg:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", -OPTION_ARROW, 5);
+		-- the name left in the bar (gold), the count right (white); both on the bar's middle (the font's glyphs sit a
+		-- pixel high in their line, hence the -1)
+		row.label = row:CreateFontString(nil, "OVERLAY", "GlueFontNormal");
+		row.label:SetJustifyH("LEFT");
+		row.label:SetPoint("LEFT", bg, "LEFT", OPTION_PAD, -1);
+		row.count = row:CreateFontString(nil, "OVERLAY", "GlueFontHighlight");
+		row.count:SetJustifyH("RIGHT");
+		row.count:SetPoint("RIGHT", bg, "RIGHT", -OPTION_PAD, -1);
 		for _, dir in ipairs({ "Left", "Right" }) do
 			local arrow = CreateFrame("Button", row:GetName()..dir, row);
 			arrow:SetWidth(32); arrow:SetHeight(32);
@@ -765,6 +1117,35 @@ local function Build()
 		end);
 	end
 
+	-- Hide the interface (the eye, as on character select, or Alt-Z): only the scene and the character stay; the eye,
+	-- a click anywhere, Escape or Alt-Z bring it back. The arrow keys still turn the character.
+	root.eye = CreateFrame("Button", "TemucraftCreateEye", CharacterCreate);
+	root.eye:SetWidth(34); root.eye:SetHeight(34);
+	root.eye:SetPoint("BOTTOMLEFT", CharacterCreate, "BOTTOMLEFT", 202, 31);
+	root.eye:SetFrameLevel(root:GetFrameLevel() + 20);
+	root.eye.icon = root.eye:CreateTexture(nil, "ARTWORK");
+	root.eye.icon:SetTexture("Interface\\Icons\\Ability_EyeOfTheOwl");
+	root.eye.icon:SetAllPoints(root.eye);
+	root.eye:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD");
+	root.eye:SetScript("OnClick", function() ToggleHidden(); end);
+	root.eye:SetScript("OnEnter", function(self)
+		Tooltip(self, hidden and "Show the interface" or "Hide the interface", "top", "Alt-Z. Left / Right arrow keys turn the character.");
+	end);
+	root.eye:SetScript("OnLeave", HideTooltip);
+	root.catcher = CreateFrame("Button", "TemucraftCreateShowUI", CharacterCreate);
+	root.catcher:SetAllPoints(CharacterCreate);
+	root.catcher:SetFrameLevel(root:GetFrameLevel() + 15);
+	root.catcher:RegisterForClicks("LeftButtonUp", "RightButtonUp");
+	root.catcher:SetScript("OnClick", function() ToggleHidden(); end);
+	root.catcher:Hide();
+	-- arrow keys: held = keeps turning, as the rotate buttons
+	root.keys = CreateFrame("Frame", nil, CharacterCreate);
+	root.keys:SetScript("OnUpdate", function()
+		if ( turning and CharacterCreate:IsShown() ) then
+			SetCharacterCreateFacing(GetCharacterCreateFacing() + turning * (CHARACTER_FACING_INCREMENT or 2));
+		end
+	end);
+
 	-- Back / Next (Customize) / Finish
 	root.back = NavButton("TemucraftCreateBack", root, BACK or "Back", function()
 		CharacterCreate_Back();
@@ -804,14 +1185,22 @@ local function HideStock()
 	end
 	CharacterCreateNameEdit:SetParent(root.nameBar);
 	CharacterCreateNameEdit:ClearAllPoints();
-	CharacterCreateNameEdit:SetPoint("LEFT", root.nameBar, "LEFT", 6, 0);
-	CharacterCreateNameEdit:SetWidth(250);
+	CharacterCreateNameEdit:SetAllPoints(root.nameBar);
 	CharacterCreateNameEdit:Show();
+	-- the stock "NAME" over the box is in the big blackletter faction font (FactionName_Shadow_Huge): ours (nameLabel,
+	-- the screen's own font) replaces it
+	if ( CharacterCreateNameEdit.GetRegions ) then
+		for _, r in ipairs({ CharacterCreateNameEdit:GetRegions() }) do
+			if ( r.GetObjectType and r:GetObjectType() == "FontString" ) then
+				r:Hide();
+			end
+		end
+	end
 end
 
 local function OnShow()
 	if ( not Active() ) then
-		if ( root ) then root:Hide(); end
+		if ( root ) then root:Hide(); root.eye:Hide(); root.catcher:Hide(); end
 		return;
 	end
 	if ( not root ) then
@@ -827,6 +1216,11 @@ local function OnShow()
 		positions[CounterKey()] = nil;
 	end
 	lastDeathKnight = nil;
+	serverNameError, turning = nil, nil;
+	hidden = false;
+	root.catcher:Hide();
+	root.eye.icon:SetDesaturated(nil);
+	root.eye:Show();
 	root:Show();
 	Refresh();
 end
@@ -864,4 +1258,78 @@ if ( CharacterCreateNameEdit and CharacterCreateNameEdit.HookScript ) then
 			RefreshName();
 		end
 	end);
+end
+
+-- Keys on the screen (the name box gets its own keys while it has the focus, so typing still moves its cursor):
+-- Left / Right turn the character while held, Alt-Z hides / shows the interface; with it hidden Escape brings it back
+-- and Enter does nothing (no Finish by accident). Everything else goes to the client's own handler (Escape = Back,
+-- Enter = Next / Finish).
+local oldCreateKeyDown = CharacterCreate_OnKeyDown;
+if ( oldCreateKeyDown ) then
+	CharacterCreate_OnKeyDown = function(key, ...)
+		if ( Active() and root ) then
+			if ( key == "LEFT" or key == "RIGHT" ) then
+				turning = (key == "LEFT") and -1 or 1;
+				return;
+			end
+			if ( key == "Z" and IsAltKeyDown and IsAltKeyDown() ) then
+				ToggleHidden();
+				return;
+			end
+			if ( hidden ) then
+				if ( key == "ESCAPE" ) then ToggleHidden(true); end
+				if ( key ~= "PRINTSCREEN" ) then return; end
+			end
+		end
+		return oldCreateKeyDown(key, ...);
+	end
+end
+local function CreateKeyUp(self, key)
+	if ( key == "LEFT" or key == "RIGHT" ) then turning = nil; end
+end
+if ( CharacterCreate.HookScript and CharacterCreate:GetScript("OnKeyUp") ) then
+	CharacterCreate:HookScript("OnKeyUp", CreateKeyUp);
+else
+	CharacterCreate:SetScript("OnKeyUp", CreateKeyUp);
+end
+
+-- The server's answer to Finish comes in the status dialog (OPEN_STATUS_DIALOG -> GlueDialog_Show, or
+-- UPDATE_STATUS_DIALOG -> GlueDialogText:SetText): a name answer turns the name check red with it
+local oldDialogShow = GlueDialog_Show;
+if ( oldDialogShow ) then
+	GlueDialog_Show = function(which, text, ...)
+		local r = oldDialogShow(which, text, ...);
+		CheckServerAnswer(text);
+		return r;
+	end
+end
+if ( GlueDialogText and GlueDialogText.SetText ) then
+	local oldSetText = GlueDialogText.SetText;
+	GlueDialogText.SetText = function(self, text, ...)
+		oldSetText(self, text, ...);
+		CheckServerAnswer(text);
+	end
+end
+
+-- Even light on every race (see Logic.EvenLights): the character's light set from GlueParent.lua's TemucraftApplyLights
+-- (patch-~) is caught and replaced by the even one; the background's own lights stay. TEMUCRAFT_EVEN_LIGHT = false
+-- (Interface\TemucraftScenes.lua) keeps the scene's lights as they are.
+local oldApplyLights = TemucraftApplyLights;
+if ( oldApplyLights ) then
+	TemucraftApplyLights = function(model, ...)
+		if ( not Active() or TEMUCRAFT_EVEN_LIGHT == false or not model or not model.AddCharacterLight ) then
+			return oldApplyLights(model, ...);
+		end
+		local caught = {};
+		local add, raw = model.AddCharacterLight, rawget(model, "AddCharacterLight");
+		model.AddCharacterLight = function(self, set, ...)
+			if ( set == (LIGHT_LIVE or 0) ) then table.insert(caught, { ... }); else add(self, set, ...); end
+		end
+		local ok, err = pcall(oldApplyLights, model, ...);
+		model.AddCharacterLight = raw;   -- back to the frame's own method
+		if ( not ok ) then error(err, 0); end
+		for _, light in ipairs(Logic.EvenLights(caught)) do
+			add(model, LIGHT_LIVE or 0, unpack(light));
+		end
+	end
 end
