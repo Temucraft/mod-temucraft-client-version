@@ -5,7 +5,9 @@
 --
 -- Combat: the spellbook's buttons are secure (they cast), so anything that moves, resizes or re-points them, or changes
 -- their attributes, waits for the end of combat (TemucraftPlayerSpells_AfterCombat).
-local WIDTH, WIDE_WIDTH, HEIGHT, TALENTS_WIDTH = 820, 1560, 640, 860;
+-- every tab is TALENTS_WIDTH wide (the talents need room for three trees and the buttons on the right), so the frame and
+-- the bottom tabs stay put when you switch; WIDE_WIDTH is the spellbook's two-page view (its expand button)
+local WIDE_WIDTH, HEIGHT, TALENTS_WIDTH = 1672, 640, 860;
 local TAB_SPEC, TAB_TALENTS, TAB_SPELLBOOK = 1, 2, 3;
 TEMUCRAFT_PLAYERSPELLS_TAB_SPEC, TEMUCRAFT_PLAYERSPELLS_TAB_TALENTS, TEMUCRAFT_PLAYERSPELLS_TAB_SPELLBOOK = TAB_SPEC, TAB_TALENTS, TAB_SPELLBOOK;
 
@@ -18,7 +20,7 @@ function TemucraftPlayerSpells_AfterCombat(key, func)
 end
 
 local frame = CreateFrame("Frame", "TemucraftPlayerSpellsFrame", UIParent);
-frame:SetWidth(WIDTH); frame:SetHeight(HEIGHT);
+frame:SetWidth(TALENTS_WIDTH); frame:SetHeight(HEIGHT);
 frame:SetPoint("CENTER", UIParent, "CENTER", 0, 20);
 frame:SetFrameStrata("HIGH");
 frame:SetToplevel(true);
@@ -65,12 +67,11 @@ function TemucraftPlayerSpells_AddPanel(index, panel, show)
 	panel:Hide();
 end
 
--- the window's size for the open tab (the talents need room for three trees and the buttons on the right), scaled
--- down when the screen is smaller than that, and put back in the middle when part of it would be off screen
-local TAB_WIDTH = { [TAB_TALENTS] = TALENTS_WIDTH };
+-- the window's size (the same on every tab; wider only in the spellbook's two-page view), scaled down when the screen
+-- is smaller than that, and put back in the middle when part of it would be off screen
 local wide = false;
 local function Layout()
-	local width = wide and WIDE_WIDTH or (TAB_WIDTH[current] or WIDTH);
+	local width = wide and WIDE_WIDTH or TALENTS_WIDTH;
 	frame:SetWidth(width);
 	local sw, sh = UIParent:GetWidth(), UIParent:GetHeight();
 	local scale = min(1, (sw - 20) / width, (sh - 20) / HEIGHT);

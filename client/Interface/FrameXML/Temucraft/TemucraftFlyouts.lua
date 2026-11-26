@@ -154,8 +154,10 @@ function TemucraftFlyouts_WrapButton(b)
 	header:WrapScript(b, "OnClick", TOGGLE);
 end
 
--- out of combat only (the book's layout): point a book button at a flyout, or (flyout nil) at none
-function TemucraftFlyouts_Attach(b, flyout)
+-- out of combat only (the book's layout): point a book button at a flyout, or (flyout nil) at none; the row opens to
+-- the right of anchor (default b itself). The spellbook's rank arrows use this too (flyout key "rank..", members the
+-- lower ranks of a spell), with the arrow as b and the spell's icon as anchor.
+function TemucraftFlyouts_Attach(b, flyout, anchor)
 	if ( InCombatLockdown() ) then return; end
 	if ( not flyout ) then b:SetAttribute("tcflyout", nil); return; end
 	local bar = Bar(flyout.key);
@@ -181,7 +183,7 @@ function TemucraftFlyouts_Attach(b, flyout)
 	end
 	bar:SetWidth(8 + n * SIZE + max(0, n - 1) * GAP);
 	bar:ClearAllPoints();
-	bar:SetPoint("LEFT", b, "RIGHT", 4, 0);
+	bar:SetPoint("LEFT", anchor or b, "RIGHT", 4, 0);
 	b:SetAttribute("tcflyout", flyout.key);
 	SecureHandlerSetFrameRef(b, "tcflyoutbar", bar);
 end

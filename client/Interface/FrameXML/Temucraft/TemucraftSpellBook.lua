@@ -1,10 +1,16 @@
--- Temucraft spellbook (the Spellbook tab of TemucraftPlayerSpells.lua): a retail-style book with two tabs, the class
--- and General, a search box, abilities in a 3-column grid (icon, name, grey subtitle) under section headings, and page
--- arrows; the expand button at the top right shows two pages side by side.
+-- Temucraft spellbook (the Spellbook tab of TemucraftPlayerSpells.lua): a retail-style book with three tabs, the class,
+-- General and Skills, a search box, entries in a 3-column grid (icon, name, grey subtitle) under section headings, and
+-- page arrows; the expand button at the top right shows two pages side by side.
 --   Class:   a section named after the class (class spell tabs that aren't talent trees, when the server has any),
 --            then one section per talent tree, in talent order.
 --   General: General, Racial, Professions, Guild Perks, then any other spell tab (Temucraft spells).
--- Only the highest rank of each spell is shown (the tooltip says the rank); passives get the stock passive border.
+--   Skills:  the character's skill lines (GetSkillLineInfo: weapons, defense, armour, languages, class skills,
+--            professions read-only), each with an icon and a "current / max" bar; refreshed on SKILL_LINES_CHANGED.
+-- Ranks ("Show all ranks" box by the search, saved account-wide with TemucraftStore, key ui.bookranks = "all"):
+--   off (default) one entry per spell, its highest rank; a spell with lower ranks has a small arrow on its icon that
+--                 opens them in a row beside it (a TemucraftFlyouts.lua row: click casts that rank, drag puts it on a bar)
+--   on            every rank, grouped under a bar with the spell's name; a click on the bar folds / unfolds it.
+-- Passives get the stock passive border.
 -- The buttons are SecureActionButtons (type "spell", the spell's id): click casts, drag puts it on an action bar, in
 -- and out of combat. They are laid out and given their spells only out of combat; a change in combat waits for it to
 -- end. What a spell is (racial, profession, guild perk) comes from TemucraftSpellTabs.lua (server prefix TSB).
@@ -57,15 +63,134 @@ function L.Classify(e, trees, className)
 	return "general", e.tabName or "Temucraft", subtitle;
 end
 
--- keeps the last (highest) rank of each name, in the order the names first appear
+-- keeps the last (highest) rank of each name, in the order the names first appear; each kept entry gets .ranks, all
+-- its ranks lowest first (the entry itself last) and .key ("tab:name")
 function L.HighestRanks(list)
-	local out, at = {}, {};
+	local out, at, ranks = {}, {}, {};
 	for _, e in ipairs(list) do
 		local key = e.tab..":"..e.name;
-		if ( at[key] ) then out[at[key]] = e;
-		else table.insert(out, e); at[key] = #out; end
+		if ( at[key] ) then out[at[key]] = e; table.insert(ranks[key], e);
+		else table.insert(out, e); at[key] = #out; ranks[key] = { e }; end
+	end
+	for _, e in ipairs(out) do
+		e.key = e.tab..":"..e.name;
+		e.ranks = ranks[e.key];
 	end
 	return out;
+end
+
+-- the lower ranks of an entry, next lower first (the rank row of the "highest only" view)
+function L.LowerRanks(e)
+	local out = {};
+	if ( e.ranks ) then for i = #e.ranks - 1, 1, -1 do table.insert(out, e.ranks[i]); end end
+	return out;
+end
+
+-- "Show all ranks": a spell with several ranks becomes a group bar ({ group = true, name, count, folded, groupKey })
+-- followed, unless folded[key], by its ranks, highest first (subtitle "Rank n", groupKey set); the rest stays
+function L.ExpandRanks(sections, folded)
+	folded = folded or {};
+	local out = {};
+	for _, s in ipairs(sections) do
+		local entries = {};
+		for _, e in ipairs(s.entries) do
+			if ( e.ranks and #e.ranks > 1 and not e.flyout ) then
+				local key = e.key or (e.tab..":"..e.name);
+				table.insert(entries, { group = true, name = e.name, icon = e.icon, count = #e.ranks, folded = folded[key] and true or false,
+					groupKey = key, subtitle = e.subtitle or "", section = s.title });
+				if ( not folded[key] ) then
+					for i = #e.ranks, 1, -1 do
+						local r = e.ranks[i];
+						local copy = {};
+						for k, v in pairs(r) do copy[k] = v; end
+						copy.ranks, copy.groupKey, copy.section = nil, key, s.title;
+						copy.subtitle = (r.sub and r.sub ~= "") and r.sub or (e.subtitle or "");
+						table.insert(entries, copy);
+					end
+				end
+			else
+				table.insert(entries, e);
+			end
+		end
+		table.insert(out, { title = s.title, entries = entries });
+	end
+	return out;
+end
+
+----------------------------------------------------------------------------------------------------------------------
+-- Skills (GetSkillLineInfo)
+----------------------------------------------------------------------------------------------------------------------
+L.SKILL_ORDER = { "Weapon Skills", "Armor Proficiencies", "Secondary Skills", "Languages", "Class Skills", "Professions" };
+local I = "Interface\\Icons\\";
+L.SKILL_ICONS = {
+	["swords"] = "INV_Sword_04", ["two-handed swords"] = "INV_Sword_39", ["axes"] = "INV_Axe_04", ["two-handed axes"] = "INV_Axe_09",
+	["maces"] = "INV_Mace_04", ["two-handed maces"] = "INV_Hammer_05", ["staves"] = "INV_Staff_08", ["polearms"] = "INV_Spear_06",
+	["daggers"] = "INV_Weapon_ShortBlade_05", ["fist weapons"] = "INV_Gauntlets_04", ["bows"] = "INV_Weapon_Bow_07",
+	["crossbows"] = "INV_Weapon_Crossbow_01", ["guns"] = "INV_Weapon_Rifle_01", ["thrown"] = "INV_ThrowingKnife_02",
+	["wands"] = "INV_Wand_01", ["unarmed"] = "Ability_GolemThunderClap", ["defense"] = "Ability_Defend", ["shield"] = "INV_Shield_04",
+	["cloth"] = "INV_Chest_Cloth_21", ["leather"] = "INV_Chest_Leather_09", ["mail"] = "INV_Chest_Chain_05", ["plate mail"] = "INV_Chest_Plate01",
+	["riding"] = "Ability_Mount_RidingHorse", ["first aid"] = "Spell_Holy_SealOfSacrifice", ["cooking"] = "INV_Misc_Food_15",
+	["fishing"] = "Trade_Fishing", ["alchemy"] = "Trade_Alchemy", ["blacksmithing"] = "Trade_BlackSmithing",
+	["enchanting"] = "Trade_Engraving", ["engineering"] = "Trade_Engineering", ["herbalism"] = "Spell_Nature_NatureTouchGrow",
+	["inscription"] = "INV_Inscription_Tradeskill01", ["jewelcrafting"] = "INV_Misc_Gem_01", ["leatherworking"] = "Trade_LeatherWorking",
+	["mining"] = "Trade_Mining", ["skinning"] = "INV_Misc_Pelt_Wolf_01", ["tailoring"] = "Trade_Tailoring", ["lockpicking"] = "Spell_Nature_MoonKey",
+	["poisons"] = "Trade_BrewPoison",
+};
+L.SKILL_HEADER_ICONS = {
+	["weapon skills"] = "INV_Sword_04", ["armor proficiencies"] = "INV_Chest_Chain_05", ["languages"] = "INV_Misc_Book_09",
+	["secondary skills"] = "INV_Misc_Note_01", ["professions"] = "INV_Misc_Note_01", ["class skills"] = "INV_Misc_Book_11",
+};
+
+-- treeIcons: { [lower talent tree name] = icon } (class skills are named like the trees)
+function L.SkillIcon(name, header, treeIcons)
+	local n = lower(name);
+	if ( L.SKILL_ICONS[n] ) then return I..L.SKILL_ICONS[n]; end
+	if ( string.find(n, "^language") or lower(header) == "languages" ) then return I.."INV_Misc_Book_09"; end
+	if ( treeIcons and treeIcons[n] ) then return treeIcons[n]; end
+	return I..(L.SKILL_HEADER_ICONS[lower(header)] or "INV_Misc_QuestionMark");
+end
+
+-- lines: what GetSkillLineInfo gives, in order ({ name, header, rank, max, modifier, description }); returns sections
+-- ({ title, entries }) in SKILL_ORDER, then any other heading in the client's order. A skill without a rank (max <= 1:
+-- armour, some class skills) has rank nil.
+function L.SkillSections(lines, treeIcons)
+	local byTitle, seen, section = {}, {}, nil;
+	for _, l in ipairs(lines) do
+		if ( l.header ) then
+			section = byTitle[l.name];
+			if ( not section ) then
+				section = { title = l.name, entries = {} };
+				byTitle[l.name] = section;
+				table.insert(seen, l.name);
+			end
+		elseif ( l.name ) then
+			if ( not section ) then
+				section = { title = "Skills", entries = {} }; byTitle["Skills"] = section; table.insert(seen, "Skills");
+			end
+			local ranked = (l.max or 0) > 1;
+			table.insert(section.entries, { skill = true, name = l.name, rank = ranked and (l.rank or 0) or nil,
+				max = ranked and l.max or nil, modifier = l.modifier or 0, description = l.description or "",
+				icon = L.SkillIcon(l.name, section.title, treeIcons), subtitle = "", section = section.title,
+				profession = (section.title == "Professions" or section.title == "Secondary Skills") });
+		end
+	end
+	local out, used = {}, {};
+	for _, t in ipairs(L.SKILL_ORDER) do
+		if ( byTitle[t] and #byTitle[t].entries > 0 ) then table.insert(out, byTitle[t]); used[t] = true; end
+	end
+	for _, t in ipairs(seen) do
+		if ( not used[t] and #byTitle[t].entries > 0 ) then table.insert(out, byTitle[t]); end
+	end
+	return out;
+end
+
+-- "300 / 450", "300 (+15) / 450", or "" without a rank
+function L.SkillRankText(e)
+	if ( not e.rank ) then return ""; end
+	if ( e.modifier and e.modifier ~= 0 ) then
+		return string.format("%d (%s%d) / %d", e.rank, e.modifier > 0 and "+" or "", e.modifier, e.max);
+	end
+	return string.format("%d / %d", e.rank, e.max);
 end
 
 -- { class = { {title, entries}, ... }, general = { ... } }
@@ -123,20 +248,30 @@ function L.Filter(sections, query, describe)
 	return out;
 end
 
--- pages of { kind = "header", text, y } and { kind = "spell", entry, col, y }; a heading never ends a page
-function L.Paginate(sections, cols, pageHeight, headerHeight, rowHeight, gap)
+-- pages of { kind = "header", text, y }, { kind = "group", entry, y } (a rank group's bar, full width) and
+-- { kind = "spell", entry, col, y }; a heading or a group bar never ends a page, and a group starts and ends a row
+function L.Paginate(sections, cols, pageHeight, headerHeight, rowHeight, gap, groupHeight)
+	groupHeight = groupHeight or 24;
 	local pages, page, y = {}, {}, 0;
 	local function newPage() table.insert(pages, page); page, y = {}, 0; end
 	for _, s in ipairs(sections) do
 		if ( y > 0 and y + headerHeight + rowHeight > pageHeight ) then newPage(); end
 		table.insert(page, { kind = "header", text = s.title, y = y });
 		y = y + headerHeight;
-		local col = 0;
+		local col, lastGroup = 0, nil;
 		for _, e in ipairs(s.entries) do
-			if ( col == 0 and y + rowHeight > pageHeight ) then newPage(); end
-			table.insert(page, { kind = "spell", entry = e, col = col, y = y });
-			col = col + 1;
-			if ( col == cols ) then col, y = 0, y + rowHeight; end
+			if ( col > 0 and (e.group or e.groupKey ~= lastGroup) ) then col, y = 0, y + rowHeight; end
+			lastGroup = e.groupKey;
+			if ( e.group ) then
+				if ( y > 0 and y + groupHeight + (e.folded and 0 or rowHeight) > pageHeight ) then newPage(); end
+				table.insert(page, { kind = "group", entry = e, y = y });
+				y = y + groupHeight;
+			else
+				if ( col == 0 and y + rowHeight > pageHeight ) then newPage(); end
+				table.insert(page, { kind = "spell", entry = e, col = col, y = y });
+				col = col + 1;
+				if ( col == cols ) then col, y = 0, y + rowHeight; end
+			end
 		end
 		if ( col > 0 ) then y = y + rowHeight; end
 		y = y + gap;
@@ -150,18 +285,24 @@ end
 ----------------------------------------------------------------------------------------------------------------------
 if ( not CreateFrame ) then return; end   -- tests load only the logic
 
-local COLS, COL_WIDTH, PAGE_WIDTH, PAGE_HEIGHT = 3, 250, 750, 470;
-local HEADER_HEIGHT, ROW_HEIGHT, GAP = 30, 50, 8;
+-- the window is 860 wide on every tab (TemucraftPlayerSpells.lua): the panel inside is 832, a page 792 with 20 px
+-- margins; two pages side by side in the wide view
+local COLS, COL_WIDTH, PAGE_WIDTH, PAGE_HEIGHT = 3, 264, 792, 470;
+local HEADER_HEIGHT, ROW_HEIGHT, GAP, GROUP_HEIGHT = 30, 50, 8, 24;
 local PER_PAGE = COLS * floor(PAGE_HEIGHT / ROW_HEIGHT);
+local GROUPS_PER_PAGE = floor(PAGE_HEIGHT / GROUP_HEIGHT);
+local RANKS_KEY = "ui.bookranks";
 
 local panel = CreateFrame("Frame", "TemucraftSpellBook", UIParent);
 local book, page, wide, query = "class", 1, false, "";
-local books, pages = { class = {}, general = {} }, {};
+local books, pages = { class = {}, general = {}, skills = {} }, {};
 local described = {};      -- spell id -> lower-case tooltip text (search)
 local pending = false;     -- a refresh waits for the end of combat
+local folded = {};         -- "Show all ranks": the groups folded this session ("tab:name" -> true)
+local function ShowAllRanks() return TemucraftStore_Get and TemucraftStore_Get("A", RANKS_KEY) == "all"; end
 
 local combatNote = panel:CreateFontString(nil, "OVERLAY", "GameFontRedSmall");
-combatNote:SetPoint("BOTTOM", 0, 26);
+combatNote:SetPoint("BOTTOM", 0, 38);
 combatNote:SetText("In combat: the book updates when combat ends.");
 combatNote:Hide();
 
@@ -197,12 +338,14 @@ local function BookTab(i, key)
 	bookTabs[i] = tab;
 	return tab;
 end
-BookTab(1, "class"); BookTab(2, "general");
+BookTab(1, "class"); BookTab(2, "general"); BookTab(3, "skills");
 
+-- Pet, Collections (and the Train button, below) sit in the middle of the bottom bar: the top row is the book tabs,
+-- the ranks box and the search
 local petButton = CreateFrame("Button", "TemucraftSpellBookPetButton", panel, "UIPanelButtonTemplate");
 petButton:SetWidth(60); petButton:SetHeight(20);
 petButton:SetText(PET or "Pet");
-petButton:SetPoint("LEFT", bookTabs[2], "RIGHT", 8, 0);
+petButton:SetPoint("BOTTOM", panel, "BOTTOM", 0, 12);
 petButton:SetScript("OnClick", function() TemucraftStockToggleSpellBook(BOOKTYPE_PET); end);
 
 local collectionsButton = CreateFrame("Button", "TemucraftSpellBookCollectionsButton", panel, "UIPanelButtonTemplate");
@@ -219,6 +362,31 @@ search:SetPoint("TOPRIGHT", -50, -34);
 local searchHint = search:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall");
 searchHint:SetPoint("LEFT", 2, 0);
 searchHint:SetText("Search abilities, keywords");
+
+-- highest rank only (default) or every rank, grouped
+local ranksCheck = CreateFrame("CheckButton", "TemucraftSpellBookRanksCheck", panel, "UICheckButtonTemplate");
+ranksCheck:SetWidth(24); ranksCheck:SetHeight(24);
+ranksCheck:SetPoint("RIGHT", search, "LEFT", -112, 0);
+_G[ranksCheck:GetName().."Text"]:SetText("Show all ranks");
+ranksCheck:SetScript("OnClick", function(self)
+	if ( InCombatLockdown() ) then
+		self:SetChecked(ShowAllRanks());
+		UIErrorsFrame:AddMessage(ERR_NOT_IN_COMBAT, 1, 0.1, 0.1);
+		return;
+	end
+	PlaySound(self:GetChecked() and "igMainMenuOptionCheckBoxOn" or "igMainMenuOptionCheckBoxOff");
+	if ( TemucraftStore_Set ) then TemucraftStore_Set("A", RANKS_KEY, self:GetChecked() and "all" or ""); end
+	page = 1;
+	TemucraftSpellBook_Refresh();
+end);
+ranksCheck:SetScript("OnEnter", function(self)
+	GameTooltip:SetOwner(self, "ANCHOR_BOTTOM");
+	GameTooltip:SetText("Show all ranks");
+	GameTooltip:AddLine("Off: one entry per spell, its highest rank; the arrow on its icon opens the lower ranks.", 1, 1, 1, true);
+	GameTooltip:AddLine("On: every rank, under a bar with the spell's name (click the bar to fold it).", 1, 1, 1, true);
+	GameTooltip:Show();
+end);
+ranksCheck:SetScript("OnLeave", function() GameTooltip:Hide(); end);
 search:SetScript("OnEscapePressed", function(self) self:ClearFocus(); end);
 search:SetScript("OnEnterPressed", function(self) self:ClearFocus(); end);
 search:SetScript("OnEditFocusGained", function() searchHint:Hide(); end);
@@ -266,10 +434,11 @@ classic:SetScript("OnClick", function(self)
 end);
 
 -- pages
-local pageFrames, buttons, headers = {}, {}, {};
+local pageFrames, buttons, headers, groups, skills = {}, {}, {}, {}, {};
 local scan = CreateFrame("GameTooltip", "TemucraftSpellBookScanTooltip", nil, "GameTooltipTemplate");
 
 local function Describe(e)
+	if ( e.skill ) then return string.lower(e.description or ""); end
 	if ( e.flyout ) then
 		local names = {};
 		for _, m in ipairs(e.flyout.members) do table.insert(names, m.name or ""); end
@@ -354,8 +523,93 @@ local function MakeButton(side, i)
 	end);
 	b:SetScript("OnLeave", function() GameTooltip:Hide(); end);
 	if ( TemucraftFlyouts_WrapButton ) then TemucraftFlyouts_WrapButton(b); end
+	-- the lower ranks: a small arrow on the icon's right edge opens them in a row beside it (secure, so in combat too)
+	local arrow = CreateFrame("Button", name.."RankArrow", b, "SecureActionButtonTemplate");
+	arrow:SetWidth(14); arrow:SetHeight(14);
+	arrow:SetPoint("LEFT", b, "RIGHT", -5, 0);
+	arrow:SetFrameLevel(b:GetFrameLevel() + 3);
+	arrow:RegisterForClicks("AnyUp");
+	arrow:SetNormalTexture("Interface\\ChatFrame\\ChatFrameExpandArrow");
+	arrow:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD");
+	arrow:SetScript("OnEnter", function(self)
+		GameTooltip:SetOwner(self, "ANCHOR_RIGHT");
+		GameTooltip:SetText(b.spellName or "");
+		GameTooltip:AddLine("Click for the lower ranks ("..(self.count or 0)..").", 0.4, 0.78, 1);
+		GameTooltip:AddLine("Drag a rank to an action bar.", 0.7, 0.7, 0.7);
+		GameTooltip:Show();
+	end);
+	arrow:SetScript("OnLeave", function() GameTooltip:Hide(); end);
+	if ( TemucraftFlyouts_WrapButton ) then TemucraftFlyouts_WrapButton(arrow); end
+	arrow:Hide();
+	b.arrow = arrow;
 	b:Hide();
 	return b;
+end
+
+-- a "Show all ranks" group bar: the spell's name; a click folds / unfolds its ranks (out of combat: the book moves)
+local function MakeGroup(side, i)
+	local g = CreateFrame("Button", "TemucraftSpellBookGroup"..side.."_"..i, pageFrames[side]);
+	g:SetWidth(PAGE_WIDTH - 16); g:SetHeight(GROUP_HEIGHT - 4);
+	g:SetBackdrop({ bgFile = "Interface\\Tooltips\\UI-Tooltip-Background", tile = true, tileSize = 16 });
+	g:SetBackdropColor(0.2, 0.15, 0.05, 0.55);
+	g:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD");
+	g.toggle = g:CreateTexture(nil, "ARTWORK");
+	g.toggle:SetWidth(14); g.toggle:SetHeight(14); g.toggle:SetPoint("LEFT", 4, 0);
+	g.icon = g:CreateTexture(nil, "ARTWORK");
+	g.icon:SetWidth(16); g.icon:SetHeight(16); g.icon:SetPoint("LEFT", g.toggle, "RIGHT", 6, 0);
+	g.label = g:CreateFontString(nil, "OVERLAY", "GameFontNormal");
+	g.label:SetPoint("LEFT", g.icon, "RIGHT", 6, 0);
+	g.count = g:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall");
+	g.count:SetPoint("LEFT", g.label, "RIGHT", 8, 0);
+	g:SetScript("OnClick", function(self)
+		if ( InCombatLockdown() ) then UIErrorsFrame:AddMessage(ERR_NOT_IN_COMBAT, 1, 0.1, 0.1); return; end
+		PlaySound("igMainMenuOptionCheckBoxOn");
+		folded[self.key] = not folded[self.key] or nil;
+		TemucraftSpellBook_Refresh();
+	end);
+	g:Hide();
+	return g;
+end
+
+-- a skill: icon, name and its "current / max" bar (read only)
+local function MakeSkill(side, i)
+	local name = "TemucraftSpellBookSkill"..side.."_"..i;
+	local k = CreateFrame("Button", name, pageFrames[side]);
+	k:SetWidth(COL_WIDTH - 10); k:SetHeight(40);
+	k.iconFrame = CreateFrame("Frame", nil, k);
+	k.iconFrame:SetWidth(36); k.iconFrame:SetHeight(36); k.iconFrame:SetPoint("TOPLEFT");
+	local bg = k.iconFrame:CreateTexture(nil, "BACKGROUND");
+	bg:SetTexture("Interface\\Spellbook\\UI-Spellbook-SpellBackground");
+	bg:SetWidth(64); bg:SetHeight(64); bg:SetPoint("TOPLEFT", -3, 3);
+	k.icon = k.iconFrame:CreateTexture(nil, "ARTWORK"); k.icon:SetAllPoints();
+	local border = k.iconFrame:CreateTexture(nil, "OVERLAY");
+	border:SetTexture("Interface\\Buttons\\UI-Quickslot2");
+	border:SetWidth(64); border:SetHeight(64); border:SetPoint("CENTER", 0, -1);
+	k.label = k:CreateFontString(nil, "OVERLAY", "GameFontHighlight");
+	k.label:SetPoint("TOPLEFT", k.iconFrame, "TOPRIGHT", 8, -2);
+	k.label:SetWidth(COL_WIDTH - 52); k.label:SetHeight(14); k.label:SetJustifyH("LEFT");
+	k.bar = CreateFrame("StatusBar", name.."Bar", k);
+	k.bar:SetWidth(COL_WIDTH - 64); k.bar:SetHeight(13);
+	k.bar:SetPoint("TOPLEFT", k.label, "BOTTOMLEFT", 0, -4);
+	k.bar:SetStatusBarTexture("Interface\\TargetingFrame\\UI-StatusBar");
+	k.bar:SetStatusBarColor(0.1, 0.35, 0.85);
+	local barBg = k.bar:CreateTexture(nil, "BACKGROUND");
+	barBg:SetAllPoints(); barBg:SetTexture(0, 0, 0, 0.55);
+	k.bar.text = k.bar:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall");
+	k.bar.text:SetPoint("CENTER", 0, 1);
+	k:SetScript("OnEnter", function(self)
+		local e = self.entry;
+		if ( not e ) then return; end
+		GameTooltip:SetOwner(self, "ANCHOR_RIGHT");
+		GameTooltip:SetText(e.name);
+		if ( e.rank ) then GameTooltip:AddLine("Skill "..L.SkillRankText(e), 1, 1, 1); end
+		if ( e.description and e.description ~= "" ) then GameTooltip:AddLine(e.description, NORMAL_FONT_COLOR.r, NORMAL_FONT_COLOR.g, NORMAL_FONT_COLOR.b, true); end
+		if ( e.profession ) then GameTooltip:AddLine("Recipes and training: the Professions window.", 0.6, 0.6, 0.6, true); end
+		GameTooltip:Show();
+	end);
+	k:SetScript("OnLeave", function() GameTooltip:Hide(); end);
+	k:Hide();
+	return k;
 end
 
 for side = 1, 2 do
@@ -365,8 +619,10 @@ for side = 1, 2 do
 	p.number = p:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall");
 	p.number:SetPoint("TOP", p, "BOTTOM", 0, -6);
 	pageFrames[side] = p;
-	buttons[side], headers[side] = {}, {};
+	buttons[side], headers[side], groups[side], skills[side] = {}, {}, {}, {};
 	for i = 1, PER_PAGE do buttons[side][i] = MakeButton(side, i); end
+	for i = 1, GROUPS_PER_PAGE do groups[side][i] = MakeGroup(side, i); end
+	for i = 1, PER_PAGE do skills[side][i] = MakeSkill(side, i); end
 	for i = 1, 8 do
 		local h = p:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge");
 		h:SetJustifyH("LEFT");
@@ -430,6 +686,28 @@ local function Read()
 	return L.Group(list, trees, (UnitClass("player")));
 end
 
+-- reads the skill lines (every heading opened first: the client lists only the lines under open ones)
+local function ReadSkills()
+	for i = GetNumSkillLines(), 1, -1 do
+		local _, header, expanded = GetSkillLineInfo(i);
+		if ( header and not expanded ) then ExpandSkillHeader(i); end
+	end
+	local lines = {};
+	for i = 1, GetNumSkillLines() do
+		local name, header, _, rank, _, modifier, maxRank, _, _, _, _, _, description = GetSkillLineInfo(i);
+		if ( name ) then
+			table.insert(lines, { name = name, header = header and true or false, rank = rank, max = maxRank,
+				modifier = modifier, description = description });
+		end
+	end
+	local treeIcons = {};
+	for t = 1, GetNumTalentTabs() do
+		local name, icon = GetTalentTabInfo(t);
+		if ( name ) then treeIcons[string.lower(name)] = icon; end
+	end
+	return L.SkillSections(lines, treeIcons);
+end
+
 local function SetButton(b, e)
 	b.slot, b.spellId, b.passive, b.spellName, b.flyout = e.slot, e.id, e.passive, e.name, e.flyout;
 	b.icon:SetTexture(e.icon);
@@ -454,20 +732,47 @@ local function SetButton(b, e)
 		end
 	end
 	if ( TemucraftFlyouts_Attach ) then TemucraftFlyouts_Attach(b, e.flyout); end
+	-- highest rank only: the lower ranks behind the arrow
+	local lowerRanks = (not e.flyout and not ShowAllRanks()) and L.LowerRanks(e) or {};
+	if ( #lowerRanks > 0 and TemucraftFlyouts_Attach ) then
+		b.arrow.count = #lowerRanks;
+		TemucraftFlyouts_Attach(b.arrow, { key = "rank"..b:GetName(), title = e.name, members = lowerRanks }, b);
+		b.arrow:Show();
+	end
 	UpdateCooldown(b);
 	b:Show();
+end
+
+local function SetSkill(k, e)
+	k.entry = e;
+	k.icon:SetTexture(e.icon);
+	k.label:SetText(e.name);
+	if ( e.rank ) then
+		k.label:ClearAllPoints(); k.label:SetPoint("TOPLEFT", k.iconFrame, "TOPRIGHT", 8, -2);
+		k.bar:SetMinMaxValues(0, max(1, e.max));
+		k.bar:SetValue(min(e.max, e.rank));
+		k.bar.text:SetText(L.SkillRankText(e));
+		k.bar:Show();
+	else
+		k.label:ClearAllPoints(); k.label:SetPoint("LEFT", k.iconFrame, "RIGHT", 8, 0);
+		k.bar:Hide();
+	end
+	k:Show();
 end
 
 local function Draw(side, items, number)
 	local p = pageFrames[side];
 	for _, b in ipairs(buttons[side]) do
 		b:Hide(); b.slot, b.flyout = nil, nil;
-		if ( TemucraftFlyouts_Attach ) then TemucraftFlyouts_Attach(b, nil); end
+		b.arrow:Hide();
+		if ( TemucraftFlyouts_Attach ) then TemucraftFlyouts_Attach(b, nil); TemucraftFlyouts_Attach(b.arrow, nil); end
 	end
 	for _, h in ipairs(headers[side]) do h:Hide(); h.line:Hide(); end
+	for _, g in ipairs(groups[side]) do g:Hide(); end
+	for _, k in ipairs(skills[side]) do k:Hide(); k.entry = nil; end
 	if ( not items ) then p.number:SetText(""); return; end
 	p.number:SetText(number);
-	local nb, nh = 0, 0;
+	local nb, nh, ng, nk = 0, 0, 0, 0;
 	for _, item in ipairs(items) do
 		if ( item.kind == "header" and nh < #headers[side] ) then
 			nh = nh + 1;
@@ -478,6 +783,24 @@ local function Draw(side, items, number)
 			h.line:SetPoint("LEFT", h, "RIGHT", 8, 0);
 			h.line:SetWidth(max(10, PAGE_WIDTH - 30 - h:GetStringWidth()));
 			h.line:Show();
+		elseif ( item.kind == "group" and ng < #groups[side] ) then
+			ng = ng + 1;
+			local g, e = groups[side][ng], item.entry;
+			g.key = e.groupKey;
+			g:ClearAllPoints(); g:SetPoint("TOPLEFT", p, "TOPLEFT", 8, -item.y - 2);
+			g.toggle:SetTexture(e.folded and "Interface\\Buttons\\UI-PlusButton-Up" or "Interface\\Buttons\\UI-MinusButton-Up");
+			g.icon:SetTexture(e.icon);
+			g.label:SetText(e.name);
+			g.count:SetText(e.count.." ranks"..((e.subtitle and e.subtitle ~= "") and ("  -  "..e.subtitle) or ""));
+			g:Show();
+		elseif ( item.kind == "spell" and item.entry.skill ) then
+			if ( nk < PER_PAGE ) then
+				nk = nk + 1;
+				local k = skills[side][nk];
+				k:ClearAllPoints();
+				k:SetPoint("TOPLEFT", p, "TOPLEFT", 8 + item.col * COL_WIDTH, -item.y - 6);
+				SetSkill(k, item.entry);
+			end
 		elseif ( item.kind == "spell" and nb < PER_PAGE ) then
 			nb = nb + 1;
 			local b = buttons[side][nb];
@@ -493,8 +816,10 @@ local function Render()
 	if ( TemucraftFlyouts_HideAll ) then TemucraftFlyouts_HideAll(); end
 	combatNote:Hide();
 	books = Read();
-	local sections = L.Filter(books[book], query, Describe);
-	pages = L.Paginate(sections, COLS, PAGE_HEIGHT, HEADER_HEIGHT, ROW_HEIGHT, GAP);
+	if ( book == "skills" ) then books.skills = ReadSkills(); end
+	local sections = L.Filter(books[book] or {}, query, Describe);
+	if ( book ~= "skills" and ShowAllRanks() ) then sections = L.ExpandRanks(sections, folded); end
+	pages = L.Paginate(sections, COLS, PAGE_HEIGHT, HEADER_HEIGHT, ROW_HEIGHT, GAP, GROUP_HEIGHT);
 	local per = wide and 2 or 1;
 	local spreads = max(1, ceil(#pages / per));
 	if ( page > spreads ) then page = spreads; end
@@ -515,6 +840,10 @@ end
 local function UpdateTabs()
 	bookTabs[1]:SetText((UnitClass("player")));
 	bookTabs[2]:SetText(GENERAL or "General");
+	bookTabs[3]:SetText(SKILLS or "Skills");
+	ranksCheck:SetChecked(ShowAllRanks());
+	if ( book == "skills" ) then ranksCheck:Hide(); else ranksCheck:Show(); end
+	searchHint:SetText(book == "skills" and "Search skills" or "Search abilities, keywords");
 	for _, tab in ipairs(bookTabs) do
 		BookTabSize(tab);
 		BookTabSelect(tab, tab.key == book);
@@ -540,7 +869,7 @@ local function Borrow(on)
 	if ( not train ) then return; end
 	train:SetParent(on and panel or SpellBookFrame);
 	train:ClearAllPoints();
-	if ( on ) then train:SetPoint("LEFT", collectionsButton, "RIGHT", 34, 0);
+	if ( on ) then train:SetPoint("RIGHT", petButton, "LEFT", -10, 0);
 	else train:SetPoint("TOPRIGHT", SpellBookFrame, "TOPRIGHT", -44, -40); end
 	if ( check ) then check:SetParent(on and panel or SpellBookFrame); end
 end
@@ -564,7 +893,9 @@ events:RegisterEvent("SPELLS_CHANGED");
 events:RegisterEvent("LEARNED_SPELL_IN_TAB");
 events:RegisterEvent("PLAYER_TALENT_UPDATE");
 events:RegisterEvent("SPELL_UPDATE_COOLDOWN");
+events:RegisterEvent("SKILL_LINES_CHANGED");
 events:SetScript("OnEvent", function(self, event)
+	if ( event == "SKILL_LINES_CHANGED" and book ~= "skills" ) then return; end
 	if ( event == "SPELL_UPDATE_COOLDOWN" ) then
 		if ( panel:IsShown() ) then
 			for side = 1, 2 do for _, b in ipairs(buttons[side]) do if ( b:IsShown() ) then UpdateCooldown(b); end end end

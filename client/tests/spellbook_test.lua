@@ -50,5 +50,46 @@ check("no heading ends a page", lastOk);
 check("several pages", #pages >= 2);
 check("one empty page when nothing", #L.Paginate({}, 3, 470, 30, 50, 8) == 1);
 
+-- ranks
+local wrath = books.class[1].entries[1];
+check("ranks kept on the highest", wrath.ranks and #wrath.ranks == 2 and wrath.ranks[1].sub == "Rank 1");
+check("lower ranks, next lower first", #L.LowerRanks(wrath) == 1 and L.LowerRanks(wrath)[1].sub == "Rank 1");
+check("single rank has none lower", #L.LowerRanks(books.class[2].entries[1]) == 0);
+local all = L.ExpandRanks(books.class, {});
+local bal = all[1].entries;
+check("all ranks: group bar then ranks, highest first", bal[1].group and bal[1].count == 2 and bal[2].subtitle == "Rank 2" and bal[3].subtitle == "Rank 1");
+check("all ranks: members carry the group", bal[2].groupKey == bal[1].groupKey and bal[2].ranks == nil);
+check("all ranks: single-rank spells unchanged", #all[2].entries == 2 and not all[2].entries[1].group);
+local foldedAll = L.ExpandRanks(books.class, { [bal[1].groupKey] = true });
+check("folded group keeps only its bar", #foldedAll[1].entries == 1 and foldedAll[1].entries[1].folded);
+local mixed = { { title = "S", entries = { { name = "x" }, { group = true, groupKey = "g", name = "G" },
+	{ name = "g1", groupKey = "g" }, { name = "g2", groupKey = "g" }, { name = "y" } } } };
+local mp = L.Paginate(mixed, 3, 470, 30, 50, 8, 24)[1];
+check("group bar on its own row", mp[3].kind == "group" and mp[3].y == 30 + 50);
+check("ranks under the bar, then a new row", mp[4].y == 30 + 50 + 24 and mp[4].col == 0 and mp[6].y == 30 + 50 + 24 + 50 and mp[6].col == 0);
+
+-- skills
+local lines = {
+	{ name = "Class Skills", header = true }, { name = "Balance", rank = 1, max = 1 },
+	{ name = "Professions", header = true }, { name = "Herbalism", rank = 120, max = 150, modifier = 0 },
+	{ name = "Secondary Skills", header = true }, { name = "Cooking", rank = 75, max = 150 },
+	{ name = "Weapon Skills", header = true }, { name = "Staves", rank = 50, max = 60 }, { name = "Defense", rank = 58, max = 60, modifier = 5 },
+	{ name = "Armor Proficiencies", header = true }, { name = "Cloth", rank = 1, max = 1 }, { name = "Leather", rank = 1, max = 1 },
+	{ name = "Languages", header = true }, { name = "Language: Darnassian", rank = 300, max = 300, description = "Speak it" },
+	{ name = "Empty", header = true },
+};
+local ss = L.SkillSections(lines, { balance = "Interface\\Icons\\Spell_Nature_StarFall" });
+local order2 = {};
+for _, s in ipairs(ss) do table.insert(order2, s.title); end
+check("skill sections in retail order, empty ones dropped", table.concat(order2, ",") == "Weapon Skills,Armor Proficiencies,Secondary Skills,Languages,Class Skills,Professions");
+check("weapon icon", ss[1].entries[1].icon == "Interface\\Icons\\INV_Staff_08");
+check("defense icon and modifier", ss[1].entries[2].icon == "Interface\\Icons\\Ability_Defend" and L.SkillRankText(ss[1].entries[2]) == "58 (+5) / 60");
+check("armour has no rank", ss[2].entries[1].rank == nil and L.SkillRankText(ss[2].entries[1]) == "");
+check("language icon", ss[4].entries[1].icon == "Interface\\Icons\\INV_Misc_Book_09");
+check("class skill uses the tree icon", ss[5].entries[1].icon == "Interface\\Icons\\Spell_Nature_StarFall");
+check("professions read-only flag", ss[6].entries[1].profession and L.SkillRankText(ss[6].entries[1]) == "120 / 150");
+check("skills search", #L.Filter(ss, "staves") == 1 and #L.Filter(ss, "speak", function(e) return string.lower(e.description or ""); end) == 1);
+check("unknown skill falls back to its heading", L.SkillIcon("Foo", "Weapon Skills") == "Interface\\Icons\\INV_Sword_04");
+
 if ( failed > 0 ) then print(failed.." failed"); os.exit(1); end
 print("all passed");

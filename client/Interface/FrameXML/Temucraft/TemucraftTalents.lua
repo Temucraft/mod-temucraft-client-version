@@ -151,7 +151,7 @@ local cards = {};
 for t = 1, 3 do
 	local c = CreateFrame("Frame", "TemucraftSpecializationCard"..t, spec);
 	c:SetWidth(252); c:SetHeight(560);
-	c:SetPoint("TOPLEFT", 10 + (t - 1) * 262, -40);
+	c:SetPoint("TOP", spec, "TOP", (t - 2) * (252 + 18), -40);   -- centred: 20 px margins in the 860 window
 	c:SetBackdrop({ bgFile = "Interface\\Tooltips\\UI-Tooltip-Background", edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
 		tile = true, tileSize = 16, edgeSize = 16, insets = { left = 4, right = 4, top = 4, bottom = 4 } });
 	c:SetBackdropColor(0, 0, 0, 0.75);

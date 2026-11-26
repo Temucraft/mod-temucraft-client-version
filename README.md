@@ -91,14 +91,23 @@ tabs at the bottom. P and the spellbook micro button open it on Spellbook, N and
 (they replace `ToggleSpellBook` / `ToggleTalentFrame`; the pet book, Shift-P, stays the stock one). `/tsb classic` (or
 the "Classic spellbook" checkbox) and `/ttf classic` (the "Classic talents" checkbox) bring back the stock frames,
 `/tsb new` and `/ttf new` this one; Interface Options > Temucraft has the same choices. Both ways switch at once, no
-`/reload`. The window is 860 wide on the Talents tab (820 otherwise) and scales down to fit smaller screens.
+`/reload`. The window is 860 wide on all three tabs (so the frame and its bottom tabs don't move when you switch;
+1672 in the spellbook's two-page view) and scales down to fit smaller screens. The Specialization cards are centred.
 
-- **Spellbook** ([`TemucraftSpellBook.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftSpellBook.lua)): tabs *class* and *General*, a search box (name, subtitle, section and the
+- **Spellbook** ([`TemucraftSpellBook.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftSpellBook.lua)): tabs *class*, *General* and *Skills*, a search box (name, subtitle, section and the
   tooltip text, read once from a hidden tooltip), a 3-column grid of icon, name and grey subtitle (the spell's subtext,
   e.g. "Shapeshift", "Racial Passive", "Guild Perk"; never "Rank n") under headings: the class (class spell tabs that
   aren't talent trees, if the server has any), then each talent tree; General, Racial, Professions, Guild Perks and any
-  other spell tab (Temucraft spells) in General. Highest rank only, passives with the stock passive border. The
-  expand button shows two pages. The old Racials / Professions / Guild tabs of `TemucraftSpellTabs.lua` became these
+  other spell tab (Temucraft spells) in General. Passives with the stock passive border. The expand button shows two
+  pages. Pet, Collections and Train sit in the middle of the bottom bar.
+  *Ranks*: the "Show all ranks" box by the search (account-wide, `TemucraftStore` key `ui.bookranks` = `all`). Off
+  (default): one entry per spell, its highest rank; a spell with lower ranks has a small arrow on its icon's right edge
+  that opens them in a flyout row (click casts that rank, drag puts it on a bar, each has its own tooltip). On: every
+  rank, highest first, under a bar with the spell's name; a click on the bar folds / unfolds it (out of combat).
+  *Skills*: the stock skill lines (`GetSkillLineInfo`, every heading opened with `ExpandSkillHeader`) under Weapon
+  Skills, Armor Proficiencies, Secondary Skills, Languages, Class Skills, Professions (read only), each with an icon
+  (`TemucraftSpellBookLogic.SKILL_ICONS`, class skills the talent tree's icon) and a "current / max" bar (none for
+  skills without ranks, e.g. armour); the search filters it too; it refreshes on `SKILL_LINES_CHANGED`. The old Racials / Professions / Guild tabs of `TemucraftSpellTabs.lua` became these
   sections (the flags still come from the server, prefix TSB); its Mounts / Companions tabs became Collections. The
   Train button of `TemucraftAutoLearn.lua` moves into the book while it's open. The spell buttons are
   `SecureActionButtonTemplate` (type `spell`, the spell id): click casts and drag picks the spell up, in and out of
@@ -215,6 +224,7 @@ sat on their bottom tabs), except the spellbook and talents.
   `SecureActionButtonTemplate` buttons beside it (cast in combat). The book's buttons are wrapped with
   `SecureHandlerWrapScript` (header `TemucraftFlyoutHeader`) so the row opens and closes in combat too; what a row
   holds changes only out of combat. Groups: `TemucraftFlyoutLogic.FLYOUTS`, `TELEPORT_IDS`, `PORTAL_IDS`, `HELPER_ITEMS`.
+  The book's rank arrows use the same rows (`TemucraftFlyouts_Attach(arrow, flyout, icon)`, key `rank<button>`).
 
 ## DragonUI
 
