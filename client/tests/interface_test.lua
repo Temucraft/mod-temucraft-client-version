@@ -109,5 +109,45 @@ local books = B.Group(F.Collapse(list, { { item = 610140, name = "Courier's Bell
 check("flyout in its tree", books.class[1].title == "Arcane" and books.class[1].entries[1].name == "Teleports");
 check("helpers in General", books.general[1].title == "General" and books.general[1].entries[1].name == "Temucraft Helpers");
 
+-- the one character window: where each tab goes, its scale, its place, the Skills and Pet pages
+local all = function() return true; end
+local none = function() return false; end
+local only = function(which) return function(w) return w == which; end; end
+check("C goes to the character page", C.Route("PaperDollFrame", none, all) == "character");
+check("every stock tab has its page", C.Route("ReputationFrame", none, all) == "rep" and C.Route("SkillFrame", none, all) == "skills"
+	and C.Route("TokenFrame", none, all) == "currency" and C.Route("PetPaperDollFrame", none, all) == "pet");
+check("classic character panel: character, pet and skills stock, reputation stays", C.Route("PaperDollFrame", only("char"), all) == "stock"
+	and C.Route("PetPaperDollFrame", only("char"), all) == "stock" and C.Route("SkillFrame", only("char"), all) == "stock"
+	and C.Route("ReputationFrame", only("char"), all) == "rep" and C.Route("TokenFrame", only("char"), all) == "currency");
+check("classic reputation / currency only send their own tab", C.Route("ReputationFrame", only("rep"), all) == "stock"
+	and C.Route("TokenFrame", only("currency"), all) == "stock" and C.Route("PaperDollFrame", only("rep"), all) == "character");
+check("DragonUI (char + currency): reputation stays ours", C.Route("ReputationFrame", function(w) return w == "char" or w == "currency"; end, all) == "rep"
+	and C.Route("TokenFrame", function(w) return w == "char" or w == "currency"; end, all) == "stock");
+check("no pet: stock (it ignores it)", C.Route("PetPaperDollFrame", none, function(k) return k ~= "pet"; end) == "stock");
+check("unknown frame: stock", C.Route("HonorFrame", none, all) == "stock");
+check("every tab has a classic option", #C.TABS == 6 and C.CLASSIC.prof == "char" and C.CLASSIC.rep == "rep");
+check("full size on a big screen", C.FitScale(1920, 1080, 730, 500) == 1);
+check("scaled down on a small screen", math.abs(C.FitScale(640, 480, 730, 500) - (480 - 60) / 500) < 0.0001);
+check("place text", C.PositionText(16.4, 700.6) == "16,701" and select(2, C.ParsePosition("16,701")) == 701 and C.ParsePosition("-5,20") == -5);
+check("bad place text", C.ParsePosition(nil) == nil and C.ParsePosition("x,y") == nil);
+local skillSections = B.SkillSections({
+	{ name = "Weapon Skills", header = true }, { name = "Swords", rank = 300, max = 400, modifier = 5 }, { name = "Defense", rank = 400, max = 400 },
+	{ name = "Armor Proficiencies", header = true }, { name = "Plate Mail", rank = 1, max = 1 },
+	{ name = "Professions", header = true }, { name = "Mining", rank = 120, max = 150 },
+}, {});
+local slines = C.SkillLines(skillSections, {});
+check("skills: a header then its skills", slines[1].kind == "group" and slines[1].name == "Weapon Skills" and slines[2].kind == "skill" and slines[2].name == "Swords" and #slines == 7);
+slines = C.SkillLines(skillSections, { ["Weapon Skills"] = true });
+check("skills: a collapsed header hides its skills, keeps its count", slines[1].collapsed and slines[1].count == 2 and slines[2].name == "Armor Proficiencies");
+check("skills: same icons and rank text as the spellbook", slines[3].entry.icon == "Interface\\Icons\\INV_Chest_Plate01" and slines[3].entry.rank == nil
+	and B.SkillRankText(skillSections[1].entries[1]) == "300 (+5) / 400");
+check("skills: how to raise it", C.SkillHelp(skillSections[1].entries[1]):find("weapon") ~= nil and C.SkillHelp(skillSections[1].entries[2]):find("attack you") ~= nil
+	and C.SkillHelp(skillSections[3].entries[1]):find("trainer") ~= nil and C.SkillHelp(nil) == "" and C.SkillHelp({ name = "X", section = "?" }) == "");
+local pet = C.PetSections({ str = 100, agi = 50, sta = 80, int = 20, spi = 30, armor = 3000, ap = 900, minDamage = 100.2, maxDamage = 140.7, speed = 2,
+	fire = 10, nature = 0, frost = 0, shadow = 0, arcane = 5, talentPoints = 2 });
+check("pet: attributes, melee, resistances, talents", #pet == 4 and pet[1].title == "Attributes" and pet[2].rows[2][2] == "100 - 141"
+	and pet[2].rows[3][2] == "2.00" and pet[3].rows[1][2] == "5" and pet[4].rows[1][2] == "2");
+check("pet: no talents section without points, spell power only when there is some", #C.PetSections({ sp = 50 }) == 3 and #C.PetSections({ sp = 50 })[2].rows == 4);
+
 if ( failed > 0 ) then print(failed.." failed"); os.exit(1); end
 print("all passed");

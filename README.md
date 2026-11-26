@@ -158,15 +158,37 @@ sat on their bottom tabs), except the spellbook and talents.
   banker: coin, battlemaster: banner, healer: resurrection, gossip: note...) and taller rows; quests keep their ! / ?
   icons. Restyled after each `GossipFrameUpdate`, and put back for quests and with "Classic gossip window".
 
-- **Character panel** ([`TemucraftCharacter.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftCharacter.lua), C, `/tchar`, `/tchar classic|new`):
-  the stock item slots (they move into the window while it is open, so clicking, Alt flyouts and the equipment manager
-  work as always) down both sides and the weapons at the bottom, a bigger model on the race's backdrop (drag to turn,
-  wheel to zoom), a Titles menu, and on the right the item level (average of the 17 slots, a two-hander counts twice)
-  and the stats: Attributes, Enhancements (by role: melee, ranged or caster; hybrids by their main talent tree) and
-  Defense. Tabs Character / Pet / Reputation / Skills / Currency / Professions, like the classic set; Pet and Skills
-  open the stock frame on that tab, Reputation and Currency the windows below, Professions (only with the
-  TemucraftProfGear addon of mod-temucraft-professions) its Profession Equipment panel. The Titles list is the solid
-  dialog-style menu.
+- **Character window** ([`TemucraftCharacter.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftCharacter.lua), C, U, `/tchar`, `/tchar classic|new`):
+  ONE window (730 x 500, the same size, place and style on every tab; scaled down on small screens; drag the top to
+  move it, the place is kept per character in TemucraftStore `ui.charwin`; Esc closes it) with the tabs Character /
+  Pet (only while you have a pet) / Reputation / Skills / Currency / Professions (only with the TemucraftProfGear
+  addon of mod-temucraft-professions). A tab swaps the page inside; the window and the tab strip stay put.
+  The look is the shared one (`TemucraftStyle.lua`): gold border and header (the page's title; on Character and Pet
+  the name and "Level 80 ..."), parchment insets for lists, details and stats, the achievement categories' dark bar
+  behind section headers and their gold highlight on rows (`TemucraftCharacter_Panel` / `_Inset` / `_HeaderBar` /
+  `_Highlight` for the pages of other files).
+  - Character: the stock item slots (they move into the page while it is open, so clicking, Alt flyouts and the
+    equipment manager work as always) down both sides and the weapons at the bottom, a bigger model on the race's
+    backdrop (drag to turn, wheel to zoom), a Titles menu, and on the right the item level (average of the 17 slots,
+    a two-hander counts twice) and the stats: Attributes, Enhancements (by role: melee, ranged or caster; hybrids by
+    their main talent tree) and Defense. The Titles list is the solid dialog-style menu.
+  - Pet: the pet's model on the same backdrop, happiness (hunters: icon, "your pet does N% damage", the headline of
+    the stats), the experience bar, and its stats in the same panel (Attributes, Melee, Resistances, unspent talent
+    points).
+  - Reputation and Currency: the pages below (`TemucraftReputation.lua`, `TemucraftCurrency.lua`).
+  - Skills: the skill lines under collapsible section headers (the spellbook Skills tab's sections, icons and
+    "current (+bonus) / max" text, `TemucraftSpellBookLogic`): an icon, the name and a slim rank bar per skill; on the
+    right the description, the rank bar, "How to raise it" and Unlearn for professions. Refreshes on
+    `SKILL_LINES_CHANGED`. Reusable: `TemucraftSkills_Build(parent [, name])` (list + details in any frame) and
+    `TemucraftSkills_Read()` (the sections).
+  - Professions: TemucraftProfGear's Profession Equipment and Reagent Bag panels side by side in the window's style,
+    the help text in its own line under them (`TemucraftProfGear_Host(parent)`; `/profgear` and alt-right-click open
+    this tab).
+  Classic: "Classic character panel" sends Character, Pet, Skills and Professions to the stock character frame
+  (Professions to the addon's tab there), "Classic reputation window" / "Classic currency window" just those tabs;
+  the other tabs stay in this window. With DragonUI's Character Panel module on, its window is used for Character,
+  Pet, Skills and Currency, and Reputation stays ours. Other files add pages with `TemucraftCharacter_AddPage(key,
+  frame, { title })` and open them with `TemucraftCharacter_Open(key [, toggle])`.
 - **Micro menu** ([`TemucraftMicroMenu.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftMicroMenu.lua)): a row at the bottom right (smaller
   if need be, or above the main bar when there's no room beside it): Character, Spellbook & Talents (right click:
   talents), Achievements, Quest Log, Guild (right click: friends), Group Finder (right click: PvP), Collections, Shop,
@@ -190,7 +212,7 @@ sat on their bottom tabs), except the spellbook and talents.
   the Available Amount bar; Log and Money Log list deposits (green) and withdrawals (red) with class-coloured names,
   Gold / Silver / Copper and "(10 months ago)", every entry ever made from mod-temucraft-guild's archive ("Show
   more..."), else the stock last 25. Changed only out of combat.
-- **Reputation** ([`TemucraftReputation.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftReputation.lua), the Reputation tab, U):
+- **Reputation** ([`TemucraftReputation.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftReputation.lua), the Reputation tab, U; a page of the character window):
   factions under collapsible expansion headers (Allied Races, Mists of Pandaria, Cataclysm, Wrath of the Lich King,
   The Burning Crusade, Classic, Lost Lands, Crafting Orders, the client's other headers, Inactive last), a filter
   (All / Active / Inactive / At War), bars with the standing (its value on mouse over) or "Renown N" / "Level N" for
@@ -201,7 +223,7 @@ sat on their bottom tabs), except the spellbook and talents.
   again). 3.3.5 gives the interface no faction ids, so factions are matched by name: the English names are in that
   file, and [mod-temucraft-renown](https://github.com/Temucraft/mod-temucraft-renown) sends them in the player's
   locale. Renown and Warband need that module (addon messages `TRN`); without it the window is a plain reputation list.
-- **Currency** ([`TemucraftCurrency.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftCurrency.lua), the Currency tab): the same style; the
+- **Currency** ([`TemucraftCurrency.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftCurrency.lua), the Currency tab; a page of the character window): the same style; the
   currencies under their collapsible categories with icon and count, a detail panel with the description, Move to
   Unused and Show on Backpack (at most 3, as in the stock window).
 - **Renown journeys** ([`TemucraftRenown.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftRenown.lua), View Renown, `/renown [faction]`): a
@@ -316,7 +338,7 @@ hidden holder and ours sit on top. The "Classic" choice here is `TEMUCRAFT_LOGIN
 |---|---|
 | `/options`, `/settings` [page] | the Options window (page: `controls`, `graphics`, `keybindings` ... or an addon's name) |
 | `/tui` | Options > AddOns > Temucraft (every Classic box, tooltip IDs, guild chat at login) |
-| C, `/tchar [classic\|new]` | character panel |
+| C, `/tchar [classic\|new]` | character window (Character tab) |
 | P / N, `/tsb [classic\|new]`, `/ttf [classic\|new]` | spellbook / talents |
 | `/collections`, `/tcol` | collections |
 | J, `/tguild [classic\|new]` | guild window (J is bound to the stock Guild key once per account when both are free) |

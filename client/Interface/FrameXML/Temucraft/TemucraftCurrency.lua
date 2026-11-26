@@ -2,7 +2,8 @@
 -- categories (collapsible), the count on the right, and on the right a panel with the selected currency's icon,
 -- count and description, Move to Unused and Show on Backpack (the stock SetCurrencyUnused / SetCurrencyBackpack,
 -- at most MAX_WATCHED_TOKENS on the backpack as in the stock window). Shift-click links the currency.
--- The character panel's Currency tab and the stock one open it; "Classic currency window" (/tui) opens the stock one.
+-- It is the Currency page of the character window (TemucraftCharacter.lua: one window for every tab). The character
+-- window's Currency tab and the stock one open it; "Classic currency window" (/tui) opens the stock one.
 -- Like the reputation window it opens every stock category to read the whole list and keeps its own collapsed state.
 
 ----------------------------------------------------------------------------------------------------------------------
@@ -90,32 +91,13 @@ end
 ----------------------------------------------------------------------------------------------------------------------
 -- The window
 ----------------------------------------------------------------------------------------------------------------------
-local WIDTH, HEIGHT, LIST_WIDTH = 720, 500, 430;
+local LIST_WIDTH = 430;
 local NUM_ROWS, ROW_HEIGHT = 17, 24;
-local Panel = TemucraftReputationLogic and TemucraftReputationLogic.Panel;
+local Panel = TemucraftCharacter_Panel or (TemucraftReputationLogic and TemucraftReputationLogic.Panel);
 
-local frame = CreateFrame("Frame", "TemucraftCurrencyFrame", UIParent);
-frame:SetWidth(WIDTH); frame:SetHeight(HEIGHT);
-frame:SetToplevel(true);
-frame:EnableMouse(true);
-frame:SetMovable(true);
-frame:SetClampedToScreen(true);
-frame:SetBackdrop({ bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background-Dark", edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
-	tile = true, tileSize = 32, edgeSize = 32, insets = { left = 11, right = 12, top = 12, bottom = 11 } });
+-- a page of the character window (its frame, header, close button, tabs and place)
+local frame = CreateFrame("Frame", "TemucraftCurrencyFrame", TemucraftCharacterFrame or UIParent);
 frame:Hide();
-UIPanelWindows["TemucraftCurrencyFrame"] = { area = "left", pushable = 3, whileDead = 1 };
-
-local title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal");
-title:SetPoint("TOP", 0, -18);
-title:SetText(CURRENCY or "Currency");
-local close = CreateFrame("Button", "TemucraftCurrencyFrameCloseButton", frame, "UIPanelCloseButton");
-close:SetPoint("TOPRIGHT", -6, -6);
-local drag = CreateFrame("Frame", nil, frame);
-drag:SetPoint("TOPLEFT", 12, -8); drag:SetPoint("TOPRIGHT", -40, -8); drag:SetHeight(26);
-drag:EnableMouse(true);
-drag:RegisterForDrag("LeftButton");
-drag:SetScript("OnDragStart", function() frame:StartMoving(); end);
-drag:SetScript("OnDragStop", function() frame:StopMovingOrSizing(); end);
 
 local listBox = Panel(frame);
 listBox:SetPoint("TOPLEFT", 16, -64);
@@ -141,6 +123,7 @@ for i = 1, NUM_ROWS do
 	b.expand = b:CreateTexture(nil, "ARTWORK");
 	b.expand:SetWidth(14); b.expand:SetHeight(14);
 	b.expand:SetPoint("LEFT", 0, 0);
+	b.header = TemucraftCharacter_HeaderBar and TemucraftCharacter_HeaderBar(b);
 	b.icon = b:CreateTexture(nil, "ARTWORK");
 	b.icon:SetWidth(ROW_HEIGHT - 6); b.icon:SetHeight(ROW_HEIGHT - 6);
 	b.icon:SetPoint("LEFT", 16, 0);
@@ -153,7 +136,7 @@ for i = 1, NUM_ROWS do
 	b.name = b:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall");
 	b.name:SetJustifyH("LEFT");
 	b.name:SetPoint("RIGHT", b.check, "LEFT", -4, 0);
-	b:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD");
+	if ( TemucraftCharacter_Highlight ) then TemucraftCharacter_Highlight(b); else b:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD"); end
 	b:SetScript("OnEnter", function(self)
 		local line = self.line;
 		if ( not line or line.kind ~= "currency" ) then return; end
@@ -277,7 +260,7 @@ local function UpdateDetail(r)
 end
 
 Update = function()
-	if ( not frame:IsShown() ) then return; end
+	if ( not frame:IsVisible() ) then return; end
 	allRows = ReadRows();
 	local lines = TemucraftCurrencyLogic.Lines(allRows, collapsed);
 	FauxScrollFrame_Update(scroll, #lines, NUM_ROWS, ROW_HEIGHT);
@@ -299,9 +282,10 @@ Update = function()
 				b.name:SetFontObject(GameFontNormal);
 				b.name:SetText(line.name);
 				b.count:SetText("");
-				b.band:SetTexture(1, 0.82, 0, 0.12);
+				if ( b.header ) then b.header:Show(); b.band:SetTexture(0, 0, 0, 0); else b.band:SetTexture(1, 0.82, 0, 0.12); end
 			else
 				local r = line.row;
+				if ( b.header ) then b.header:Hide(); end
 				b.expand:Hide();
 				SetIcon(b.icon, r); b.icon:Show();
 				b.name:SetPoint("LEFT", b.icon, "RIGHT", 6, 0);
@@ -326,62 +310,20 @@ listBox:SetScript("OnMouseWheel", function(_, delta)
 	if ( bar ) then bar:SetValue(bar:GetValue() - delta * ROW_HEIGHT * 3); end
 end);
 
-local classic = CreateFrame("CheckButton", "TemucraftCurrencyClassicCheck", frame, "UICheckButtonTemplate");
-classic:SetWidth(22); classic:SetHeight(22);
-classic:SetPoint("BOTTOMLEFT", 16, 2);
-classic:Hide();   -- it sat on the bottom tabs: the choice is in Interface > Temucraft (and /tui) only
-_G[classic:GetName().."Text"]:SetText("Classic");
-classic:SetScript("OnClick", function(self)
-	self:SetChecked(false);
-	TemucraftUI_SetClassic("currency", true);
-	DEFAULT_CHAT_FRAME:AddMessage("|cff66ccffTemucraft:|r classic currency window on (/tui to switch back).");
-end);
+frame:SetScript("OnShow", function() Update(); end);
 
-local LayoutTabs = TemucraftCharacter_AddTabs and TemucraftCharacter_AddTabs(frame, TEMUCRAFT_CHARACTER_TAB_CURRENCY or 5);
-frame:SetScript("OnShow", function()
-	PlaySound("igCharacterInfoOpen");
-	if ( LayoutTabs ) then LayoutTabs(); end
-	Update();
-	if ( UpdateMicroButtons ) then UpdateMicroButtons(); end
-end);
-frame:SetScript("OnHide", function()
-	PlaySound("igCharacterInfoClose");
-	if ( UpdateMicroButtons ) then UpdateMicroButtons(); end
-end);
+-- the character window's Currency tab and the stock one (ToggleCharacter("TokenFrame") goes to this page, or to the
+-- stock frame with the Classic option on or while DragonUI's Character Panel has the currencies)
+if ( TemucraftCharacter_AddPage ) then TemucraftCharacter_AddPage("currency", frame, { title = CURRENCY or "Currency" }); end
 
-function TemucraftCurrency_Toggle()
-	if ( frame:IsShown() ) then HideUIPanel(frame); else ShowUIPanel(frame); end
-end
-
-if ( TemucraftCharacter_Redirect ) then
-	TemucraftCharacter_Redirect.TokenFrame = { classic = "currency", open = function()
-		if ( TemucraftUI_IsClassic("currency") ) then
-			if ( frame:IsShown() ) then HideUIPanel(frame); end
-			return false;
-		end
-		if ( CharacterFrame and CharacterFrame:IsShown() ) then HideUIPanel(CharacterFrame); end
-		TemucraftCurrency_Toggle();
-		return true;
-	end };
-end
-
-hooksecurefunc("UpdateMicroButtons", function()
-	if ( frame:IsShown() and CharacterMicroButton ) then
-		CharacterMicroButton:SetButtonState("PUSHED", 1);
-		CharacterMicroButton_SetPushed();
-	end
-end);
-
-TemucraftUI_OnChange("classiccurrency", function(on)
-	if ( on and frame:IsShown() ) then HideUIPanel(frame); end
-end);
+function TemucraftCurrency_Toggle() ToggleCharacter("TokenFrame"); end
 
 local events = CreateFrame("Frame");
 events:RegisterEvent("CURRENCY_DISPLAY_UPDATE");
 events:RegisterEvent("KNOWN_CURRENCY_TYPES_UPDATE");
 local dirty = false;
 events:SetScript("OnEvent", function(self)
-	if ( dirty or not frame:IsShown() ) then return; end
+	if ( dirty or not frame:IsVisible() ) then return; end
 	dirty = true;
 	self:SetScript("OnUpdate", function(f)
 		f:SetScript("OnUpdate", nil);

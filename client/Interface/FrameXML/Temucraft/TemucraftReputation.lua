@@ -8,8 +8,9 @@
 --   Details    on the right: description, At War, Move to Inactive, Show as Experience Bar (the stock
 --              FactionToggleAtWar / SetFactionInactive / SetWatchedFactionIndex, with the stock frame's rules for
 --              when each can be used) and View Renown (TemucraftRenown.lua's Journeys page).
--- The character panel's Reputation tab, U and the stock Reputation tab open it; "Classic reputation window" (/tui)
--- opens the stock one.
+-- It is the Reputation page of the character window (TemucraftCharacter.lua: one window for every tab, the same size
+-- and place). The character window's Reputation tab, U and the stock Reputation tab open it; "Classic reputation
+-- window" (/tui) opens the stock one.
 -- 3.3.5 gives the interface no faction ids: factions are known by name (the server sends the names in the player's
 -- locale; TemucraftReputationData.lua has the English ones). The window expands every stock header to read the whole
 -- list and keeps its own collapsed / expanded state.
@@ -396,33 +397,16 @@ L.StandingText = StandingText;
 ----------------------------------------------------------------------------------------------------------------------
 -- The window
 ----------------------------------------------------------------------------------------------------------------------
-local WIDTH, HEIGHT, LIST_WIDTH = 720, 500, 430;
+local LIST_WIDTH = 430;
 local NUM_ROWS, ROW_HEIGHT = 17, 24;
 
-local frame = CreateFrame("Frame", "TemucraftReputationFrame", UIParent);
-frame:SetWidth(WIDTH); frame:SetHeight(HEIGHT);
-frame:SetToplevel(true);
-frame:EnableMouse(true);
-frame:SetMovable(true);
-frame:SetClampedToScreen(true);
-frame:SetBackdrop({ bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background-Dark", edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
-	tile = true, tileSize = 32, edgeSize = 32, insets = { left = 11, right = 12, top = 12, bottom = 11 } });
+-- a page of the character window (its frame, header, close button, tabs and place); the title is its header
+local frame = CreateFrame("Frame", "TemucraftReputationFrame", TemucraftCharacterFrame or UIParent);
 frame:Hide();
-UIPanelWindows["TemucraftReputationFrame"] = { area = "left", pushable = 3, whileDead = 1 };
 
-local title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal");
-title:SetPoint("TOP", 0, -18);
-title:SetText(REPUTATION or "Reputation");
-local close = CreateFrame("Button", "TemucraftReputationFrameCloseButton", frame, "UIPanelCloseButton");
-close:SetPoint("TOPRIGHT", -6, -6);
-local drag = CreateFrame("Frame", nil, frame);
-drag:SetPoint("TOPLEFT", 12, -8); drag:SetPoint("TOPRIGHT", -40, -8); drag:SetHeight(26);
-drag:EnableMouse(true);
-drag:RegisterForDrag("LeftButton");
-drag:SetScript("OnDragStart", function() frame:StartMoving(); end);
-drag:SetScript("OnDragStop", function() frame:StopMovingOrSizing(); end);
-
+-- the character window's inset box (TemucraftCharacter.lua), else a dark tooltip box
 local function Panel(parent)
+	if ( TemucraftCharacter_Panel ) then return TemucraftCharacter_Panel(parent); end
 	local p = CreateFrame("Frame", nil, parent);
 	p:SetBackdrop({ bgFile = "Interface\\Tooltips\\UI-Tooltip-Background", edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
 		tile = true, tileSize = 16, edgeSize = 16, insets = { left = 4, right = 4, top = 4, bottom = 4 } });
@@ -443,7 +427,8 @@ detail:SetPoint("BOTTOMRIGHT", -16, 24);
 -- the filter
 local filter, collapsed, selectedName = "all", {}, nil;
 local filterMenu = CreateFrame("Frame", "TemucraftReputationFilterMenu", frame, "UIDropDownMenuTemplate");
-filterMenu:SetPoint("BOTTOMRIGHT", listBox, "TOPRIGHT", 16, -2);
+-- over the list's left end (the window's gold header is in the middle)
+filterMenu:SetPoint("BOTTOMLEFT", listBox, "TOPLEFT", 22, -2);
 UIDropDownMenu_SetWidth(filterMenu, 110);
 local Update;
 local function FilterName(key) for _, f in ipairs(L.FILTERS) do if ( f[1] == key ) then return f[2]; end end return key; end
@@ -504,6 +489,7 @@ for i = 1, NUM_ROWS do
 	b.band:SetAllPoints();
 	b.expand = b:CreateTexture(nil, "ARTWORK");
 	b.expand:SetWidth(14); b.expand:SetHeight(14);
+	b.header = TemucraftCharacter_HeaderBar and TemucraftCharacter_HeaderBar(b);
 	b.name = b:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall");
 	b.name:SetJustifyH("LEFT");
 	b.bar = CreateFrame("StatusBar", nil, b);
@@ -523,7 +509,7 @@ for i = 1, NUM_ROWS do
 	b.warband:SetPoint("RIGHT", b.bar, "LEFT", -4, 0);
 	b.warband:SetTexture("Interface\\FriendsFrame\\Battlenet-Portrait");
 	b.name:SetPoint("RIGHT", b.warband, "LEFT", -4, 0);
-	b:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD");
+	if ( TemucraftCharacter_Highlight ) then TemucraftCharacter_Highlight(b); else b:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD"); end
 	b:SetScript("OnEnter", function(self)
 		ShowTooltip(self);
 		if ( self.line and self.line.kind == "faction" and self.valueText ) then self.bar.text:SetText(self.valueText); end
@@ -654,7 +640,7 @@ end
 
 local groupsCache;
 Update = function()
-	if ( not frame:IsShown() ) then return; end
+	if ( not frame:IsVisible() ) then return; end
 	groupsCache = L.Group(L.ReadRows());
 	lines = L.Flatten(groupsCache, filter, collapsed);
 	FauxScrollFrame_Update(scroll, #lines, NUM_ROWS, ROW_HEIGHT);
@@ -689,10 +675,11 @@ Update = function()
 			if ( line.kind == "group" ) then
 				b.name:SetFontObject(GameFontNormal);
 				b.name:SetText(line.name);
-				b.band:SetTexture(1, 0.82, 0, 0.12);
+				if ( b.header ) then b.header:Show(); b.band:SetTexture(0, 0, 0, 0); else b.band:SetTexture(1, 0.82, 0, 0.12); end
 				b.bar:Hide(); b.warband:Hide();
 			else
 				local r = line.row;
+				if ( b.header ) then b.header:Hide(); end
 				b.name:SetFontObject(line.kind == "sub" and GameFontNormalSmall or GameFontHighlightSmall);
 				b.name:SetText(r.name);
 				if ( r.name == selectedName ) then b.band:SetTexture(0.3, 0.5, 1, 0.25);
@@ -726,64 +713,21 @@ listBox:SetScript("OnMouseWheel", function(_, delta)
 	if ( bar ) then bar:SetValue(bar:GetValue() - delta * ROW_HEIGHT * 3); end
 end);
 
-local classic = CreateFrame("CheckButton", "TemucraftReputationClassicCheck", frame, "UICheckButtonTemplate");
-classic:SetWidth(22); classic:SetHeight(22);
-classic:SetPoint("BOTTOMLEFT", 16, 2);
-classic:Hide();   -- it sat on the bottom tabs: the choice is in Interface > Temucraft (and /tui) only
-_G[classic:GetName().."Text"]:SetText("Classic");
-classic:SetScript("OnClick", function(self)
-	self:SetChecked(false);
-	TemucraftUI_SetClassic("rep", true);
-	DEFAULT_CHAT_FRAME:AddMessage("|cff66ccffTemucraft:|r classic reputation window on (/tui to switch back).");
-end);
+frame:SetScript("OnShow", function() Update(); end);
 
-local LayoutTabs = TemucraftCharacter_AddTabs and TemucraftCharacter_AddTabs(frame, TEMUCRAFT_CHARACTER_TAB_REPUTATION or 3);
+-- the character window's Reputation tab, U and the stock Reputation tab (ToggleCharacter("ReputationFrame") goes to
+-- this page, or to the stock frame with the Classic option on)
+if ( TemucraftCharacter_AddPage ) then TemucraftCharacter_AddPage("rep", frame, { title = REPUTATION or "Reputation" }); end
 
-frame:SetScript("OnShow", function()
-	PlaySound("igCharacterInfoOpen");
-	if ( LayoutTabs ) then LayoutTabs(); end
-	Update();
-	if ( UpdateMicroButtons ) then UpdateMicroButtons(); end
-end);
-frame:SetScript("OnHide", function()
-	PlaySound("igCharacterInfoClose");
-	if ( UpdateMicroButtons ) then UpdateMicroButtons(); end
-end);
-
-function TemucraftReputation_Toggle()
-	if ( frame:IsShown() ) then HideUIPanel(frame); else ShowUIPanel(frame); end
-end
+function TemucraftReputation_Toggle() ToggleCharacter("ReputationFrame"); end
 
 -- open on a faction (TemucraftRenown.lua's back button)
 function TemucraftReputation_Show(id)
 	local name = id and L.NameOf(id);
 	if ( name ) then selectedName = name; end
-	if ( not frame:IsShown() ) then ShowUIPanel(frame); else Update(); end
+	if ( frame:IsVisible() ) then Update(); return; end
+	if ( not (TemucraftCharacter_Open and TemucraftCharacter_Open("rep")) ) then ToggleCharacter("ReputationFrame"); end
 end
-
--- the character panel's tab, U and the stock Reputation tab (ToggleCharacter("ReputationFrame"))
-if ( TemucraftCharacter_Redirect ) then
-	TemucraftCharacter_Redirect.ReputationFrame = { classic = "rep", open = function()
-		if ( TemucraftUI_IsClassic("rep") ) then
-			if ( frame:IsShown() ) then HideUIPanel(frame); end
-			return false;
-		end
-		if ( CharacterFrame and CharacterFrame:IsShown() ) then HideUIPanel(CharacterFrame); end
-		TemucraftReputation_Toggle();
-		return true;
-	end };
-end
-
-hooksecurefunc("UpdateMicroButtons", function()
-	if ( frame:IsShown() and CharacterMicroButton ) then
-		CharacterMicroButton:SetButtonState("PUSHED", 1);
-		CharacterMicroButton_SetPushed();
-	end
-end);
-
-TemucraftUI_OnChange("classicrep", function(on)
-	if ( on and frame:IsShown() ) then HideUIPanel(frame); end
-end);
 
 ----------------------------------------------------------------------------------------------------------------------
 -- Events
