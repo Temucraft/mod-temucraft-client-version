@@ -161,7 +161,7 @@ the "Classic spellbook" checkbox) and `/ttf classic` (the "Classic talents" chec
 Interface Options > Temucraft (or `/tui`) has a "Classic" box for each piece and the tooltip ID option
 ([`TemucraftInterface.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftInterface.lua); per account in the store, keys `ui.classicchar`,
 `ui.classicmicro`, `ui.classicmenu`, `ui.classicoptions`, `ui.classicguild`, `ui.classicgbank`, `ui.classicrep`, `ui.classiccurrency`,
-`ui.classicgossip`, `ui.tooltipids`, `ui.guildloginchat`). The windows themselves have no Classic checkbox any more (it
+`ui.classicgossip`, `ui.classictradeskill`, `ui.tooltipids`, `ui.guildloginchat`). The windows themselves have no Classic checkbox any more (it
 sat on their bottom tabs), except the spellbook and talents.
 
 - **Gossip** ([`TemucraftGossip.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftGossip.lua)): the stock GossipFrame with a 36 px
@@ -294,6 +294,53 @@ sat on their bottom tabs), except the spellbook and talents.
   holds changes only out of combat. Groups: `TemucraftFlyoutLogic.FLYOUTS`, `TELEPORT_IDS`, `PORTAL_IDS`, `HELPER_ITEMS`.
   The book's rank arrows use the same rows (`TemucraftFlyouts_Attach(arrow, flyout, icon)`, key `rank<button>`).
 
+## Professions window
+
+[`TemucraftProfessions.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftProfessions.lua)
+takes the place of the stock TradeSkillFrame with one retail-style window (like Dragonflight's Professions frame; 820 x
+560, the shared look of `TemucraftStyle.lua`, Esc closes it). Blizzard_TradeSkillUI still loads and the stock
+tradeskill API does the work: UIParent's `TRADE_SKILL_SHOW` / `TRADE_SKILL_CLOSE` call `TradeSkillFrame_Show` /
+`TradeSkillFrame_Hide`, which open and close this window instead (closing it calls `CloseTradeSkill`). In 3.3.5
+enchanting is a tradeskill too (no CraftFrame), so every profession goes through it.
+
+- **Top**: the profession's icon, name and skill bar (`GetTradeSkillLine`: "175 / 225", "+15" from equipment), the
+  stock link button (`GetTradeSkillListLink`, shift-click into chat), a small **Stats** box and a button per
+  profession you know (`GetSkillLineInfo`). The buttons are `SecureActionButtonTemplate` (a click casts the profession
+  and opens it; the open one shows its recipes). They sit in a holder parented to UIParent, hidden at
+  `PLAYER_REGEN_DISABLED` and back after combat ("Switch professions after combat"), so the window itself stays
+  insecure and opens in combat.
+- **Stats**: mod-temucraft-professions' numbers: Finesse / Perception / Deftness for gathering, Multicraft /
+  Resourcefulness for crafting. The window sends `GET` (prefix `TPG`, whispered to yourself, as TemucraftProfGear does)
+  and reads the `SS` answer; hover for what each does. Without the server half the box says "(none)". There is no
+  Specializations tab: the server keeps knowledge and specializations behind `.temucraft knowledge` (an admin command
+  by default) and sends the client no data for them; their effect is already in the stats.
+- **Tabs**: Recipes (while a profession is open) and Overview (every profession you know: bar and stats; `/professions`
+  with nothing open lands here).
+- **Recipe list** (left): search (recipe names, and reagent names: `GetTradeSkillReagentInfo`), **Have materials**,
+  **Skill up** (orange, yellow and green only), the stock difficulty colours, `[n]` you can make, collapsible
+  categories (every stock category is opened, `ExpandTradeSkillSubClass(0)`; the window keeps its own collapsed state),
+  and **Favorites** first: the star on a row or a right-click, per character in TemucraftStore `prof.fav` (recipe
+  spell ids from `GetTradeSkillRecipeLink`). Filters are ours: on opening a profession the stock ones are reset
+  (`SetTradeSkillSubClassFilter`, `SetTradeSkillInvSlotFilter`, `SetTradeSkillItemNameFilter("")`,
+  `SetTradeSkillItemLevelFilter(0, 0)`, `TradeSkillOnlyShowMakeable(false)`) so the classic window's leftovers hide
+  nothing. Shift-click links the recipe.
+- **Selected recipe** (right): icon (with how many it makes, `GetTradeSkillNumMade`), name in the item's quality
+  colour, its difficulty, what is still **missing** (`GetTradeSkillTools`: only the tools, anvils, forges or totems the
+  client says you lack; what is met, or not required on our server, isn't listed), the cooldown
+  (`GetTradeSkillCooldown`), the crafted item's own tooltip inside the panel (scaled down when it is too tall), and
+  the reagents with have / need (red when short; shift-click links, ctrl-click tries it on).
+- **Bottom bar**: Recipe (links it), From bag (with the TemucraftProfGear addon: its reagent bag, `RP <spell> <count>`,
+  then Create once the reagents are in the bags), - quantity + and Max, Create All (n) and Create (`DoTradeSkill`; the box
+  follows `UPDATE_TRADESKILL_RECAST`). Enchanting and the like (`altVerb`, "Enchant") craft one at a time as in the
+  stock window.
+- **Gathering**: Herbalism, Skinning and Fishing have no tradeskill: their button shows their skill bar and stats.
+  Mining's button opens Smelting (a tradeskill) as its recipe list, with Mining's bar and stats on top.
+- **Someone else's profession** (a link in chat, `IsTradeSkillLinked`): "Bob's Alchemy", read-only (no Create, no
+  stats), recipes and reagents still link.
+- **Classic**: "Classic professions window" (Interface > Temucraft, `/tui`, key `ui.classictradeskill`) keeps the stock
+  window; DragonUI's Professions module wins while it is on (`tradeskill` in `TemucraftDragonUI.lua`). Skillet and
+  Advanced Trade Skill Window, when loaded, are left alone too.
+
 ## DragonUI
 
 [DragonUI](https://github.com/NeticSoul/DragonUI) (our fork: Temucraft/DragonUI-Temucraft, PTR first) is the base of
@@ -313,6 +360,7 @@ module or DragonUI off) takes a `/reload`, after which our windows are back.
 | spellbook (`book`), talents (`talents`) | `spellbook`, `talents` | DragonUI's; the Train button and auto-learn box follow DragonUI's book (`TemucraftAutoLearn_Ask`) |
 | gossip icons (`gossip`) | `questdialog` | DragonUI's |
 | AddOns list (`addons`) | `addonmanager` | DragonUI's: our Esc menu's AddOns row and `/addons` open it |
+| Professions window (`tradeskill`) | `professions` | DragonUI's (it dresses the stock TradeSkillFrame) |
 
 Ours stay: reputation and Renown (the Reputation tab and U still open ours), guild, guild bank, collections
 (`ToggleCollectionsJournal` is defined, so DragonUI's Pets & Mounts button opens ours), the flight map, the Issue
@@ -430,6 +478,7 @@ hidden holder and ours sit on top. The "Classic" choice here is `TEMUCRAFT_LOGIN
 | J, `/tguild [classic\|new]` | guild window (J is bound to the stock Guild key once per account when both are free) |
 | U (Reputation tab), `/renown [faction]` | reputation, Renown journeys |
 | `/addons` | addon list |
+| `/professions`, `/tprof` | Professions window (the Overview when no profession is open) |
 | `/ttutorial [reset\|skip\|on\|off]` | the new-player tutorial |
 | `/issue`, `/bug`; F6 (`/issuekey <key>\|none`) | Issue Reporter; the key is a click binding, F6 by default when free |
 | `/wardrobe`, `/vanity`, `/tokenpreview <link>`, `/heritage`, `/disguise`, `/tankrole` | module windows |
@@ -440,7 +489,7 @@ hidden holder and ours sit on top. The "Classic" choice here is `TEMUCRAFT_LOGIN
 Stub tests (no client; run from the module folder with Lua 5.1) for the grouping, search, paging, collection and
 loadout logic, the player UI, the login screens and the protocols: `lua5.1 client/tests/spellbook_test.lua`,
 `collections_test.lua`, `interface_test.lua`, `taxi_test.lua`, `issues_test.lua`, `guild_test.lua`,
-`reputation_test.lua`, `glue_test.lua`, `loadouts_test.lua` (the server loadouts protocol), `dragonui_test.lua` (the DragonUI step-aside switch), `tutorial_test.lua` (the new-player tutorial's start rules and step machine, fed fake events) and `options_test.lua` (the Options pages, search, sliders, key names, binding groups, the AddOns list, server answers and the Esc menu rows; all in `client/tests/`). Also check every file with `luac5.1 -p`.
+`reputation_test.lua`, `glue_test.lua`, `loadouts_test.lua` (the server loadouts protocol), `dragonui_test.lua` (the DragonUI step-aside switch), `professions_test.lua` (the Professions window's list, filters, favourites, stats and recipe helpers), `tutorial_test.lua` (the new-player tutorial's start rules and step machine, fed fake events) and `options_test.lua` (the Options pages, search, sliders, key names, binding groups, the AddOns list, server answers and the Esc menu rows; all in `client/tests/`). Also check every file with `luac5.1 -p`.
 
 ## Also in this module
 

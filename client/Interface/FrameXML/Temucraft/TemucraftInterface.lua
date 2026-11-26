@@ -2,7 +2,8 @@
 -- game menu) and the tooltip options, kept per account by TemucraftStore.lua (keys "ui.classic<which>", like the
 -- spellbook's "ui.classicbook", and "ui.<option>"). A "Temucraft" page in Interface Options has the checkboxes; /tui
 -- opens it.
---   TemucraftUI_IsClassic(which)            "char", "micro", "menu", "options", "guild", "gbank", "rep", "currency", "gossip" (and "book",
+--   TemucraftUI_IsClassic(which)            "char", "micro", "menu", "options", "guild", "gbank", "rep", "currency", "gossip",
+--                                           "tradeskill" (the Professions window) (and "book",
 --                                           "talents" of TemucraftPlayerSpells.lua): the saved choice, or DragonUI has
 --                                           that piece (TemucraftDragonUI.lua)
 --   TemucraftUI_IsSavedClassic(which)       the player's own choice only
@@ -82,6 +83,7 @@ local CHECKS = {
 	{ "Classic reputation window", function() return TemucraftUI_IsSavedClassic("rep"); end, function(on) TemucraftUI_SetClassic("rep", on); end, "rep" },
 	{ "Classic currency window", function() return TemucraftUI_IsSavedClassic("currency"); end, function(on) TemucraftUI_SetClassic("currency", on); end, "currency" },
 	{ "Classic gossip window (small NPC option icons)", function() return TemucraftUI_IsSavedClassic("gossip"); end, function(on) TemucraftUI_SetClassic("gossip", on); end, "gossip" },
+	{ "Classic professions window", function() return TemucraftUI_IsSavedClassic("tradeskill"); end, function(on) TemucraftUI_SetClassic("tradeskill", on); end, "tradeskill" },
 	{ "Show recent guild chat in the chat window at login",
 		function() return TemucraftUI_GetOption("guildloginchat", true); end, function(on) TemucraftUI_SetOption("guildloginchat", on); end },
 	{ "Show SpellID / ItemID and icon names in tooltips",

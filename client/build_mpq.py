@@ -57,6 +57,8 @@ FRAME_FILES = ["Temucraft\\TemucraftCore.lua",
                # after TemucraftCharacter.lua (its tabs and ToggleCharacter) and TemucraftInterface.lua
                "Temucraft\\TemucraftReputationData.lua", "Temucraft\\TemucraftReputation.lua",
                "Temucraft\\TemucraftCurrency.lua", "Temucraft\\TemucraftRenown.lua",
+               # the Professions window (after TemucraftInterface.lua, its "Classic professions window", and TemucraftDragonUI.lua)
+               "Temucraft\\TemucraftProfessions.lua",
                # after TemucraftCore.lua (the version), TemucraftStore.lua and TemucraftTooltips.lua (its lines come first)
                "Temucraft\\TemucraftIssues.lua",
                # the new-player tutorial (after TemucraftStore.lua; the Options window's Tutorials row calls it)

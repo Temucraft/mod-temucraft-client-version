@@ -6,7 +6,7 @@
 -- /reload: ours come back. Read once at login: DragonUI's own modules load once and need a /reload to change too.
 --   TemucraftDragonUI_IsLoaded()        DragonUI is running
 --   TemucraftDragonUI_Owns(which)       DragonUI has this piece: "char", "currency", "micro", "book", "talents",
---                                       "gossip", "addons" (keys of TemucraftDragonUILogic.TAKEOVER)
+--                                       "gossip", "addons", "tradeskill" (keys of TemucraftDragonUILogic.TAKEOVER)
 --   TemucraftDragonUI_Note(which)       "DragonUI's Character Panel" for the options page, or nil
 --   TemucraftDragonUI_OnChange(func)    func() once DragonUI's choices are known (at login; at once if they are)
 TemucraftDragonUILogic = {};
@@ -21,10 +21,11 @@ D.TAKEOVER = {
 	talents = "talents",          -- its talent and glyph window (N)
 	gossip = "questdialog",       -- its quest and gossip dialogs
 	addons = "addonmanager",      -- its AddOns list (our Esc menu's AddOns row and /addons open it)
+	tradeskill = "professions",   -- its Professions window (on the stock TradeSkillFrame; ours: TemucraftProfessions.lua)
 };
 D.NAMES = {
 	characterpanel = "Character Panel", micromenu = "Micro Menu", spellbook = "Spellbook", talents = "Talents",
-	questdialog = "Quest Dialog", addonmanager = "Addon Manager",
+	questdialog = "Quest Dialog", addonmanager = "Addon Manager", professions = "Professions",
 };
 
 -- which of ours DragonUI has: loaded = DragonUI is running, enabled(module) = its module is on
