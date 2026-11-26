@@ -59,6 +59,10 @@ rebuild the MPQ, put `patch-^.MPQ` in the launcher's `patches/` folder, write th
 
 `.temucraft clientversion` shows your (or your target's) client version.
 
+Addon message `TCC` (Collections previews, `src/TemucraftCollectionsCache.cpp`): a comma list of creature entries (up to
+48 a message); each one the world has gets the creature query response (`HandleCreatureQueryOpcode`), so the client's
+`Model:SetCreature` can show it. No setting.
+
 ## Install
 
 Put this folder in `modules/`, copy the conf, re-run CMake and build. The SQL adds the module's texts
@@ -133,9 +137,16 @@ the "Classic spellbook" checkbox) and `/ttf classic` (the "Classic talents" chec
   something). Mounts and pets:
   every one the game has (`TemucraftCollectionsData.lua`), the missing ones greyed with the item that teaches them,
   "X / Y collected" (Y: collected plus the missing ones with a known source; "Unknown source" shows the rest),
-  favourites (right click; per account), a 3D preview (`SetCreature` with the creature, tried again for a few seconds while the client asks the
-  server for it; 3.3.5 has no `SetDisplayInfo`, and a bare `SetModel` of the .m2 has no skin, so the model file is used
-  only for an entry without a creature), Show Character, Mount /
+  favourites (right click; per account), a 3D preview on your race's dressing-room backdrop (`SetCreature` with the
+  creature; 3.3.5 has no `SetDisplayInfo`, and a bare `SetModel` of the .m2 has no skin). The client's `SetCreature`
+  shows only creatures already in its creature cache and never asks the server for one (`Script_SetCreature` looks the
+  entry up without a callback), so the window sends every entry of the list to the server once (addon message `TCC`,
+  comma lists of up to 40 entries, four messages a second; the selected one again at once if it isn't in), and
+  `src/TemucraftCollectionsCache.cpp` answers each entry the world has with the ordinary creature query response,
+  which the client keeps (also in `creaturecache.wdb`). Until it is in, `SetCreature` is retried for 6 seconds, then
+  "No preview". Show Character: your character on the left with the mount behind it on the right, or the pet small at
+  your feet (a model frame can't seat a character on a creature in 3.3.5: each has its own camera); drag to turn them.
+  Mount /
   Summon and Summon Random Favorite (`CallCompanion`, not protected). The data table: `python3 client/collections/build_collections.py`
   (Spell.dbc, SkillLineAbility.dbc skill lines 777 / 778 and items of class 15 / subclass 5 and 2, creature models from
   CreatureDisplayInfo / CreatureModelData; defaults to `_dev/server-dbc/dbc` and the core's `data/sql/base/db_world`).
@@ -308,6 +319,13 @@ Ours stay: reputation and Renown (the Reputation tab and U still open ours), gui
 Reporter and the Esc menu, which takes DragonUI's settings button and an Edit Mode row (DragonUI's editor) as rows. The
 fixes and defaults that live in DragonUI itself (custom races, in-column talents, route-only flight points, Temucraft
 defaults) are patches in `_dev/dragonui/` for the fork.
+
+Maps and quest trackers: Leatrix Maps (with Questie) is the standard world map, so DragonUI's World Map module is off in
+our defaults (patch 0004, which also adds Leatrix Maps to the addons it steps aside for); a player who turns it on
+while Leatrix Maps is loaded is told once in chat (at login or when the map opens). DragonUI's quest tracker is the
+one kept: at the first login with DragonUI's tracker on, Questie's own tracker is turned off once
+(`Questie.db.profile.trackerEnabled = false`, flagged `temucraftTracker` in that Questie profile, so turning it back
+on in Questie's options sticks).
 
 ## Login screens (GlueXML)
 

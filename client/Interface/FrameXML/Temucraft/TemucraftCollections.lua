@@ -96,7 +96,55 @@ function L.SerializeFavourites(set)
 	return table.concat(ids, ",");
 end
 
+-- creature entries (each once, none 0) as comma lists of at most maxLen characters and maxCount entries: the TCC
+-- messages that ask the server for them
+function L.Chunks(ids, maxLen, maxCount)
+	local out, cur, n, seen = {}, "", 0, {};
+	for _, id in ipairs(ids) do
+		if ( id and id > 0 and not seen[id] ) then
+			seen[id] = true;
+			local s = tostring(id);
+			if ( cur ~= "" and (#cur + 1 + #s > maxLen or n >= maxCount) ) then table.insert(out, cur); cur, n = "", 0; end
+			cur = (cur == "" and s) or (cur..","..s);
+			n = n + 1;
+		end
+	end
+	if ( cur ~= "" ) then table.insert(out, cur); end
+	return out;
+end
+
 if ( not CreateFrame ) then return; end   -- tests load only the logic
+
+-- the races that have a dressing room picture (Interface\DressUpFrame\DressUpBackground-<race>1..4)
+local SCENES = { Human = true, Orc = true, Dwarf = true, NightElf = true, Scourge = true, Tauren = true, Gnome = true, Troll = true, BloodElf = true, Draenei = true };
+
+-- ask the server (mod-temucraft-client-version, addon message TCC) to send these creatures to the client's creature
+-- cache, so Model:SetCreature can show them. Each entry once a session (urgent: now and again, for the one selected);
+-- the rest goes out four messages a second. The cache is kept on disk (creaturecache.wdb), so this is mostly once.
+local asked, queue = {}, {};
+local sender = CreateFrame("Frame");
+sender:Hide();
+local sendWait = 0;
+sender:SetScript("OnUpdate", function(self, elapsed)
+	sendWait = sendWait + elapsed;
+	if ( sendWait < 0.25 ) then return; end
+	sendWait = 0;
+	local msg = table.remove(queue, 1);
+	if ( msg ) then SendAddonMessage("TCC", msg, "WHISPER", UnitName("player")); end
+	if ( #queue == 0 ) then self:Hide(); end
+end);
+function TemucraftCollections_Prime(ids, urgent)
+	if ( urgent ) then
+		for _, chunk in ipairs(L.Chunks(ids, 200, 40)) do SendAddonMessage("TCC", chunk, "WHISPER", UnitName("player")); end
+		return;
+	end
+	local fresh = {};
+	for _, id in ipairs(ids) do
+		if ( id and id > 0 and not asked[id] ) then asked[id] = true; table.insert(fresh, id); end
+	end
+	for _, chunk in ipairs(L.Chunks(fresh, 200, 40)) do table.insert(queue, chunk); end
+	if ( #queue > 0 ) then sender:Show(); end
+end
 
 ----------------------------------------------------------------------------------------------------------------------
 -- The window
@@ -106,13 +154,19 @@ frame:SetWidth(WIDTH); frame:SetHeight(HEIGHT);
 frame:SetPoint("CENTER", 0, 20);
 frame:SetFrameStrata("HIGH"); frame:SetToplevel(true);
 frame:EnableMouse(true); frame:SetMovable(true); frame:SetClampedToScreen(true);
-frame:SetBackdrop({ bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background-Dark", edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
-	tile = true, tileSize = 32, edgeSize = 32, insets = { left = 11, right = 12, top = 12, bottom = 11 } });
 frame:Hide();
 tinsert(UISpecialFrames, "TemucraftCollectionsFrame");
-local title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge");
-title:SetPoint("TOP", 0, -20);
-title:SetText("Collections");
+-- the shared Temucraft look (TemucraftStyle.lua): dark stone, gold border, gold header with the title
+local title;
+if ( TemucraftStyle_Window ) then
+	title = TemucraftStyle_Window(frame, "Collections");
+else
+	frame:SetBackdrop({ bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background-Dark", edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Gold-Border",
+		tile = true, tileSize = 32, edgeSize = 32, insets = { left = 11, right = 12, top = 12, bottom = 11 } });
+	title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge");
+	title:SetPoint("TOP", 0, -20);
+	title:SetText("Collections");
+end
 CreateFrame("Button", "TemucraftCollectionsFrameCloseButton", frame, "UIPanelCloseButton"):SetPoint("TOPRIGHT", -6, -6);
 frame:RegisterForDrag("LeftButton");
 frame:SetScript("OnDragStart", function(self) self:StartMoving(); end);
@@ -149,6 +203,25 @@ local function Journal(kind, noun)
 	local filters = { collected = true, missing = true, unknown = false };
 	local query = "";
 
+	-- the list side: a dark strip behind the counts, search and filters, and a stone inset with a gold edge behind the list
+	local listTop = CreateFrame("Frame", nil, panel);
+	listTop:SetPoint("TOPLEFT", -2, 2); listTop:SetWidth(324); listTop:SetHeight(86);
+	listTop:SetFrameLevel(panel:GetFrameLevel());   -- under the search box, filters and rows
+	listTop:SetBackdrop({ bgFile = "Interface\\Buttons\\WHITE8X8", edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+		tile = false, edgeSize = 12, insets = { left = 3, right = 3, top = 3, bottom = 3 } });
+	listTop:SetBackdropColor(0.06, 0.05, 0.04, 0.85);
+	listTop:SetBackdropBorderColor(0.80, 0.65, 0.30, 0.9);
+	local listBg = CreateFrame("Frame", nil, panel);
+	listBg:SetPoint("TOPLEFT", -2, -84); listBg:SetPoint("BOTTOMLEFT", -2, 0); listBg:SetWidth(324);
+	listBg:SetFrameLevel(panel:GetFrameLevel());
+	if ( TemucraftStyle_Inset ) then
+		TemucraftStyle_Inset(listBg, 0.95);
+	else
+		listBg:SetBackdrop({ bgFile = "Interface\\AchievementFrame\\UI-Achievement-AchievementBackground", edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+			tile = false, edgeSize = 16, insets = { left = 4, right = 4, top = 4, bottom = 4 } });
+		listBg:SetBackdropColor(0.45, 0.45, 0.45, 1);
+		listBg:SetBackdropBorderColor(0.80, 0.65, 0.30);
+	end
 	local count = panel:CreateFontString(nil, "OVERLAY", "GameFontNormal");
 	count:SetPoint("TOPLEFT", 6, -2);
 	local collectedText = panel:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall");
@@ -182,23 +255,54 @@ local function Journal(kind, noun)
 	scroll:SetPoint("TOPLEFT", 0, -86); scroll:SetWidth(290); scroll:SetHeight(ROWS * ROW_HEIGHT);
 	local rows = {};
 
-	-- the preview
+	-- the preview: a scenic backdrop (the dressing room picture of your race) with a soft vignette, the model on it
 	local right = CreateFrame("Frame", nil, panel);
 	right:SetPoint("TOPLEFT", 330, 0); right:SetPoint("BOTTOMRIGHT", 0, 0);
-	right:SetBackdrop({ bgFile = "Interface\\Tooltips\\UI-Tooltip-Background", edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+	right:SetBackdrop({ bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background-Dark", edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
 		tile = true, tileSize = 16, edgeSize = 16, insets = { left = 4, right = 4, top = 4, bottom = 4 } });
-	right:SetBackdropColor(0, 0, 0, 0.6);
-	local model = CreateFrame("DressUpModel", panel:GetName().."Model", right);
-	model:SetPoint("TOPLEFT", 6, -6); model:SetPoint("TOPRIGHT", -6, -6); model:SetHeight(300);
+	right:SetBackdropBorderColor(0.80, 0.65, 0.30);
+	local stage = CreateFrame("Frame", nil, right);
+	stage:SetPoint("TOPLEFT", 5, -5); stage:SetPoint("TOPRIGHT", -5, -5); stage:SetHeight(300);
+	local sceneL = stage:CreateTexture(nil, "BACKGROUND");
+	sceneL:SetPoint("TOPLEFT"); sceneL:SetPoint("BOTTOMLEFT"); sceneL:SetWidth(346);
+	local sceneR = stage:CreateTexture(nil, "BACKGROUND");
+	sceneR:SetPoint("TOPLEFT", sceneL, "TOPRIGHT"); sceneR:SetPoint("BOTTOMRIGHT");
+	sceneR:SetTexCoord(0, 62 / 64, 0, 1);
+	sceneL:SetVertexColor(0.8, 0.8, 0.8); sceneR:SetVertexColor(0.8, 0.8, 0.8);
+	local function Shade(point, w, h, orient, a1, a2)
+		local t = stage:CreateTexture(nil, "BORDER");
+		t:SetTexture("Interface\\Buttons\\WHITE8X8");
+		if ( w ) then t:SetWidth(w); t:SetPoint(point == "LEFT" and "TOPLEFT" or "TOPRIGHT"); t:SetPoint(point == "LEFT" and "BOTTOMLEFT" or "BOTTOMRIGHT"); end
+		if ( h ) then t:SetHeight(h); t:SetPoint(point == "TOP" and "TOPLEFT" or "BOTTOMLEFT"); t:SetPoint(point == "TOP" and "TOPRIGHT" or "BOTTOMRIGHT"); end
+		t:SetGradientAlpha(orient, 0, 0, 0, a1, 0, 0, 0, a2);   -- min (bottom / left) to max (top / right)
+	end
+	Shade("TOP", nil, 60, "VERTICAL", 0, 0.75);
+	Shade("BOTTOM", nil, 80, "VERTICAL", 0.85, 0);
+	Shade("LEFT", 50, nil, "HORIZONTAL", 0.7, 0);
+	Shade("RIGHT", 50, nil, "HORIZONTAL", 0, 0.7);
+	local function Scene()
+		local _, race = UnitRace("player");
+		if ( not SCENES[race or ""] ) then race = "Human"; end
+		sceneL:SetTexture("Interface\\DressUpFrame\\DressUpBackground-"..race.."1");
+		sceneR:SetTexture("Interface\\DressUpFrame\\DressUpBackground-"..race.."2");
+		local w = stage:GetWidth();
+		if ( w and w > 0 ) then sceneL:SetWidth(w * 256 / 318); end
+	end
+	local model = CreateFrame("DressUpModel", panel:GetName().."Model", stage);
+	local charModel = CreateFrame("DressUpModel", panel:GetName().."CharacterModel", stage);
+	charModel:Hide();
+	local noPreview = stage:CreateFontString(nil, "OVERLAY", "GameFontDisable");
+	noPreview:SetPoint("CENTER"); noPreview:SetText("No preview"); noPreview:Hide();
 	local name = right:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge");
-	name:SetPoint("TOPLEFT", model, "BOTTOMLEFT", 8, -8); name:SetWidth(400); name:SetJustifyH("LEFT");
+	name:SetPoint("TOPLEFT", stage, "BOTTOMLEFT", 8, -8); name:SetWidth(400); name:SetJustifyH("LEFT");
 	local source = right:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall");
 	source:SetPoint("TOPLEFT", name, "BOTTOMLEFT", 0, -6); source:SetWidth(400); source:SetJustifyH("LEFT");
 	local desc = right:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall");
 	desc:SetPoint("TOPLEFT", source, "BOTTOMLEFT", 0, -8); desc:SetWidth(400); desc:SetJustifyH("LEFT");
-	local showChar = CreateFrame("CheckButton", panel:GetName().."ShowCharacter", right, "UICheckButtonTemplate");
+	local showChar = CreateFrame("CheckButton", panel:GetName().."ShowCharacter", stage, "UICheckButtonTemplate");
 	showChar:SetWidth(22); showChar:SetHeight(22);
-	showChar:SetPoint("TOPRIGHT", model, "TOPRIGHT", -110, -4);
+	showChar:SetPoint("TOPRIGHT", stage, "TOPRIGHT", -110, -6);
+	showChar:SetFrameLevel(stage:GetFrameLevel() + 10);   -- above the model frames, so the click reaches it
 	_G[showChar:GetName().."Text"]:SetText("Show Character");
 	local summon = CreateFrame("Button", panel:GetName().."Summon", right, "UIPanelButtonTemplate");
 	summon:SetWidth(130); summon:SetHeight(24);
@@ -208,43 +312,85 @@ local function Journal(kind, noun)
 	random:SetPoint("BOTTOMLEFT", 10, 10);
 	random:SetText(kind == "MOUNT" and "Summon Random Favorite Mount" or "Summon Random Favorite Pet");
 
-	-- the model: the creature (SetCreature: its display, with its skin). 3.3.5 has no SetDisplayInfo, and a bare
-	-- SetModel of the .m2 has no skin (all white), so that is used only when there is no creature at all. A creature the
-	-- client hasn't seen yet is asked from the server by SetCreature: try again for a few seconds until it is in.
+	-- where the models stand: alone, the creature fills the stage; with Show Character, your character on the left and
+	-- the mount (big, behind on the right) or the pet (small, at your feet) beside it. 3.3.5 can't seat a character on a
+	-- creature in a model frame (each frame has its own camera, fitted to its own model), so it is side by side.
+	local function Layout(withChar, withCreature)
+		local w, h = stage:GetWidth() or 430, stage:GetHeight() or 300;
+		if ( w <= 0 ) then w = 430; end
+		model:ClearAllPoints(); charModel:ClearAllPoints();
+		if ( not withChar ) then model:SetAllPoints(stage); charModel:Hide(); return; end
+		charModel:Show();
+		if ( not withCreature ) then charModel:SetAllPoints(stage); return; end
+		if ( kind == "MOUNT" ) then
+			charModel:SetPoint("BOTTOMLEFT", stage, "BOTTOMLEFT", 6, 8);
+			charModel:SetWidth(w * 0.40); charModel:SetHeight(h * 0.80);
+			model:SetPoint("TOPRIGHT", stage, "TOPRIGHT", 0, -10);
+			model:SetPoint("BOTTOMLEFT", stage, "BOTTOMLEFT", w * 0.28, 0);
+		else
+			charModel:SetPoint("TOPLEFT", stage, "TOPLEFT", 10, -10);
+			charModel:SetPoint("BOTTOMRIGHT", stage, "BOTTOM", 30, 6);
+			model:SetPoint("BOTTOMRIGHT", stage, "BOTTOMRIGHT", -24, 10);
+			model:SetWidth(w * 0.40); model:SetHeight(h * 0.45);
+		end
+	end
+
+	-- the model: the creature (SetCreature: its display, with its skin). 3.3.5 has no SetDisplayInfo, and a bare SetModel
+	-- of the .m2 has no skin (all white). SetCreature shows only a creature the client has in its creature cache: it never
+	-- asks the server itself, so every creature of the list is asked from mod-temucraft-client-version (addon message
+	-- TCC) when the window first opens, and the selected one again if it isn't in after a second; until it arrives
+	-- SetCreature is tried again every 0.3 s, for up to 6 seconds.
 	local pending, tries, wait = nil, 0, 0;
+	local function Facing(alone) return (alone and 0.5) or (kind == "MOUNT" and -0.5 or -0.7); end
 	model:SetScript("OnUpdate", function(self, elapsed)
 		if ( not pending ) then return; end
 		wait = wait + elapsed;
 		if ( wait < 0.3 ) then return; end
 		wait = 0;
-		local m = self.GetModel and self:GetModel();
-		if ( type(m) == "string" and m ~= "" ) then pending = nil; return; end
+		if ( self:GetModel() ) then pending = nil; noPreview:Hide(); return; end
 		tries = tries + 1;
-		if ( tries > 10 ) then pending = nil; return; end
+		if ( tries == 3 ) then TemucraftCollections_Prime({ pending }, true); end
+		if ( tries > 20 ) then pending = nil; noPreview:Show(); return; end
 		self:SetCreature(pending);
-		self:SetFacing(0.5);
+		self:SetFacing(Facing(not charModel:IsShown()));
 	end);
+	-- drag on the stage to turn the models
 	local turning, lastX = false, 0;
-	model:EnableMouse(true);
-	model:SetScript("OnMouseDown", function(self) turning, lastX = true, GetCursorPosition(); end);
-	model:SetScript("OnMouseUp", function() turning = false; end);
-	model:HookScript("OnUpdate", function(self)
+	stage:EnableMouse(true);
+	stage:SetScript("OnMouseDown", function() turning, lastX = true, GetCursorPosition(); end);
+	stage:SetScript("OnMouseUp", function() turning = false; end);
+	stage:SetScript("OnHide", function() turning = false; end);
+	stage:SetScript("OnUpdate", function()
 		if ( not turning ) then return; end
 		local x = GetCursorPosition();
-		self:SetFacing((self:GetFacing() or 0) + (x - lastX) / 100);
+		local d = (x - lastX) / 100;
+		model:SetFacing((model:GetFacing() or 0) + d);
+		if ( charModel:IsShown() ) then charModel:SetFacing((charModel:GetFacing() or 0) + d); end
 		lastX = x;
 	end);
 	local function ShowModel(e)
 		model:ClearModel();
 		pending = nil;
-		if ( showChar:GetChecked() or not e ) then model:SetUnit("player"); return; end
-		if ( e.creature and e.creature > 0 and model.SetCreature ) then
-			model:SetCreature(e.creature);
-			pending, tries, wait = e.creature, 0, 0;
-		elseif ( e.model and e.model ~= "" ) then
-			model:SetModel(e.model);
+		noPreview:Hide();
+		local withChar = showChar:GetChecked() and true or false;
+		local creature = e and e.creature and e.creature > 0 and e.creature;
+		if ( not e ) then
+			Layout(true, false);
+			charModel:SetUnit("player"); charModel:SetFacing(0);
+			return;
 		end
-		model:SetFacing(0.5);
+		Layout(withChar, creature ~= nil);
+		if ( withChar ) then
+			charModel:SetUnit("player");
+			charModel:SetFacing(creature and 0.5 or 0);
+		end
+		if ( creature ) then
+			model:SetCreature(creature);
+			model:SetFacing(Facing(not withChar));
+			if ( not model:GetModel() ) then pending, tries, wait = creature, 0, 0; end
+		elseif ( not withChar ) then
+			noPreview:Show();
+		end
 	end
 	showChar:SetScript("OnClick", function() ShowModel(selected); end);
 
@@ -280,6 +426,13 @@ local function Journal(kind, noun)
 		entries, collected, total = L.Build(data, owned, function(id) local n, _, icon = GetSpellInfo(id); return n, icon; end,
 			Favourites(kind), RACES[raceToken], CLASSES[classToken]);
 		shown = L.Filter(entries, query, filters);
+		if ( not panel.primed ) then
+			panel.primed = true;
+			local ids = {};
+			for _, e in ipairs(entries) do table.insert(ids, e.creature or 0); end
+			for _, row in ipairs(data or {}) do table.insert(ids, row[2]); end
+			TemucraftCollections_Prime(ids);
+		end
 		count:SetText(format("Total %s: |cffffffff%d|r", noun, collected));
 		collectedText:SetText(format("%d / %d collected", collected, total));
 		if ( selected ) then
@@ -323,7 +476,8 @@ local function Journal(kind, noun)
 		row:SetPoint("TOPLEFT", scroll, "TOPLEFT", 4, -(i - 1) * ROW_HEIGHT);
 		row:RegisterForClicks("LeftButtonUp", "RightButtonUp");
 		row:RegisterForDrag("LeftButton");
-		row:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD");
+		if ( TemucraftStyle_Highlight ) then TemucraftStyle_Highlight(row);
+		else row:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD"); end
 		row.icon = row:CreateTexture(nil, "ARTWORK");
 		row.icon:SetWidth(34); row.icon:SetHeight(34); row.icon:SetPoint("LEFT", 2, 0);
 		row.name = row:CreateFontString(nil, "OVERLAY", "GameFontHighlight");
@@ -392,7 +546,7 @@ local function Journal(kind, noun)
 		if ( #pool == 0 ) then return; end
 		CallCompanion(kind, pool[math.random(#pool)].index);
 	end);
-	panel:SetScript("OnShow", Refresh);
+	panel:SetScript("OnShow", function() Scene(); Refresh(); end);
 	return panel;
 end
 

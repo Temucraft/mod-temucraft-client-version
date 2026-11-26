@@ -36,6 +36,12 @@ check("class mask shows to its class", (function() for _, e in ipairs(warlock) d
 local fav = L.ParseFavourites("458,6777");
 check("favourites round trip", L.SerializeFavourites(fav) == "458,6777");
 
+local chunks = L.Chunks({ 32158, 7561, 0, 7561, 1, 22, 333 }, 12, 3);
+check("cache asks: each entry once, no 0", table.concat(chunks, "|") == "32158,7561,1|22,333");
+chunks = L.Chunks({ 123456, 123457, 123458 }, 14, 40);
+check("cache asks: length limit", #chunks == 2 and chunks[1] == "123456,123457" and chunks[2] == "123458");
+check("cache asks: nothing to ask", #L.Chunks({ 0 }, 200, 40) == 0);
+
 local builds = P.Parse("Raid=05500.3200.0=@PvP=0..555");
 check("loadouts parse", #builds == 1 or #builds == 2);
 builds = P.Parse(P.Serialize({ { name = "Raid", trees = { "0550", "32", "" } }, { name = "PvP", trees = { "", "", "555" } } }));

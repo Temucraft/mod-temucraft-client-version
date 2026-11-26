@@ -7,8 +7,8 @@ Collections window (TemucraftCollections.lua) to show the ones still to get, gre
     class masks, plus every spell taught by a mount or pet item (item_template class 15, subclass 5 / 2: the item's
     spell, or the spell its "learning" spell teaches, Spell.dbc effect 36);
   - the creature: Spell.dbc, the mount aura (aura 78) or the summon effect (effect 28), EffectMiscValue;
-  - the model, for the preview when the client has no creature cache: creature_template_model (world DB) ->
-    CreatureDisplayInfo -> CreatureModelData;
+  - the model path (creature_template_model (world DB) -> CreatureDisplayInfo -> CreatureModelData), for reference:
+    the preview uses SetCreature, after asking the server for the creature (addon message TCC);
   - the source line: the name of the item that teaches it (item_template, world DB).
 Names, icons and descriptions are not stored: the client reads them from its own Spell.dbc (GetSpellInfo / tooltip).
 

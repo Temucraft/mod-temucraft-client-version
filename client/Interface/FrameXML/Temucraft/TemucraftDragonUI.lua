@@ -45,6 +45,26 @@ function D.Note(which, owned)
 	return "DragonUI's "..(D.NAMES[module] or module);
 end
 
+-- Leatrix Maps (with Questie's pins) is the standard Temucraft world map. DragonUI's World Map module replaces the same
+-- frame: it is off in our defaults (patch 0004, which also makes it step aside while Leatrix Maps is loaded). A player
+-- who turns it on anyway is told once: what to say, or nil (applied = DragonUI's map really took the frame)
+function D.MapWarning(dragonLoaded, worldmapOn, leatrixLoaded, applied)
+	if ( not (dragonLoaded and worldmapOn and leatrixLoaded) ) then return nil; end
+	if ( applied ) then
+		return "|cffffd100Temucraft:|r DragonUI's World Map and Leatrix Maps both change the world map. Leatrix Maps (with Questie) is the Temucraft map: turn DragonUI's World Map off (/dui) and /reload.";
+	end
+	return "|cffffd100Temucraft:|r DragonUI's World Map is on, but it steps aside for Leatrix Maps, the Temucraft map. Turn it off in /dui to stop this note.";
+end
+
+-- Two quest trackers: DragonUI's (its questtracker module, over the stock watch list) and Questie's own. DragonUI's is
+-- kept; Questie can't feed it (its tracker is a separate list), but with its own tracker off Questie leaves the stock
+-- watch list alone, so DragonUI's shows the watched quests and Questie keeps its map pins and tooltips. Turned off once
+-- per Questie profile (a flag in that profile), so a player who turns Questie's tracker back on keeps it.
+-- true = turn it off now
+function D.QuestieTrackerOff(dragonLoaded, trackerOn, profile)
+	return dragonLoaded and trackerOn and type(profile) == "table" and profile.temucraftTracker == nil or false;
+end
+
 if ( not CreateFrame ) then return; end   -- tests load only the logic
 
 local owned, loaded, known = {}, false, false;
@@ -120,11 +140,42 @@ end
 local events = CreateFrame("Frame");
 events:RegisterEvent("PLAYER_LOGIN");
 events:RegisterEvent("PLAYER_ENTERING_WORLD");
+-- Questie's own tracker off beside DragonUI's (see D.QuestieTrackerOff). Our PLAYER_LOGIN runs before Questie's (its
+-- AceDB is in since its ADDON_LOADED), and Questie reads trackerEnabled at its PLAYER_LOGIN.
+local function QuestieTracker()
+	local dui = Running();
+	local q = _G.Questie;
+	local profile = type(q) == "table" and type(q.db) == "table" and q.db.profile;
+	local ok, trackerOn = pcall(function() return dui and dui:IsModuleEnabled("questtracker"); end);
+	if ( not D.QuestieTrackerOff(dui ~= nil, ok and trackerOn, profile) ) then return; end
+	profile.temucraftTracker = true;
+	if ( profile.trackerEnabled ~= false ) then
+		profile.trackerEnabled = false;
+		DEFAULT_CHAT_FRAME:AddMessage("|cffffd100Temucraft:|r your quests are in DragonUI's quest tracker; Questie's own tracker is off (Questie's options, Tracker, turn it back on).");
+	end
+end
+
+-- DragonUI's World Map with Leatrix Maps: told once, at login or when the map opens (it can be turned on in /dui)
+local mapWarned = false;
+local function MapCheck()
+	if ( mapWarned ) then return; end
+	local dui = Running();
+	if ( not dui ) then return; end
+	local ok, on = pcall(function() return dui:IsModuleEnabled("worldmap"); end);
+	local wm = dui.WorldMap;
+	local applied = type(wm) == "table" and type(wm.IsApplied) == "function" and wm.IsApplied();
+	local text = D.MapWarning(true, ok and on, IsAddOnLoaded("Leatrix_Maps") and true or false, applied);
+	if ( text ) then mapWarned = true; DEFAULT_CHAT_FRAME:AddMessage(text); end
+end
+if ( WorldMapFrame ) then WorldMapFrame:HookScript("OnShow", MapCheck); end
+
 events:SetScript("OnEvent", function(self, event)
 	if ( event == "PLAYER_LOGIN" ) then
 		if ( not known ) then Read(); end
+		pcall(QuestieTracker);
 		return;
 	end
+	MapCheck();
 	-- DragonUI builds its spellbook at its own PLAYER_LOGIN
 	self:UnregisterEvent("PLAYER_ENTERING_WORLD");
 	if ( TemucraftDragonUI_Owns("book") ) then CarryTrainButton(); end

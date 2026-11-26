@@ -19,6 +19,14 @@ check("character panel covers currency too", D.Resolve(true, enabled({ character
 check("a module that errors counts as off", next(D.Resolve(true, function() error("boom"); end)) == nil);
 check("note names the module", D.Note("book", { book = true }) == "DragonUI's Spellbook" and D.Note("book", {}) == nil and D.Note("rep", { rep = true }) == nil);
 
+check("map: no note without Leatrix Maps or with DragonUI's map off", D.MapWarning(true, true, false, true) == nil and D.MapWarning(true, false, true, true) == nil and D.MapWarning(false, true, true, true) == nil);
+check("map: note when both are on", D.MapWarning(true, true, true, true) ~= nil and D.MapWarning(true, true, true, false) ~= nil
+	and D.MapWarning(true, true, true, true) ~= D.MapWarning(true, true, true, false));
+check("questie tracker: off once beside DragonUI's", D.QuestieTrackerOff(true, true, { trackerEnabled = true }) == true);
+check("questie tracker: player's choice kept after that", D.QuestieTrackerOff(true, true, { trackerEnabled = true, temucraftTracker = true }) == false);
+check("questie tracker: left alone without DragonUI's tracker", D.QuestieTrackerOff(true, false, { trackerEnabled = true }) == false
+	and D.QuestieTrackerOff(false, true, { trackerEnabled = true }) == false and D.QuestieTrackerOff(true, true, nil) == false);
+
 -- the switch in the client: a stub frame, DragonUI's addon table and PLAYER_LOGIN
 local function Load(dragonLoaded, modules, skipLogin)
 	local frames = {};
@@ -32,6 +40,7 @@ local function Load(dragonLoaded, modules, skipLogin)
 		table.insert(frames, f);
 		return f;
 	end
+	DEFAULT_CHAT_FRAME = { lines = {}, AddMessage = function(self, t) table.insert(self.lines, t); end };
 	local loggedIn = false;
 	IsLoggedIn = function() return loggedIn; end
 	IsAddOnLoaded = function(name) return dragonLoaded and name == "DragonUI"; end
@@ -59,6 +68,15 @@ check("talents module off: our talents stay", not TemucraftDragonUI_Owns("talent
 check("gossip: DragonUI's module not in its profile counts as off", not TemucraftDragonUI_Owns("gossip"));
 check("note for the options page", TemucraftDragonUI_Note("char") == "DragonUI's Character Panel" and TemucraftDragonUI_Note("talents") == nil);
 check("the player's saved choice is not written", DragonUI.db.profile.modules.talents.enabled == false);
+
+Questie = { db = { profile = { trackerEnabled = true } } };
+Load(true, { questtracker = true });
+check("login: Questie's tracker off beside DragonUI's, once", Questie.db.profile.trackerEnabled == false and Questie.db.profile.temucraftTracker == true
+	and #DEFAULT_CHAT_FRAME.lines == 1);
+Questie.db.profile.trackerEnabled = true;
+Load(true, { questtracker = true });
+check("login: turned back on by the player, stays on", Questie.db.profile.trackerEnabled == true and #DEFAULT_CHAT_FRAME.lines == 0);
+Questie = nil;
 
 Load(false, {});
 check("DragonUI off (after /reload): every window ours again", not TemucraftDragonUI_IsLoaded() and not TemucraftDragonUI_Owns("char")
