@@ -860,6 +860,9 @@ local function TextArea(parent, name, top, height, label)
 	edit:SetWidth(245); edit:SetHeight(height);
 	edit:SetFontObject(GameFontHighlightSmall);
 	edit:SetAutoFocus(false);
+	-- ScrollingEdit_OnUpdate does arithmetic on these: a SetText before the box ever had a cursor (hidden, at a guild
+	-- roster update) errored "attempt to perform arithmetic on field 'cursorOffset' (a nil value)"
+	edit.cursorOffset, edit.cursorHeight = 0, 0;
 	edit:SetScript("OnEscapePressed", function(self) self:ClearFocus(); end);
 	edit:SetScript("OnTextChanged", function(self) ScrollingEdit_OnTextChanged(self, scroll); end);
 	edit:SetScript("OnCursorChanged", ScrollingEdit_OnCursorChanged);

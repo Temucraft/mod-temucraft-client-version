@@ -376,6 +376,8 @@ for _, c in ipairs(checks) do
 		UpdateSubmit();
 	end);
 end
+-- ScrollingEdit_OnUpdate does arithmetic on these; a SetText before the box ever had a cursor errored on the nil
+edit.cursorOffset, edit.cursorHeight = 0, 0;
 edit:SetScript("OnTextChanged", function(self)
 	ScrollingEdit_OnTextChanged(self, scroll);
 	UpdateSubmit();
@@ -551,34 +553,24 @@ button:SetScript("OnClick", function() GameTooltip:Hide(); TemucraftIssues_Toggl
 -- tooltips: what each one shows, and the hint line
 
 -- subject: { kind, id, name, icon, unit, subType }
-local function AddHint(tooltip)
+-- noShow: inside a TemucraftTooltips.lua build (it sizes the tooltip once at the end)
+local function AddHint(tooltip, noShow)
 	local s = tooltip.tcIssue;
 	if ( not s or tooltip.tcIssueHint or not reportingOn ) then return; end
 	local text = L.HintText(s.kind, BoundKey());
 	if ( not text ) then return; end
 	tooltip.tcIssueHint = true;
 	tooltip:AddLine(text, HINT_COLOR[1], HINT_COLOR[2], HINT_COLOR[3], true);
-	tooltip:Show();
+	if ( not noShow ) then tooltip:Show(); end
 end
 
--- other files add their lines in the same frame (some a frame later): the hint goes on after them
-local queued = {};
-local later = CreateFrame("Frame");
-later:Hide();
-later:SetScript("OnUpdate", function(self)
-	self:Hide();
-	for tooltip in pairs(queued) do
-		queued[tooltip] = nil;
-		if ( tooltip:IsShown() ) then AddHint(tooltip); end
-	end
-end);
-
-local function SetSubject(tooltip, subject, now)
+-- our own tooltips below (quest log, quest tracker, world map POIs): the hint at once
+local function SetSubject(tooltip, subject)
 	if ( not subject or not subject.kind ) then return; end
 	if ( tooltip.tcIssue and tooltip.tcIssue.kind == subject.kind and tooltip.tcIssue.id == subject.id ) then return; end
 	tooltip.tcIssue = subject;
 	tooltip.tcIssueHint = nil;
-	if ( now ) then AddHint(tooltip); else queued[tooltip] = true; later:Show(); end
+	AddHint(tooltip);
 end
 
 local function Cleared(tooltip) tooltip.tcIssue, tooltip.tcIssueHint = nil, nil; end
@@ -596,22 +588,30 @@ local function QuestSubject(questIndex)
 	return { kind = "quest", id = questID, name = title, icon = "Interface\\GossipFrame\\AvailableQuestIcon" };
 end
 
+-- spells, items and creatures: the last line of every build, through TemucraftTooltips.lua (one place for all our
+-- lines, once per build, so tooltips refreshed every 0.2 s don't flicker)
+for _, name in ipairs({ "GameTooltip", "ItemRefTooltip" }) do _G[name]:HookScript("OnTooltipCleared", Cleared); end
+TemucraftTooltipLines = TemucraftTooltipLines or {};
+table.insert(TemucraftTooltipLines, { order = 90, kinds = { spell = true, item = true, unit = true }, add = function(tooltip, s)
+	if ( tooltip ~= GameTooltip and tooltip ~= ItemRefTooltip ) then return; end
+	local subject;
+	if ( s.kind == "spell" ) then
+		subject = SpellSubject(s.id);
+	elseif ( s.kind == "item" ) then
+		subject = { kind = "item", id = s.id, name = (GetItemInfo(s.id)) or tooltip:GetItem(), icon = GetItemIcon(s.id) };
+	elseif ( s.unit and not UnitIsPlayer(s.unit) and tooltip == GameTooltip ) then
+		local guid = UnitGUID(s.unit);
+		local id = L.CreatureId(guid);
+		if ( id ) then subject = { kind = "creature", id = id, name = s.name, unit = s.unit, guid = guid, subType = "Creature" }; end
+	end
+	if ( not subject ) then return; end
+	tooltip.tcIssue, tooltip.tcIssueHint = subject, nil;
+	AddHint(tooltip, true);
+end });
+-- quest links (no TemucraftTooltips.lua subject; never refreshed): the hint at once
 for _, name in ipairs({ "GameTooltip", "ItemRefTooltip" }) do
-	local tooltip = _G[name];
-	tooltip:HookScript("OnTooltipCleared", Cleared);
-	tooltip:HookScript("OnTooltipSetItem", function(self)
-		local itemName, link = self:GetItem();
-		local id = link and tonumber(string.match(link, "item:(%d+)"));
-		if ( id ) then SetSubject(self, { kind = "item", id = id, name = itemName, icon = GetItemIcon(id) }); end
-	end);
-	tooltip:HookScript("OnTooltipSetSpell", function(self)
-		local _, _, id = self:GetSpell();
-		if ( type(id) == "number" ) then SetSubject(self, SpellSubject(id)); end
-	end);
-	hooksecurefunc(tooltip, "SetHyperlink", function(self, link)
+	hooksecurefunc(_G[name], "SetHyperlink", function(self, link)
 		if ( type(link) ~= "string" ) then return; end
-		local spellId = tonumber(string.match(link, "spell:(%d+)") or string.match(link, "enchant:(%d+)"));
-		if ( spellId ) then SetSubject(self, SpellSubject(spellId)); return; end
 		local questId, questName = L.QuestFromLink(link);
 		if ( questId ) then
 			SetSubject(self, { kind = "quest", id = questId, name = questName or (self:IsShown() and _G[self:GetName().."TextLeft1"]:GetText()),
@@ -619,24 +619,6 @@ for _, name in ipairs({ "GameTooltip", "ItemRefTooltip" }) do
 		end
 	end);
 end
-
-GameTooltip:HookScript("OnTooltipSetUnit", function(self)
-	local name, unit = self:GetUnit();
-	if ( not unit or UnitIsPlayer(unit) ) then return; end
-	local guid = UnitGUID(unit);
-	local id = L.CreatureId(guid);
-	if ( id ) then SetSubject(self, { kind = "creature", id = id, name = name, unit = unit, guid = guid, subType = "Creature" }); end
-end);
-
-local function AuraHook(filter)
-	return function(tooltip, unit, index, auraFilter)
-		local id = select(11, UnitAura(unit, index, filter or auraFilter));
-		SetSubject(tooltip, SpellSubject(id));
-	end
-end
-hooksecurefunc(GameTooltip, "SetUnitAura", AuraHook(nil));
-hooksecurefunc(GameTooltip, "SetUnitBuff", AuraHook("HELPFUL"));
-hooksecurefunc(GameTooltip, "SetUnitDebuff", AuraHook("HARMFUL"));
 
 -- quest log titles: a tooltip with the quest's title (stock shows one only for party members on it)
 if ( QuestLogTitleButton_OnEnter ) then hooksecurefunc("QuestLogTitleButton_OnEnter", function(self)
@@ -646,7 +628,7 @@ if ( QuestLogTitleButton_OnEnter ) then hooksecurefunc("QuestLogTitleButton_OnEn
 		GameTooltip:SetOwner(self, "ANCHOR_RIGHT");
 		GameTooltip:SetText(subject.name);
 	end
-	SetSubject(GameTooltip, subject, true);
+	SetSubject(GameTooltip, subject);
 end); end
 
 -- quest tracker lines
@@ -657,7 +639,7 @@ if ( WatchFrameLinkButtonTemplate_Highlight ) then hooksecurefunc("WatchFrameLin
 		if ( not subject or not reportingOn or not BoundKey() ) then return; end
 		GameTooltip:SetOwner(self, "ANCHOR_LEFT");
 		GameTooltip:SetText(subject.name);
-		SetSubject(GameTooltip, subject, true);
+		SetSubject(GameTooltip, subject);
 	elseif ( GameTooltip:IsOwned(self) ) then
 		GameTooltip:Hide();
 	end
@@ -668,7 +650,7 @@ if ( WorldMapTooltip and WorldMapQuestPOI_SetTooltip ) then
 	WorldMapTooltip:HookScript("OnTooltipCleared", Cleared);
 	hooksecurefunc("WorldMapQuestPOI_SetTooltip", function(poiButton, questLogIndex)
 		local subject = QuestSubject(questLogIndex);
-		if ( subject ) then SetSubject(WorldMapTooltip, subject, true); end
+		if ( subject ) then SetSubject(WorldMapTooltip, subject); end
 	end);
 end
 
