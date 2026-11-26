@@ -55,6 +55,16 @@ check("format integer", O.Format(180, 90, 270, 10) == "180");
 check("format decimals", O.Format(1.25, 0.5, 1.5, 0.05) == "1.25" and O.Format(0.9, 0.64, 1, 0.01, "2") == "0.90");
 check("format low / high names", O.Format(0, 0, 1, 1, nil, { low = "Low", high = "High" }) == "Low" and O.Format(1, 0, 1, 1, nil, { low = "Low", high = "High" }) == "High");
 check("format quality", O.Format(3, 1, 6, 1, "quality", { "Low", "Fair", "Good" }) == "Good");
+local lo, hi = O.Ends(0, 1, 0.1);
+local lo2, hi2 = O.Ends(0, 200, 5);
+local lo3, hi3 = O.Ends(1, 6, 1, "quality", { "Low", "Fair", "Good", "High", "Ultra", "Max" });
+check("slider ends: real numbers, percent for 0-1, names for quality", lo == "0%" and hi == "100%" and lo2 == "0" and hi2 == "200" and lo3 == "Low" and hi3 == "Max");
+local function near(x, y) return x and math.abs(x - y) < 1e-9; end
+check("typed value: percent or fraction, snapped and clamped", near(O.Parse("50", 0, 1, 0.1), 0.5) and near(O.Parse("0.3", 0, 1, 0.1), 0.3) and near(O.Parse("70%", 0, 1, 0.1), 0.7)
+	and O.Parse("250", 0, 200, 5) == 200 and O.Parse("62", 0, 200, 5) == 60 and near(O.Parse("1,25", 0.5, 1.5, 0.05), 1.25) and O.Parse("abc", 0, 1, 0.1) == nil);
+local fr;
+for _, g in ipairs(O.Page("graphics").groups) do if ( g.header == "Frame Rate" ) then fr = g; end end
+check("graphics: frame rate sliders (CVars)", fr and fr.rows[1].kind == "cvarslider" and fr.rows[1].cvar == "maxFPS" and fr.rows[2].cvar == "maxFPSBk" and fr.rows[1].max == 200);
 
 -- key bindings
 check("key with modifiers", O.KeyFromInput("F", true, true, true) == "ALT-CTRL-SHIFT-F" and O.KeyFromInput("1", false, false, false) == "1");

@@ -294,7 +294,7 @@ sat on their bottom tabs), except the spellbook and talents.
   and the key bindings), **Close** (settings apply as they change). Game: **Gameplay** (Controls, Interface, Action
   Bars, Combat, Social, Keybindings, Nameplates), **Accessibility** (General, Colors), **System** (Graphics, Audio,
   Languages, Network); each page has its title, Defaults, white sub-headers and rows: gold label, then a checkbox,
-  a < value > selector or a < slider > with its value; sub-options indented and greyed while their parent is off.
+  a < value > selector or a < slider > with its real min and max under its ends and its value in a box you can type in (Enter); sub-options indented and greyed while their parent is off.
   The pages are rebuilt, but each row drives the stock control underneath (`InterfaceOptions*`, `VideoOptions*`,
   `AudioOptions*`: same CVars, setFuncs, dependent controls, sound restarts), so the stock windows stay in step.
   Graphics applies at once except what needs a display restart (resolution, refresh rate, multisampling, vsync,
@@ -622,6 +622,17 @@ hidden holder and ours sit on top. The "Classic" choice here is `TEMUCRAFT_LOGIN
     (`Logic.EvenLights`: ambient 0.42, direct 1.35; a key and fill light when a scene has none). The background keeps
     its own lights. `TEMUCRAFT_EVEN_LIGHT = false` turns it off. Character select uses the same. `TEMUCRAFT_CREATE_SCENES = "race"` shows each race's own scene; `TEMUCRAFT_SCENE_PICKS`
   the player's picks.
+- **Options** (`TemucraftGlueOptions.lua`): one window in place of the stock chooser (Video / Sound / Reset User
+  Options) and its two windows, from Menu > Options and the login screen's Options. Left the pages (Graphics: the
+  stock Display and Effects pages and Frame Rate; Audio: the stock Sound page and More Sound), right the page; Defaults
+  (this page, the stock All / Current Settings confirm), Classic (the stock chooser), Apply, Cancel, Okay. The stock
+  pages are the stock panels, moved in while the window is open, and Okay / Apply / Cancel run the stock frames' own
+  code (restarts and alerts included). Frame Rate (`maxFPS`, `maxFPSBk`) and More Sound (`Sound_ListenerAtCharacter`,
+  `Sound_ZoneMusicNoDelay`, and Reset All Settings, the stock Reset User Options) are ours, the same rows as in the
+  in-game window. Every slider shows its real min and max at its ends (0% / 100% for 0-1 sliders) and its value in
+  a box you can type in (Enter; clamped and snapped to the step). The empty Refresh Rate menu of windowed mode says
+  "Set by the display (windowed)". If the window fails the stock chooser opens; `TEMUCRAFT_GLUE_OPTIONS = "classic"`
+  always uses it.
 - **Glue safety** (`TemucraftGlueSafety.lua`, loaded first): `GetAvailableRaces`, `GetAvailableClasses` and
   `GetClassesForRace` push 3 values per race or class without growing the Lua stack; with 20-30 races the stock
   Wow.exe wrote past it ("Not enough memory" crash picking Zandalari). They are wrapped to run from a Lua function
@@ -654,7 +665,7 @@ hidden holder and ours sit on top. The "Classic" choice here is `TEMUCRAFT_LOGIN
 Stub tests (no client; run from the module folder with Lua 5.1) for the grouping, search, paging, collection and
 loadout logic, the player UI, the login screens and the protocols: `lua5.1 client/tests/spellbook_test.lua`,
 `collections_test.lua`, `interface_test.lua`, `taxi_test.lua`, `issues_test.lua`, `guild_test.lua`,
-`reputation_test.lua`, `glue_test.lua`, `loadouts_test.lua` (the server loadouts protocol), `dragonui_test.lua` (the DragonUI step-aside switch), `professions_test.lua` (the Professions window's list, filters, favourites, stats and recipe helpers), `achievements_test.lua` (the Achievements window's category tree, progress, filter and search, tracking cap, series and criteria helpers), `groupfinder_test.lua` (the Group Finder and PvP window: key binding and Classic routing, toggles, roles, the Find Group and List buttons, random dungeon choice, list search, queue status, the Raid Browser filter, the Adventure Guide link, battleground order, queues, arena points and /pvp), `adventureguide_test.lua` (the Adventure Guide data's shape and the hand-checked sample instances, tabs, expansion filter, search, level suggestions, loot, the TAG asks and the journal merge), `tutorial_test.lua` (the new-player tutorial's start rules and step machine, fed fake events) and `options_test.lua` (the Options pages, search, sliders, key names, binding groups, the AddOns list, server answers and the Esc menu rows; all in `client/tests/`). Also check every file with `luac5.1 -p`.
+`reputation_test.lua`, `glue_test.lua`, `glueoptions_test.lua` (the login screens' Options window), `loadouts_test.lua` (the server loadouts protocol), `dragonui_test.lua` (the DragonUI step-aside switch), `professions_test.lua` (the Professions window's list, filters, favourites, stats and recipe helpers), `achievements_test.lua` (the Achievements window's category tree, progress, filter and search, tracking cap, series and criteria helpers), `groupfinder_test.lua` (the Group Finder and PvP window: key binding and Classic routing, toggles, roles, the Find Group and List buttons, random dungeon choice, list search, queue status, the Raid Browser filter, the Adventure Guide link, battleground order, queues, arena points and /pvp), `adventureguide_test.lua` (the Adventure Guide data's shape and the hand-checked sample instances, tabs, expansion filter, search, level suggestions, loot, the TAG asks and the journal merge), `tutorial_test.lua` (the new-player tutorial's start rules and step machine, fed fake events) and `options_test.lua` (the Options pages, search, sliders, key names, binding groups, the AddOns list, server answers and the Esc menu rows; all in `client/tests/`). Also check every file with `luac5.1 -p`.
 
 ## Also in this module
 

@@ -26,6 +26,8 @@ local function I(name, sub, label, extra) local r = extra or {}; r.stock = "Inte
 local function V(name, sub, label, extra) local r = extra or {}; r.stock = "VideoOptions"..name; r.family = "video"; r.sub = sub; r.label = label; return r; end
 local function A(name, sub, label, extra) local r = extra or {}; r.stock = "AudioOptions"..name; r.family = "audio"; r.sub = sub; r.label = label; return r; end
 local function CV(cvar, label, tooltip) return { kind = "cvar", cvar = cvar, label = label, tooltip = tooltip }; end
+-- a CVar slider: min, max, step (the character select Options window has the same rows, so both show the same value)
+local function CVS(cvar, label, min, max, step, tooltip) return { kind = "cvarslider", cvar = cvar, label = label, min = min, max = max, step = step, tooltip = tooltip }; end
 
 L.SECTIONS = { "Gameplay", "Accessibility", "System" };
 L.PAGES = {
@@ -264,6 +266,10 @@ L.PAGES = {
 			V("EffectsPanelDeathEffect", true, "Death Effect"),
 			V("EffectsPanelProjectedTextures", true, "Projected Textures"),
 		} },
+		{ header = "Frame Rate", rows = {
+			CVS("maxFPS", "Max Frame Rate", 0, 200, 5, "Frames per second at most (0 = no limit)."),
+			CVS("maxFPSBk", "Max Background Frame Rate", 0, 200, 5, "Frames per second at most while the game is in the background (0 = no limit)."),
+		} },
 	} },
 	{ key = "audio", section = "System", title = "Audio", groups = {
 		{ rows = {
@@ -287,6 +293,8 @@ L.PAGES = {
 			A("SoundPanelReverb", nil, "Enable Reverb"),
 			A("SoundPanelHRTF", nil, "Software Sound Positioning"),
 			A("SoundPanelEnableDSPs", nil, "Enable DSP Effects"),
+			CV("Sound_ListenerAtCharacter", "Hear From the Character", "Sounds are heard from where your character stands, not from the camera."),
+			CV("Sound_ZoneMusicNoDelay", "Zone Music Without Delay", "A zone's music starts again at once instead of after a pause."),
 		} },
 		{ header = "Playback", rows = {
 			A("SoundPanelHardwareDropDown", nil, "Output Device"),
@@ -368,6 +376,23 @@ function L.Format(value, min, max, step, fmt, names)
 	return string.format("%."..decimals.."f", value);
 end
 
+-- The numbers at a slider's ends: "0%" / "100%" for 0-1 sliders, else the real min and max (quality: the names)
+function L.Ends(min, max, step, fmt, names)
+	if ( fmt == "quality" ) then return L.Format(min, min, max, step, fmt, names), L.Format(max, min, max, step, fmt, names); end
+	return L.Format(min, min, max, step, fmt), L.Format(max, min, max, step, fmt);
+end
+
+-- A typed value: "50", "50%", "0.5" (for a 0-1 slider shown in percent, more than 1 or a % sign means percent),
+-- snapped to the step and kept in range; nil when it isn't a number
+function L.Parse(text, min, max, step, fmt)
+	text = string.gsub(tostring(text or ""), ",", ".");
+	local num = tonumber((string.gsub(text, "[%s%%]", "")));
+	if ( not num ) then return nil; end
+	local percent = (fmt == "percent" or (not fmt and min == 0 and max == 1 and step and step < 1));
+	if ( percent and (string.find(text, "%", 1, true) or num > 1) ) then num = num / 100; end
+	return L.Snap(num, min, max, step);
+end
+
 -- a key press or mouse button as a binding key ("ALT-CTRL-SHIFT-F", "BUTTON4"), nil for a lone modifier or
 -- the left / right button
 local MOUSE = { LeftButton = "BUTTON1", RightButton = "BUTTON2", MiddleButton = "BUTTON3" };
@@ -443,6 +468,7 @@ if ( not CreateFrame ) then return; end   -- tests load only the logic
 -- [[ the window ]] --
 local W, H, LIST_W = 900, 620, 206;
 local CONTROL_X, ROW_H = 330, 26;
+local SLIDER_ROW_H = 34;   -- slider rows: room for the min / max numbers under the bar
 local GOLD, WHITE, GREY = { 1, 0.82, 0 }, { 1, 1, 1 }, { 0.5, 0.5, 0.5 };
 
 local f = CreateFrame("Frame", "TemucraftOptionsFrame", UIParent);
@@ -775,7 +801,7 @@ local sliderCount = 0;
 local function SliderWidget(r, spec, c)
 	sliderCount = sliderCount + 1;
 	local prev, nextB = ArrowButton(r, -1), ArrowButton(r, 1);
-	prev:SetPoint("LEFT", CONTROL_X - 4, 0);
+	prev:SetPoint("LEFT", CONTROL_X - 4, 4);   -- a little up: the min / max numbers go under the bar
 	local s = CreateFrame("Slider", "TemucraftOptionsSlider"..sliderCount, r);
 	s:SetOrientation("HORIZONTAL");
 	s:SetWidth(170); s:SetHeight(17);
@@ -784,9 +810,21 @@ local function SliderWidget(r, spec, c)
 		tile = true, tileSize = 8, edgeSize = 8, insets = { left = 3, right = 3, top = 6, bottom = 6 } });
 	s:SetThumbTexture("Interface\\Buttons\\UI-SliderBar-Button-Horizontal");
 	nextB:SetPoint("LEFT", s, "RIGHT", 2, 0);
-	local value = r:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall");
+	-- the real min and max under the bar's ends, the value in a box you can type in (Enter applies)
+	local lowText = r:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall");
+	lowText:SetPoint("TOPLEFT", s, "BOTTOMLEFT", 2, 1);
+	local highText = r:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall");
+	highText:SetPoint("TOPRIGHT", s, "BOTTOMRIGHT", -2, 1);
+	local value = CreateFrame("EditBox", "TemucraftOptionsSlider"..sliderCount.."Value", r);
+	value:SetWidth(58); value:SetHeight(18);
 	value:SetPoint("LEFT", nextB, "RIGHT", 6, 0);
-	value:SetWidth(70); value:SetJustifyH("LEFT");
+	value:SetFontObject(GameFontHighlightSmall);
+	value:SetAutoFocus(false);
+	value:SetJustifyH("LEFT");
+	value:SetTextInsets(4, 4, 0, 0);
+	local vbg = value:CreateTexture(nil, "BACKGROUND");
+	vbg:SetTexture(0, 0, 0, 0.5);
+	vbg:SetAllPoints(value);
 	local updating = false;
 	local release = spec.release or c.restart;
 	local function Names()
@@ -803,7 +841,10 @@ local function SliderWidget(r, spec, c)
 	end
 	local function Show(v)
 		local min, max = c:GetMinMaxValues();
-		value:SetText(L.Format(v, min, max, c:GetValueStep(), spec.fmt, Names()));
+		local names = Names();
+		if ( not value:HasFocus() ) then value:SetText(L.Format(v, min, max, c:GetValueStep(), spec.fmt, names)); end
+		local lo, hi = L.Ends(min, max, c:GetValueStep(), spec.fmt, names);
+		lowText:SetText(lo); highText:SetText(hi);
 	end
 	local function Apply(v)
 		local min, max = c:GetMinMaxValues();
@@ -829,8 +870,23 @@ local function SliderWidget(r, spec, c)
 	end
 	prev:SetScript("OnClick", function() Nudge(-1); end);
 	nextB:SetScript("OnClick", function() Nudge(1); end);
-	s.Enable = function(self) getmetatable(self).__index.Enable(self); value:SetTextColor(1, 1, 1); end;
-	s.Disable = function(self) getmetatable(self).__index.Disable(self); value:SetTextColor(0.5, 0.5, 0.5); end;
+	value:SetScript("OnEnterPressed", function(self)
+		local min, max = c:GetMinMaxValues();
+		local v = (spec.fmt ~= "quality") and L.Parse(self:GetText(), min, max, c:GetValueStep(), spec.fmt);
+		self:ClearFocus();
+		if ( v ) then
+			updating = true; s:SetValue(v); updating = false;
+			Apply(v);
+			Refresh();
+		else
+			Show(c:GetValue());
+		end
+	end);
+	value:SetScript("OnEscapePressed", function(self) self:ClearFocus(); Show(c:GetValue()); end);
+	value:SetScript("OnEditFocusLost", function(self) self:HighlightText(0, 0); Show(c:GetValue()); end);
+	value:SetScript("OnEditFocusGained", function(self) self:HighlightText(); end);
+	s.Enable = function(self) getmetatable(self).__index.Enable(self); value:SetTextColor(1, 1, 1); value:EnableMouse(true); end;
+	s.Disable = function(self) getmetatable(self).__index.Disable(self); value:SetTextColor(0.5, 0.5, 0.5); value:ClearFocus(); value:EnableMouse(false); end;
 	r.widgets = { prev, s, nextB };
 	r.UpdateSlider = function()
 		local min, max = c:GetMinMaxValues();
@@ -849,7 +905,7 @@ local function StockRow(spec)
 	if ( not c ) then return nil; end
 	local kind = Kind(c);
 	if ( not kind ) then return nil; end
-	local r = NewRow(spec, StockLabel(c, kind, spec.label));
+	local r = NewRow(spec, StockLabel(c, kind, spec.label), (kind == "slider") and SLIDER_ROW_H or nil);
 	r.stock, r.kind = c, kind;
 	r.tooltipFunc = function() return c.tooltipText or c.tooltip or spec.tooltip; end;
 	Tooltip(r);
@@ -1055,6 +1111,24 @@ local function CustomRow(spec)
 		Tooltip(r, spec.tooltip, spec.label);
 		CheckWidget(r, function(on) SetCVar(spec.cvar, on and "1" or "0"); Refresh(); end);
 		r.Update = function() r.check:SetChecked(GetCVar(spec.cvar) == "1"); SetRowEnabled(r, true); end;
+		r.Default = function() local d = GetCVarDefault and GetCVarDefault(spec.cvar); if ( d ) then SetCVar(spec.cvar, d); end end;
+		return r;
+	end
+	if ( spec.kind == "cvarslider" ) then
+		if ( not CVarExists(spec.cvar) ) then return nil; end
+		local r = NewRow(spec, spec.label, SLIDER_ROW_H);
+		Tooltip(r, spec.tooltip, spec.label);
+		-- the slider widget drives a control: here a stand-in that reads and writes the CVar
+		local proxy = {
+			GetMinMaxValues = function() return spec.min, spec.max; end,
+			GetValueStep = function() return spec.step; end,
+			GetValue = function() return L.Snap(tonumber(GetCVar(spec.cvar)) or spec.min, spec.min, spec.max, spec.step); end,
+			SetValue = function(_, v) SetCVar(spec.cvar, tostring(v)); end,
+			GetName = function() return "TemucraftCVar"..spec.cvar; end,
+			GetParent = function() return nil; end,
+		};
+		SliderWidget(r, spec, proxy);
+		r.Update = function() r.UpdateSlider(); SetRowEnabled(r, true); end;
 		r.Default = function() local d = GetCVarDefault and GetCVarDefault(spec.cvar); if ( d ) then SetCVar(spec.cvar, d); end end;
 		return r;
 	end
