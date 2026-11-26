@@ -31,7 +31,7 @@ for _, e in ipairs(L.List()) do table.insert(items, e.text); end
 check("list: Graphics and Audio only", table.concat(items, ",") == "Graphics,Audio");
 local secs = {};
 for _, p in ipairs(L.PAGES) do for _, s in ipairs(p.sections) do table.insert(secs, s.title); end end
-check("sections like retail", table.concat(secs, ",") == "Display,Quality,Effects,Frame Rate,Volume,Playback,Output,Other");
+check("sections like retail", table.concat(secs, ",") == "Display,Quality,Effects,Frame Rate,Character Screens,Volume,Playback,Output,Other");
 local cvars = {};
 for _, r in ipairs(L.OurRows()) do cvars[r.cvar] = r; end
 check("our CVars (3.3.5 has them)", cvars.maxFPS and cvars.maxFPSBk and cvars.Sound_ListenerAtCharacter and cvars.Sound_ZoneMusicNoDelay and cvars.maxFPS.max == 200);

@@ -75,12 +75,36 @@ FRAME_FILES = ["Temucraft\\TemucraftCore.lua",
 # pictures (not in FrameXML.toc): Interface\\FrameXML\\<file>
 ART_FILES = ["Temucraft\\TemucraftIssueBug.blp"]
 # pictures for the login screens: Interface\\Glues\\<file>
-GLUE_ART_FILES = []   # (the race ring uses the glue screen's own ring art in UI-CharacterCreatePatchwerk)
+# (the race ring uses the glue screen's own ring art in UI-CharacterCreatePatchwerk); the race portraits
+# (CharacterCreate\TemucraftRace_<file>_<sex>.blp, gen_race_portraits.py) are added from the folder
+GLUE_ART_FILES = []
 # after the client's own glue files (CharacterCreate / CharacterSelect), so they can sit on top of them
-GLUE_FILES = ["TemucraftGlueSafety.lua", "TemucraftVersion.lua", "TemucraftGlueData.lua", "TemucraftCharCreate.lua", "TemucraftCharSelect.lua", "TemucraftGlueOptions.lua"]
+# (TemucraftNameFilters.lua, TemucraftRacialsData.lua, TemucraftRacePortraits.lua: character create's data, made by
+# gen_name_filters.py, gen_racials.py and gen_race_portraits.py; see GENERATORS)
+GLUE_FILES = ["TemucraftGlueSafety.lua", "TemucraftVersion.lua", "TemucraftGlueData.lua", "TemucraftNameFilters.lua",
+              "TemucraftRacialsData.lua", "TemucraftRacePortraits.lua", "TemucraftCharCreate.lua", "TemucraftCharSelect.lua", "TemucraftGlueOptions.lua"]
 # Interface\\<file> (listed as ..\\<file> in GlueXML.toc, like LoginUI.lua): the launcher writes its own loose copy
 # (TemucraftCharSummary.lua: spec, professions, gold and unread mail for the character select tooltips)
 ROOT_GLUE_FILES = ["TemucraftScenes.lua", "TemucraftCharSummary.lua"]
+
+
+# Run before packing (unless --no-gen) when the release folder is there: they read the client's own DBCs / Ryan's
+# portraits and rewrite their files in client/ (the same files are committed, so a build without the release folder
+# packs those).
+GENERATORS = ["gen_name_filters.py", "gen_racials.py", "gen_race_portraits.py"]
+
+
+def run_generators(release, tools):
+    import subprocess
+    if not os.path.isdir(release) or not os.path.isdir(tools):
+        print("generators skipped (no %s): packing the committed data files" % release)
+        return
+    dev = os.path.join(os.path.dirname(os.path.abspath(release)), "_dev")
+    extra = {"gen_name_filters.py": ["--server-dbc", os.path.join(dev, "server-dbc", "dbc")],
+             "gen_racials.py": ["--dbc", os.path.join(dev, "racial-bonuses-client", "DBFilesClient")],
+             "gen_race_portraits.py": ["--src", os.path.join(dev, "race-portraits-130")]}
+    for g in GENERATORS:
+        subprocess.run([sys.executable, "-B", os.path.join(HERE, g), "--release", release, "--tools", tools] + extra[g], check=True)
 
 
 def insert_before(text, marker, lines):
@@ -94,7 +118,12 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default=os.path.join(HERE, "out"))
     ap.add_argument("--stormlib", default=os.environ.get("STORMLIB", os.path.expanduser("~/StormLib/b/libstorm.so")))
+    ap.add_argument("--release", default=os.path.normpath(os.path.join(HERE, "..", "..", "..", "..", "5) Release")))
+    ap.add_argument("--tools", default=os.path.normpath(os.path.join(HERE, "..", "..", "..", "..", "_tools")))
+    ap.add_argument("--no-gen", action="store_true", help="pack the committed data files, don't run GENERATORS")
     a = ap.parse_args()
+    if not a.no_gen:
+        run_generators(a.release, a.tools)
     version = open(os.path.join(HERE, "VERSION")).read().strip()
 
     files = {}
@@ -108,6 +137,11 @@ def main():
         add("Interface\\FrameXML\\" + f, open(os.path.join(HERE, "Interface", "FrameXML", *f.split("\\"))).read().replace("@VERSION@", version))
     for f in ART_FILES:
         add("Interface\\FrameXML\\" + f, open(os.path.join(HERE, "Interface", "FrameXML", *f.split("\\")), "rb").read())
+    portraits = os.path.join(HERE, "Interface", "Glues", "CharacterCreate")
+    if os.path.isdir(portraits):
+        for f in sorted(os.listdir(portraits)):
+            if f.startswith("TemucraftRace_") and f.lower().endswith(".blp"):
+                add("Interface\\Glues\\CharacterCreate\\" + f, open(os.path.join(portraits, f), "rb").read())
     for f in GLUE_ART_FILES:
         add("Interface\\Glues\\" + f, open(os.path.join(HERE, "Interface", "Glues", *f.split("\\")), "rb").read())
     for f in GLUE_FILES:

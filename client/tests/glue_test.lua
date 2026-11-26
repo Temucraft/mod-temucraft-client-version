@@ -7,6 +7,8 @@ local failed = 0;
 local function check(name, ok) if ( not ok ) then failed = failed + 1; print("FAIL "..name); else print("ok   "..name); end end
 
 dofile(glue.."TemucraftGlueData.lua");
+dofile(glue.."TemucraftRacialsData.lua");
+dofile(glue.."TemucraftRacePortraits.lua");
 dofile(glue.."TemucraftCharCreate.lua");
 dofile(glue.."TemucraftCharSelect.lua");
 local C, S = assert(TemucraftCreateLogic), assert(TemucraftSelectLogic);
@@ -493,22 +495,32 @@ TemucraftCreateNameCheck.scripts.OnEnter(TemucraftCreateNameCheck);
 local checkTip = tipOk(TemucraftCreateNameCheck, "Thrallo");
 TemucraftCreateNameCheck.scripts.OnLeave(TemucraftCreateNameCheck);
 check("tooltips: race, class, gender, dice, name check each fresh", raceTip and classTip and maleTip and diceTip and checkTip and not TemucraftCharCreate_Tooltip().shown);
--- every race: title gold, description white (the description's own colour codes don't leak)
+-- every race: title gold, the faction, its racials (icon, name, a white line each) and the grey Alt hint; with Alt held
+-- the lore in white (its own colour codes don't leak) and "Release Alt to see racials"
 local oldFlavor = GetFlavorText;
 GetFlavorText = function(key) return "|cffffd100 Lore of "..key.." that is long enough to need a second line in the tooltip box.|r"; end
 TemucraftCharCreate_Refresh();
-local racesOk = true;
+local racesOk, loreOk = true, true;
+local function shownLines(t) local out = {}; for i = 1, #t.lines do if ( t.lines[i].shown ) then table.insert(out, t.lines[i]); end end return out; end
 for n = 1, 30 do
 	local b = _G["TemucraftCreateRace"..n];
+	IsAltKeyDown = function() return false; end
 	b.scripts.OnEnter(b);
-	local t = TemucraftCharCreate_Tooltip();
-	if ( t.lines[1].color[3] ~= 0 ) then racesOk = false; end
-	for i = 2, #t.lines do
-		if ( t.lines[i].shown and (t.lines[i].color[3] ~= 1 or string.find(t.lines[i].text, "|c", 1, true)) ) then racesOk = false; print("  race", n, i, t.lines[i].text); end
-	end
+	local l = shownLines(TemucraftCharCreate_Tooltip());
+	local icons = 0;
+	for _, ic in ipairs(TemucraftCharCreate_Tooltip().icons or {}) do if ( ic.shown ) then icons = icons + 1; end end
+	if ( l[1].color[3] ~= 0 or l[#l].text ~= C.LORE_HINT or icons < 2 ) then racesOk = false; print("  race", n, l[1].text, l[#l].text, icons); end
+	for i = 2, #l do if ( string.find(l[i].text, "|c", 1, true) ) then racesOk = false; end end
+	IsAltKeyDown = function() return true; end
+	b.scripts.OnUpdate(b);
+	l = shownLines(TemucraftCharCreate_Tooltip());
+	if ( l[#l].text ~= C.RACIALS_HINT or not string.find(l[3].text, "Lore of RACE_INFO_", 1, true) or l[3].color[3] ~= 1 ) then loreOk = false; print("  lore", n, l[3] and l[3].text); end
+	b.scripts.OnLeave(b);
 end
+IsAltKeyDown = function() return false; end
 GetFlavorText = oldFlavor;
-check("race tooltips: gold title, white text, all races", racesOk);
+check("race tooltips: gold name, faction, racials with icons, Alt hint (all races)", racesOk);
+check("race tooltips: Alt shows the lore, then the racials hint", loreOk);
 TemucraftCreateNext:Click();
 TemucraftCreateNext:Click();
 check("finish creates", state.created == "Thrallo");
@@ -625,7 +637,8 @@ check("credits come back to select", state.screen == "charselect");
 TemucraftSelectRealms:Click();
 check("realms", state.realms);
 check("Back in the top bar, the stock one put away", TemucraftSelectBackButton:IsVisible() and TemucraftSelectBackButton.parent == TemucraftCharSelectFrame.top
-	and TemucraftSelectBackButton.points[1][1] == "RIGHT" and not CharacterSelectBackButton:IsVisible());
+	and TemucraftSelectBackButton.points[1][1] == "LEFT" and not CharacterSelectBackButton:IsVisible());
+check("Menu at the top bar's right", TemucraftSelectMenuButton.points[1][1] == "RIGHT");
 TemucraftSelectBackButton:Click();
 check("Back goes back to the login screen", state.screen == "login");
 state.screen = "charselect";
@@ -759,5 +772,62 @@ for line in string.gmatch(wrapped.."\n", "(.-)\n") do longest = math.max(longest
 check("tooltip text wrapped", longest <= 30 and string.find(wrapped, "\n"));
 
 check("wrong realm: PTR client on Live", S.WrongRealm(30, "1 - Lorewalker Cho") and not S.WrongRealm(30, "[PTR] Falric") and not S.WrongRealm(20, "1 - Lorewalker Cho") and not S.WrongRealm(30, ""));
+-- 2026-11-26 PTR test of e254cc7 -----------------------------------------------------------------------------------
+-- reserved / profane names (synthetic lists: the real ones come from the client's DBCs)
+local fake = { reserved = "zorblax\nquuxel", profane = "blarg", patterns = { { "profane", "^snorf" }, { "reserved", "wib.*le$" }, { "profane", "glim[ao]" } } };
+check("filter: whole names", C.NameFilter("Zorblax", fake) == "reserved" and C.NameFilter("QUUXEL", fake) == "reserved" and C.NameFilter("Blarg", fake) == "profane");
+check("filter: start, wildcard, set", C.NameFilter("Snorfy", fake) == "profane" and C.NameFilter("Wibbadle", fake) == "reserved" and C.NameFilter("Oglimo", fake) == "profane");
+check("filter: others pass", C.NameFilter("Thrallo", fake) == nil and C.NameFilter("Asnorf", fake) == nil and C.NameFilter("Wibblex", fake) == nil);
+check("filter: names ending in GM are reserved (server rule)", C.NameFilter("Bobgm", fake) == "reserved" and C.NameFilter("Bobgm") == "reserved");
+check("filter: lower-cases Cyrillic and accents", C.NameFilter("ЖЖук", { reserved = "жжук", profane = "" }) == "reserved" and C.NameFilter("Élan", { reserved = "élan" }) == "reserved");
+local oldFilters = TEMUCRAFT_NAME_FILTERS;
+TEMUCRAFT_NAME_FILTERS = fake;
+local fs, freason, fsaved = C.CheckName("zorblax");
+check("name check: reserved, the word not echoed", fs == "reserved" and freason == "This name is reserved" and not string.find(freason, "orblax") and fsaved == "Zorblax");
+check("name check: profane", select(2, C.CheckName("Snorfo")) == "This name isn't allowed" and C.CheckName("Thrallo") == "ok");
+TEMUCRAFT_NAME_FILTERS = oldFilters;
+-- the generated filter file loads and reads (no word printed)
+dofile(glue.."TemucraftNameFilters.lua");
+local nPat, badPat = 0, 0;
+for _, p in ipairs(TEMUCRAFT_NAME_FILTERS.patterns) do nPat = nPat + 1; if ( not pcall(string.find, "abc", p[2]) ) then badPat = badPat + 1; end end
+check("name filters: lists and valid patterns", string.len(TEMUCRAFT_NAME_FILTERS.reserved) > 1000 and string.len(TEMUCRAFT_NAME_FILTERS.profane) > 1000 and nPat > 100 and badPat == 0);
+check("name filters: ordinary names pass", C.NameFilter("Kestrel") == nil and C.NameFilter("Marten") == nil and C.NameFilter("Elodie") == nil and C.NameFilter("Brynn") == nil);
+TEMUCRAFT_NAME_FILTERS = nil;
+-- racials: every playable race has at least two, each with an icon, a name and resolved text
+local racialsOk = true;
+for _, f in ipairs(files) do
+	local r = TEMUCRAFT_RACIALS[f];
+	if ( not r or #r < 2 ) then racialsOk = false; print("  racials", f, r and #r); end
+	for _, e in ipairs(r or {}) do
+		if ( not e.icon or e.icon == "" or not e.name or e.name == "" or not e.text or e.text == "" or string.find(e.text, "$", 1, true) ) then racialsOk = false; print("  racial", f, e.name, e.text); end
+	end
+end
+check("racials: every race has 2 or more, no unresolved $ tokens", racialsOk);
+local lines = C.RaceTooltipLines("Orc", "Horde", { { name = "Hardiness", icon = "Interface\\Icons\\X", text = "Stuns 20% shorter." } }, "Lore.", false);
+check("race tooltip lines: name, faction, racial, hint", lines[1].text == "Orc" and lines[1].color == "gold" and lines[2].color == "faction" and lines[2].faction == "Horde"
+	and lines[3].text == "Hardiness" and lines[3].icon and lines[4].text == "Stuns 20% shorter." and lines[4].indent and lines[5].text == C.LORE_HINT and lines[5].color == "grey");
+lines = C.RaceTooltipLines("Orc", "Horde", { { name = "Hardiness", icon = "x", text = "y" } }, "Lore.", true);
+check("race tooltip lines with Alt: lore, then the racials hint", lines[3].text == "Lore." and lines[3].color == "white" and lines[4].text == C.RACIALS_HINT);
+-- portraits
+check("portraits: ours by default", C.Portrait("HUMAN", "FEMALE", false, { 0, 0.1, 0, 0.1 }, true) == "Interface\\Glues\\CharacterCreate\\TemucraftRace_HUMAN_FEMALE");
+check("portraits: classic = the old atlas where there is one", C.Portrait("HUMAN", "MALE", true, { 0, 0.1, 0, 0.1 }, true) == "Interface\\Glues\\CharacterCreate\\RyansRacesRound"
+	and C.Portrait("HORDEHARANIR", "MALE", true, nil, true) == "Interface\\Glues\\CharacterCreate\\TemucraftRace_HORDEHARANIR_MALE");
+local nPortraits = 0;
+for _ in pairs(TEMUCRAFT_RACE_PORTRAIT_FILES) do nPortraits = nPortraits + 1; end
+check("portraits for all 30 races", nPortraits == 30 and TEMUCRAFT_RACE_PORTRAIT_FILES.HORDEDRACTHYR and TEMUCRAFT_RACE_PORTRAIT_FILES.ALLIANCEPANDAREN);
+-- the Classic switch is kept in the saved account list, next to the accounts and the orders
+local raw = S.JoinSaved("tc1:abcd", "");
+raw = S.SetSetting(raw, "racePortraits", "classic");
+check("setting saved and read", S.GetSetting(raw, "racePortraits") == "classic" and S.AccountsPart(raw) == "tc1:abcd");
+raw = S.SetOrder(raw, "ACC", "Realm", { "Thrall" });
+check("setting kept when orders change", S.GetSetting(raw, "racePortraits") == "classic" and S.GetOrder(raw, "ACC", "Realm")[1] == "Thrall");
+raw = S.SetSetting(raw, "racePortraits", nil);
+check("setting cleared", S.GetSetting(raw, "racePortraits") == nil and S.GetOrder(raw, "ACC", "Realm")[1] == "Thrall");
+-- the card number on every card, the name box's own text kept
+check("card number always", S.CardNumber({ place = 1 }) == "1." and S.CardNumber({ id = 3 }) == "3." and S.CardNumber(nil) == "");
+local lbl = { GetObjectType = function() return "FontString"; end, GetText = function() return "NAME"; end };
+local txt = { GetObjectType = function() return "FontString"; end, GetText = function() return "Ryan"; end };
+check("name box: only the NAME label is hidden", C.IsNameLabel(lbl, "NAME") and not C.IsNameLabel(txt, "NAME"));
+
 if ( failed > 0 ) then print(failed.." failed"); os.exit(1); end
 print("all passed");

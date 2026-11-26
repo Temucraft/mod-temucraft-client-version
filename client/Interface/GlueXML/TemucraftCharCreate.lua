@@ -191,8 +191,8 @@ function Logic.SavedName(text)
 	return table.concat(out);
 end
 
--- status ("ok", "empty", "short", "long", "letters", "mixed", "three", "latin"), the reason to show (nil when ok), the
--- name as it will be saved
+-- status ("ok", "empty", "short", "long", "letters", "mixed", "three", "latin", "reserved", "profane"), the reason to
+-- show (nil when ok), the name as it will be saved
 function Logic.CheckName(text, rules)
 	rules = rules or TEMUCRAFT_NAME_RULES or Logic.NAME_RULES;
 	local min, max, strict = rules.min or 2, rules.max or 12, rules.strict or 0;
@@ -214,7 +214,54 @@ function Logic.CheckName(text, rules)
 		local a, b, c = Lower(codes[i - 2]), Lower(codes[i - 1]), Lower(codes[i]);
 		if ( a == b and b == c ) then return fail("three"); end
 	end
+	local filtered = Logic.NameFilter(text);
+	if ( filtered ) then return filtered, Logic.FILTER_REASONS[filtered], Logic.SavedName(text); end
 	return "ok", nil, Logic.SavedName(text);
+end
+
+-- Reserved and profane names: the client's own NamesReserved.dbc / NamesProfanity.dbc (every locale), made into
+-- TEMUCRAFT_NAME_FILTERS (TemucraftNameFilters.lua) by gen_name_filters.py. Whole-name rows are what the server refuses
+-- too (ObjectMgr::IsReservedName / IsProfanityName compare whole names, StrictNames.Reserved / .Profanity = 1), plus
+-- every name ending in "gm"; the other rows (part of a name, wildcards) as Lua patterns on the lower-case name. The
+-- server's reserved_name / profanity_name tables aren't known here: those still come back after Finish.
+Logic.FILTER_REASONS = { reserved = "This name is reserved", profane = "This name isn't allowed" };
+local filterSets, filterSource;
+local function FilterSets(data)
+	if ( filterSource ~= data ) then
+		filterSource, filterSets = data, { reserved = {}, profane = {} };
+		for _, kind in ipairs({ "reserved", "profane" }) do
+			for word in string.gmatch(data[kind] or "", "[^\n]+") do filterSets[kind][word] = true; end
+		end
+	end
+	return filterSets;
+end
+-- "reserved", "profane" or nil (the name itself is never shown)
+function Logic.NameFilter(text, data)
+	data = data or TEMUCRAFT_NAME_FILTERS;
+	local codes = Logic.Utf8Codes(text or "");
+	if ( not codes or #codes == 0 ) then return nil; end
+	local low = {};
+	for i, c in ipairs(codes) do low[i] = Utf8Char(Lower(c)); end
+	local name = table.concat(low);
+	if ( string.sub(name, -2) == "gm" ) then return "reserved"; end
+	if ( type(data) ~= "table" ) then return nil; end
+	local sets = FilterSets(data);
+	if ( sets.reserved[name] ) then return "reserved"; end
+	if ( sets.profane[name] ) then return "profane"; end
+	for _, p in ipairs(data.patterns or {}) do
+		local ok, hit = pcall(string.find, name, p[2]);
+		if ( ok and hit ) then return p[1]; end
+	end
+	return nil;
+end
+
+-- The stock "NAME" label of the name box (to hide it), not the box's own text: a FontString in the faction font or
+-- with the NAME text
+function Logic.IsNameLabel(region, nameText, labelFont)
+	if ( not region or not region.GetObjectType or region:GetObjectType() ~= "FontString" ) then return false; end
+	if ( labelFont and region.GetFontObject and region:GetFontObject() == labelFont ) then return true; end
+	local t = region.GetText and region:GetText();
+	return t ~= nil and (t == (nameText or "NAME") or t == "NAME");
 end
 
 -- the old name of it ("ok", "empty", "short", "long", "letters" ...)
@@ -348,6 +395,66 @@ function Logic.Wrap(text, width)
 	return table.concat(out, "\n");
 end
 
+-- The race tooltip: the race's name (gold), its faction, then its racial abilities (icon, name, one line each, from
+-- TEMUCRAFT_RACIALS, made by gen_racials.py from the PTR's Spell.dbc) and "Hold Alt to see the lore" in grey; with Alt
+-- held the lore (the client's RACE_INFO_ text) and "Release Alt to see racials".
+-- Lines: { text =, color = "gold"|"white"|"red"|"grey"|"faction"|"name", icon =, small = true, indent = true }
+Logic.LORE_HINT, Logic.RACIALS_HINT = "Hold Alt to see the lore", "Release Alt to see racials";
+function Logic.RaceTooltipLines(name, faction, racials, lore, alt, err, width)
+	width = width or 52;
+	local out = {};
+	local function wrap(text, color, extra)
+		for line in string.gmatch(Logic.Wrap(Logic.StripColors(text or ""), width).."\n", "(.-)\n") do
+			line = string.match(line, "^%s*(.-)%s*$");
+			if ( line ~= "" ) then
+				local l = { text = line, color = color };
+				for k, v in pairs(extra or {}) do l[k] = v; end
+				table.insert(out, l);
+			end
+		end
+	end
+	table.insert(out, { text = Logic.StripColors(name or ""), color = "gold" });
+	if ( faction and faction ~= "" ) then
+		local label = (faction == "Alliance" and (FACTION_ALLIANCE or "Alliance")) or (faction == "Horde" and (FACTION_HORDE or "Horde")) or faction;
+		table.insert(out, { text = label, color = "faction", faction = faction });
+	end
+	if ( err and err ~= "" ) then wrap(err, "red"); end
+	if ( alt or not racials or #racials == 0 ) then
+		if ( lore and lore ~= "" ) then wrap(lore, "white"); end
+		if ( racials and #racials > 0 ) then table.insert(out, { text = Logic.RACIALS_HINT, color = "grey", small = true, gap = true }); end
+	else
+		for _, r in ipairs(racials) do
+			table.insert(out, { text = r.name or "", color = "name", icon = r.icon, gap = true });
+			wrap(r.text, "white", { small = true, indent = true });
+		end
+		if ( lore and lore ~= "" ) then table.insert(out, { text = Logic.LORE_HINT, color = "grey", small = true, gap = true }); end
+	end
+	return out;
+end
+function Logic.Racials(file)
+	return TEMUCRAFT_RACIALS and TEMUCRAFT_RACIALS[string.upper(file or "")] or nil;
+end
+
+-- Race portraits: Ryan's 130 px retail portraits (gen_race_portraits.py: 128x128 BLPs, round) by default; "Classic
+-- race portraits" (Options window, saved with TemucraftGlueSetting_Set) brings back the old icons
+-- (RyansRacesRound, the client's race atlas) for the races that have one there.
+Logic.PORTRAIT_PATH = "Interface\\Glues\\CharacterCreate\\TemucraftRace_%s_%s";
+function Logic.PortraitClassic()
+	if ( TEMUCRAFT_RACE_PORTRAITS == "classic" ) then return true; end
+	return (TemucraftGlueSetting_Get and TemucraftGlueSetting_Get("racePortraits") == "classic") and true or false;
+end
+-- texture, { l, r, t, b } for a race file and "MALE" / "FEMALE"; classicCoords = the atlas coords (nil = none)
+function Logic.Portrait(file, gender, classic, classicCoords, hasNew)
+	file = string.upper(file or "");
+	if ( classic and classicCoords ) then
+		return "Interface\\Glues\\CharacterCreate\\RyansRacesRound", classicCoords, true;
+	end
+	if ( hasNew == false and classicCoords ) then
+		return "Interface\\Glues\\CharacterCreate\\RyansRacesRound", classicCoords, true;
+	end
+	return string.format(Logic.PORTRAIT_PATH, file, gender), { 0, 1, 0, 1 }, false;
+end
+
 -- Faction and class colours for the "Race - Class" line (the glue screens have no RAID_CLASS_COLORS)
 Logic.FACTION_COLORS = { Alliance = "ff4a9cff", Horde = "ffe8352a" };
 Logic.CLASS_COLORS = {
@@ -399,9 +506,10 @@ TemucraftCharCreate_Active = Active;
 -- laid out from scratch every time: lines left-aligned, the title gold, the text white, errors red, sized to its lines,
 -- anchored only where asked. side: "right" / "left" / "top" / "bottom" of the owner.
 local tip;
-local TIP_COLORS = { gold = { 1, 0.82, 0 }, white = { 1, 1, 1 }, red = { 1, 0.25, 0.25 } };
-local function Tooltip(owner, title, side, body, err)
-	if ( not owner or not title ) then return; end
+local TIP_COLORS = { gold = { 1, 0.82, 0 }, white = { 1, 1, 1 }, red = { 1, 0.25, 0.25 }, grey = { 0.6, 0.6, 0.6 },
+	name = { 1, 0.9, 0.55 }, Alliance = { 0.29, 0.61, 1 }, Horde = { 0.91, 0.21, 0.16 } };
+local function Tooltip(owner, title, side, body, err, prebuilt)
+	if ( not owner or not (title or prebuilt) ) then return; end
 	if ( not tip ) then
 		tip = CreateFrame("Frame", "TemucraftCreateTooltip", CharacterCreate);
 		tip:SetFrameStrata("TOOLTIP");
@@ -409,10 +517,10 @@ local function Tooltip(owner, title, side, body, err)
 			tile = true, tileSize = 16, edgeSize = 16, insets = { left = 4, right = 4, top = 4, bottom = 4 } });
 		tip:SetBackdropColor(0.03, 0.03, 0.05, 0.96);
 		tip:SetBackdropBorderColor(0.8, 0.65, 0.3, 1);
-		tip.lines = {};
+		tip.lines, tip.icons = {}, {};
 	end
-	local lines = Logic.TooltipLines(title, body, err);
-	local width, y = 60, -10;
+	local lines = prebuilt or Logic.TooltipLines(title, body, err);
+	local width, y, icons = 60, -10, 0;
 	for i, line in ipairs(lines) do
 		local fs = tip.lines[i];
 		if ( not fs ) then
@@ -420,17 +528,35 @@ local function Tooltip(owner, title, side, body, err)
 			fs:SetJustifyH("LEFT");
 			tip.lines[i] = fs;
 		end
-		fs:SetFontObject((i == 1 and line.color == "gold") and GlueFontNormal or GlueFontHighlightSmall);
+		if ( line.gap and i > 1 ) then y = y - 4; end
+		local x = 11 + ((line.icon or line.indent) and 22 or 0);
+		fs:SetFontObject((i == 1 and line.color == "gold") and GlueFontNormal
+			or ((line.color == "name" or line.color == "faction") and GlueFontNormalSmall) or GlueFontHighlightSmall);
 		fs:ClearAllPoints();
-		fs:SetPoint("TOPLEFT", tip, "TOPLEFT", 11, y);
+		fs:SetPoint("TOPLEFT", tip, "TOPLEFT", x, y);
 		fs:SetText(line.text);
-		local c = TIP_COLORS[line.color] or TIP_COLORS.white;
+		local c = TIP_COLORS[line.color == "faction" and (line.faction or "") or line.color] or TIP_COLORS.white;
 		fs:SetTextColor(c[1], c[2], c[3]);
 		fs:Show();
-		width = math.max(width, (fs:GetStringWidth() or 0) + 24);
-		y = y - ((i == 1) and 18 or 14);
+		if ( line.icon ) then
+			icons = icons + 1;
+			local t = tip.icons[icons];
+			if ( not t ) then
+				t = tip:CreateTexture(nil, "ARTWORK");
+				t:SetWidth(18); t:SetHeight(18);
+				tip.icons[icons] = t;
+			end
+			t:SetTexture(line.icon);
+			t:SetTexCoord(0.07, 0.93, 0.07, 0.93);
+			t:ClearAllPoints();
+			t:SetPoint("TOPLEFT", tip, "TOPLEFT", 11, y + 2);
+			t:Show();
+		end
+		width = math.max(width, (fs:GetStringWidth() or 0) + x + 13);
+		y = y - ((i == 1) and 18 or (line.icon and 16 or 14));
 	end
 	for i = #lines + 1, #tip.lines do tip.lines[i]:Hide(); end
+	for i = icons + 1, #tip.icons do tip.icons[i]:Hide(); end
 	tip:SetWidth(width);
 	tip:SetHeight(-y + 8);
 	tip:ClearAllPoints();
@@ -440,6 +566,8 @@ local function Tooltip(owner, title, side, body, err)
 		tip:SetPoint("TOP", owner, "BOTTOM", 0, -8);
 	elseif ( side == "left" ) then
 		tip:SetPoint("TOPRIGHT", owner, "TOPLEFT", -10, 4);
+	elseif ( side == "rightmiddle" ) then
+		tip:SetPoint("LEFT", owner, "RIGHT", 10, 0);
 	else
 		tip:SetPoint("TOPLEFT", owner, "TOPRIGHT", 10, 4);
 	end
@@ -564,8 +692,25 @@ local function MakeIconButton(name, parent, size, shape)
 	end
 	b.ring:Hide();
 	if ( b.glow ) then b.glow:Hide(); end
-	b:SetScript("OnEnter", function(self) Tooltip(self, self.tooltip, self.tooltipSide, self.tooltipBody, self.tooltipError); end);
-	b:SetScript("OnLeave", HideTooltip);
+	b:SetScript("OnEnter", function(self)
+		if ( self.tooltipLines ) then
+			self.tipAlt = IsAltKeyDown and IsAltKeyDown() and true or false;
+			Tooltip(self, nil, self.tooltipSide, nil, nil, self.tooltipLines(self.tipAlt));
+		else
+			Tooltip(self, self.tooltip, self.tooltipSide, self.tooltipBody, self.tooltipError);
+		end
+	end);
+	b:SetScript("OnLeave", function(self) self.tipAlt = nil; HideTooltip(); end);
+	-- the race tooltip swaps racials / lore while Alt is held
+	b:SetScript("OnUpdate", function(self)
+		if ( self.tipAlt ~= nil and self.tooltipLines and tip and tip:IsShown() and tip.owner == self ) then
+			local alt = IsAltKeyDown and IsAltKeyDown() and true or false;
+			if ( alt ~= self.tipAlt ) then
+				self.tipAlt = alt;
+				Tooltip(self, nil, self.tooltipSide, nil, nil, self.tooltipLines(alt));
+			end
+		end
+	end);
 	return b;
 end
 
@@ -646,6 +791,7 @@ local function RefreshRaces()
 	end
 	local placed = Logic.Layout(list);
 	local gender = IsMale() and "MALE" or "FEMALE";
+	local classic = Logic.PortraitClassic();
 	local selected = GetSelectedRace();
 	for _, b in ipairs(raceButtons) do b:Hide(); end
 	for n, race in ipairs(list) do
@@ -653,7 +799,6 @@ local function RefreshRaces()
 		local b = raceButtons[n];
 		if ( not b ) then
 			b = MakeIconButton("TemucraftCreateRace"..n, root.races, ICON_SIZE, "round");
-			b.icon:SetTexture("Interface\\Glues\\CharacterCreate\\RyansRacesRound");
 			b:SetScript("OnClick", function(self)
 				self:SetChecked(nil);
 				if ( self.enabled and self.raceIndex ) then
@@ -664,16 +809,24 @@ local function RefreshRaces()
 			raceButtons[n] = b;
 		end
 		local enabled, stockTip = StockRaceEnabled(race.index, race.enabled);
-		local coords = GetSafeRaceIconCoords and GetSafeRaceIconCoords(race.file, gender)
-			or (RACE_ICON_TCOORDS and RACE_ICON_TCOORDS[string.upper(race.file).."_"..gender]) or { 0, 1, 0, 1 };
-		-- the portrait's circle fills 58 of the 64 px of its cell: crop to it so it fills the button and the ring
-		local iu, iv = (coords[2] - coords[1]) * 3 / 64, (coords[4] - coords[3]) * 3 / 64;
-		b.icon:SetTexCoord(coords[1] + iu, coords[2] - iu, coords[3] + iv, coords[4] - iv);
+		local atlas = (GetSafeRaceIconCoords and GetSafeRaceIconCoords(race.file, gender))
+			or (RACE_ICON_TCOORDS and RACE_ICON_TCOORDS[string.upper(race.file).."_"..gender]) or nil;
+		local hasNew = TEMUCRAFT_RACE_PORTRAIT_FILES and (TEMUCRAFT_RACE_PORTRAIT_FILES[string.upper(race.file)] and true or false);
+		local texture, coords, isAtlas = Logic.Portrait(race.file, gender, classic, atlas, hasNew);
+		b.icon:SetTexture(texture);
+		if ( isAtlas ) then
+			-- the atlas portrait's circle fills 58 of the 64 px of its cell: crop to it so it fills the button and the ring
+			local iu, iv = (coords[2] - coords[1]) * 3 / 64, (coords[4] - coords[3]) * 3 / 64;
+			b.icon:SetTexCoord(coords[1] + iu, coords[2] - iu, coords[3] + iv, coords[4] - iv);
+		else
+			b.icon:SetTexCoord(0, 1, 0, 1);   -- ours are round and fill their 128 px
+		end
 		b.raceIndex = race.index;
 		local info = GetFlavorText and GetFlavorText("RACE_INFO_"..string.upper(race.file), GetSelectedSex());
+		local err = (not enabled) and stockTip ~= race.name and stockTip or nil;
+		local racials, name, faction = Logic.Racials(race.file), race.name, race.faction;
 		b.tooltip = race.name;
-		b.tooltipBody = enabled and info or nil;
-		b.tooltipError = (not enabled) and stockTip ~= race.name and stockTip or nil;
+		b.tooltipLines = function(alt) return Logic.RaceTooltipLines(name, faction, racials, info, alt, err); end;
 		b.tooltipSide = (p.side == "Alliance") and "right" or "left";
 		b:ClearAllPoints();
 		local x = SIDE_MARGIN + (p.column - 1) * ICON_STEP + ICON_SIZE / 2;
@@ -882,6 +1035,12 @@ function Refresh()
 	end
 end
 TemucraftCharCreate_Refresh = Refresh;
+-- the Options window's "Classic race portraits"
+TemucraftRacePortraits_IsClassic = function() return Logic.PortraitClassic(); end
+TemucraftRacePortraits_SetClassic = function(on)
+	if ( TemucraftGlueSetting_Set ) then TemucraftGlueSetting_Set("racePortraits", on and "classic" or nil); end
+	Refresh();
+end
 
 ---------------------------------------------------------------------------------------------------------------------
 -- Appearance: counted clicks
@@ -1032,10 +1191,11 @@ local function Build()
 	root.nameMark = root.nameCheck:CreateTexture(nil, "ARTWORK");
 	root.nameMark:SetAllPoints(root.nameCheck);
 	root.nameCheck:SetScript("OnEnter", function(self)
+		-- right of the tick / cross, so it never covers "Name" or the "Race - Class" line above the box
 		if ( self.ok ) then
-			Tooltip(self, self.title, "top", self.text);
+			Tooltip(self, self.title, "rightmiddle", self.text);
 		else
-			Tooltip(self, self.title, "top", nil, self.text);
+			Tooltip(self, self.title, "rightmiddle", nil, self.text);
 		end
 	end);
 	root.nameCheck:SetScript("OnLeave", HideTooltip);
@@ -1054,22 +1214,27 @@ local function Build()
 		local row = CreateFrame("Button", "TemucraftCreateOption"..id, root.options);
 		row:SetWidth(OPTION_ROW_WIDTH); row:SetHeight(34);
 		row:RegisterForClicks("LeftButtonUp", "RightButtonUp");
-		-- a dark bar, as the group headers on select; only its bar (rows 4-24 of the 32 px art), so the bar's middle
-		-- is the row's middle and the text centres on it
+		-- a dark bar, as the group headers on select: only the part of the art you see (its rows 5-22 of 32 are the
+		-- bar, edge lines included; above and below is soft shadow), so the bar is exactly the row's middle
 		local bg = row:CreateTexture(nil, "BACKGROUND");
 		bg:SetTexture("Interface\\AchievementFrame\\UI-Achievement-Category-Background");
-		bg:SetTexCoord(0, 0.6640625, 4 / 32, 24 / 32);
+		bg:SetTexCoord(0, 0.6640625, 5 / 32, 23 / 32);
 		bg:SetVertexColor(0.6, 0.6, 0.65);
-		bg:SetPoint("TOPLEFT", row, "TOPLEFT", OPTION_ARROW, -5);
-		bg:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", -OPTION_ARROW, 5);
-		-- the name left in the bar (gold), the count right (white); both on the bar's middle (the font's glyphs sit a
-		-- pixel high in their line, hence the -1)
+		bg:SetPoint("TOPLEFT", row, "TOPLEFT", OPTION_ARROW, -6);
+		bg:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", -OPTION_ARROW, 6);
+		row.bar = bg;
+		-- the name left in the bar (gold), the count right (white): each spans the bar's full height and is centred in
+		-- it (JustifyV), so the text sits on the bar's middle whatever the font's line height
 		row.label = row:CreateFontString(nil, "OVERLAY", "GlueFontNormal");
 		row.label:SetJustifyH("LEFT");
-		row.label:SetPoint("LEFT", bg, "LEFT", OPTION_PAD, -1);
+		row.label:SetJustifyV("MIDDLE");
+		row.label:SetPoint("TOPLEFT", bg, "TOPLEFT", OPTION_PAD, 1);
+		row.label:SetPoint("BOTTOMLEFT", bg, "BOTTOMLEFT", OPTION_PAD, 1);
 		row.count = row:CreateFontString(nil, "OVERLAY", "GlueFontHighlight");
 		row.count:SetJustifyH("RIGHT");
-		row.count:SetPoint("RIGHT", bg, "RIGHT", -OPTION_PAD, -1);
+		row.count:SetJustifyV("MIDDLE");
+		row.count:SetPoint("TOPRIGHT", bg, "TOPRIGHT", -OPTION_PAD, 1);
+		row.count:SetPoint("BOTTOMRIGHT", bg, "BOTTOMRIGHT", -OPTION_PAD, 1);
 		for _, dir in ipairs({ "Left", "Right" }) do
 			local arrow = CreateFrame("Button", row:GetName()..dir, row);
 			arrow:SetWidth(32); arrow:SetHeight(32);
@@ -1183,17 +1348,23 @@ local function HideStock()
 			child:SetParent(holder);
 		end
 	end
-	CharacterCreateNameEdit:SetParent(root.nameBar);
-	CharacterCreateNameEdit:ClearAllPoints();
-	CharacterCreateNameEdit:SetAllPoints(root.nameBar);
-	CharacterCreateNameEdit:Show();
+	local edit = CharacterCreateNameEdit;
+	edit:SetParent(root.nameBar);
+	edit:ClearAllPoints();
+	edit:SetAllPoints(root.nameBar);
+	edit:Show();
+	-- the typed name in the middle of the box, in the screen's edit box font (GlueEditBoxFont, white): the stock box
+	-- starts its text 15 px in, for the old layout
+	if ( edit.SetTextInsets ) then edit:SetTextInsets(6, 6, 0, 0); end
+	if ( edit.SetJustifyH ) then edit:SetJustifyH("CENTER"); end
+	if ( edit.SetFontObject and GlueEditBoxFont ) then edit:SetFontObject(GlueEditBoxFont); end
+	if ( edit.SetTextColor ) then edit:SetTextColor(1, 1, 1); end
 	-- the stock "NAME" over the box is in the big blackletter faction font (FactionName_Shadow_Huge): ours (nameLabel,
-	-- the screen's own font) replaces it
-	if ( CharacterCreateNameEdit.GetRegions ) then
-		for _, r in ipairs({ CharacterCreateNameEdit:GetRegions() }) do
-			if ( r.GetObjectType and r:GetObjectType() == "FontString" ) then
-				r:Hide();
-			end
+	-- the screen's own font) replaces it. Only that one: the box's own text is a FontString region too (hiding every
+	-- FontString hid the typed name, only the caret was left).
+	if ( edit.GetRegions ) then
+		for _, r in ipairs({ edit:GetRegions() }) do
+			if ( Logic.IsNameLabel(r, NAME, FactionName_Shadow_Huge) ) then r:Hide(); end
 		end
 	end
 end

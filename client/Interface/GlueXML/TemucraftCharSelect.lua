@@ -6,8 +6,8 @@
 	bracket) and the faction crest (full colour on the selected card, a little dimmed on the others). Cards are always
 	dark; the selected one gets a gold border and a soft gold glow, a hovered one a faint light bar. At the bottom a red Create
 	Character button, a square Delete Character (trash) and a square Restore Deleted Character button. A top bar with
-	Menu (Options, AddOns, Credits, Cinematics, Exit) on the left, the realm name in the middle and Back on the right
-	(the client's CharacterSelect_Exit); an eye button (or Alt-Z) hides the interface. Enter World and the rotate
+	Back on the left (the client's CharacterSelect_Exit), the realm name in the middle and Menu (Options, AddOns,
+	Credits, Cinematics, Exit) on the right; an eye button (or Alt-Z) hides the interface. Enter World and the rotate
 	buttons stay the client's own.
 
 	The client's CharacterSelect.lua (patch-<locale>-C) still runs: its character list is only moved into a hidden
@@ -530,7 +530,7 @@ function Logic.Rows(groups, query)
 	return rows, shownChars;
 end
 
-local function SetEntries(raw, account, realm, entries)
+function Logic.SetEntriesRaw(raw, account, realm, entries)
 	local accounts, code = Logic.SplitSaved(raw);
 	local orders = Logic.ParseOrders(code);
 	local key = Logic.OrderKey(account, realm);
@@ -540,6 +540,33 @@ local function SetEntries(raw, account, realm, entries)
 	orders[key] = entries;
 	table.insert(orders.keys, 1, key);
 	return Logic.JoinSaved(accounts, Logic.SerializeOrders(orders));
+end
+
+local SetEntries = Logic.SetEntriesRaw;
+
+-- Login-screen settings (the glue screens can't register a CVar of their own): kept in the same saved account list,
+-- as one more order line under the account "*" and realm "temucraft", its entries "name=value" (character names
+-- have no "="). Setting one makes that line the latest, so the MAX_ORDERS cut never drops it while it is in use.
+Logic.SETTINGS_ACCOUNT, Logic.SETTINGS_REALM = "*", "temucraft";
+function Logic.GetSetting(raw, name)
+	local _, code = Logic.SplitSaved(raw);
+	local entries = Logic.ParseOrders(code)[Logic.OrderKey(Logic.SETTINGS_ACCOUNT, Logic.SETTINGS_REALM)];
+	for _, e in ipairs(entries or {}) do
+		local k, v = string.match(e, "^([^=]+)=(.*)$");
+		if ( k == name ) then return v; end
+	end
+	return nil;
+end
+function Logic.SetSetting(raw, name, value)
+	local _, code = Logic.SplitSaved(raw);
+	local old = Logic.ParseOrders(code)[Logic.OrderKey(Logic.SETTINGS_ACCOUNT, Logic.SETTINGS_REALM)] or {};
+	local entries = {};
+	for _, e in ipairs(old) do
+		if ( string.match(e, "^([^=]+)=") ~= name ) then table.insert(entries, e); end
+	end
+	if ( value ~= nil and value ~= "" ) then table.insert(entries, name.."="..tostring(value)); end
+	if ( #entries == 0 ) then entries = { "-=" }; end   -- an empty line would be dropped, and with it the order
+	return Logic.SetEntriesRaw(raw, Logic.SETTINGS_ACCOUNT, Logic.SETTINGS_REALM, entries);
 end
 
 -- the order saved for an account and realm (the names, down all the groups), from the whole saved account list
@@ -654,6 +681,12 @@ end
 -- Retail's list: every card has the same dark background and the same fonts; the selected one only gets a bright gold
 -- border, a soft gold glow and its crest at full strength; hovered cards a faint light highlight (see MakeCard). The
 -- crest keeps its faction colour on every card, a little dimmed on the ones not selected.
+-- "1.": the card's place down all the groups, on every card (also with one character)
+function Logic.CardNumber(c)
+	local n = c and (c.place or c.id);
+	return n and (n..".") or "";
+end
+
 function Logic.CardStyle(selected, hovered)
 	local st = { bg = { 0.10, 0.10, 0.12, 0.94 }, crestDesaturated = false, name = { 1, 0.82, 0 } };
 	if ( selected ) then
@@ -787,6 +820,14 @@ if ( rawGetSaved and rawSetSaved ) then
 		end
 		return rawSetSaved(text, ...);
 	end
+end
+
+-- the login-screen settings for the other glue files (character create's Classic race portraits, the Options window)
+TemucraftGlueSetting_Get = function(name)
+	return rawGetSaved and Logic.GetSetting(rawGetSaved() or "", name) or nil;
+end
+TemucraftGlueSetting_Set = function(name, value)
+	if ( rawGetSaved and rawSetSaved ) then rawSetSaved(Logic.SetSetting(rawGetSaved() or "", name, value)); end
 end
 
 local function CurrentAccount()
@@ -1520,8 +1561,20 @@ local function MakeCard(n)
 	b.selected:SetTexture(ART.selected);
 	b.selected:SetBlendMode("ADD");
 	b.selected:SetAlpha(0.28);
-	b.selected:SetAllPoints(b.bg);
+	b.selected:SetAllPoints(b);
 	b.selected:Hide();
+	-- the selected card's gold frame: 2 px lines on the card's own edge, over its border, so the selection is the whole
+	-- card (the tooltip border alone sat inside it)
+	b.frame = {};
+	for i, p in ipairs({ { "TOPLEFT", "TOPRIGHT" }, { "BOTTOMLEFT", "BOTTOMRIGHT" }, { "TOPLEFT", "BOTTOMLEFT", true }, { "TOPRIGHT", "BOTTOMRIGHT", true } }) do
+		local e = b:CreateTexture(nil, "OVERLAY");
+		e:SetTexture(1, 0.82, 0.18, 1);
+		e:SetPoint(p[1], b, p[1], 0, 0);
+		e:SetPoint(p[2], b, p[2], 0, 0);
+		if ( p[3] ) then e:SetWidth(2); else e:SetHeight(2); end
+		e:Hide();
+		b.frame[i] = e;
+	end
 	b.shine = b:CreateTexture(nil, "BORDER");
 	b.shine:SetTexture(1, 1, 1, 1);
 	b.shine:SetBlendMode("ADD");
@@ -1535,11 +1588,12 @@ local function MakeCard(n)
 	hl:SetBlendMode("ADD");
 	hl:SetAlpha(0.18);
 	hl:SetAllPoints(b.bg);
-	-- "1." small and grey, then the name in gold
+	-- "1." small and grey, then the name in gold; both hang on the card (FillCard moves the name past the number), so an
+	-- empty number never pulls the name up onto the card's edge
 	b.num = b:CreateFontString(nil, "OVERLAY", "GlueFontDisableSmall");
-	b.num:SetPoint("TOPLEFT", b, "TOPLEFT", 12, -12);
+	b.num:SetPoint("TOPLEFT", b, "TOPLEFT", 12, -14);
 	b.name = b:CreateFontString(nil, "OVERLAY", "GlueFontNormalLarge");
-	b.name:SetPoint("BOTTOMLEFT", b.num, "BOTTOMRIGHT", 3, -1);
+	b.name:SetPoint("TOPLEFT", b, "TOPLEFT", 12, -9);
 	b.info = b:CreateFontString(nil, "OVERLAY", "GlueFontHighlightSmall");
 	b.info:SetPoint("TOPLEFT", b, "TOPLEFT", 12, -31);
 	b.zone = b:CreateFontString(nil, "OVERLAY", "GlueFontDisableSmall");
@@ -1667,7 +1721,10 @@ end
 
 local function FillCard(b, c, sel)
 	b.id, b.service, b.char = c.id, c.paid, c;
-	b.num:SetText((#list > 1 and c.place) and (c.place..".") or "");
+	b.num:SetText(Logic.CardNumber(c));
+	local numWidth = (b.num:GetText() or "") ~= "" and ((b.num:GetStringWidth() or 0) + 4) or 0;
+	b.name:ClearAllPoints();
+	b.name:SetPoint("TOPLEFT", b, "TOPLEFT", 12 + numWidth, -9);
 	b.name:SetText(c.name);
 	local color = c.classFile and Logic.CLASS_COLORS[c.classFile];
 	local class = color and ("|cff"..color..(c.class or "").."|r") or (c.class or "");
@@ -1687,6 +1744,7 @@ local function FillCard(b, c, sel)
 	b:SetBackdropBorderColor(st.border[1], st.border[2], st.border[3], st.border[4]);
 	b.name:SetTextColor(st.name[1], st.name[2], st.name[3]);
 	if ( st.glow ) then b.selected:Show(); b.shine:Show(); else b.selected:Hide(); b.shine:Hide(); end
+	for _, e in ipairs(b.frame) do if ( st.glow ) then e:Show(); else e:Hide(); end end
 	if ( c.faction == "Alliance" or c.faction == "Horde" ) then
 		b.crest:SetTexture("Interface\\TargetingFrame\\UI-PVP-"..c.faction);
 		b.crest:SetTexCoord(0, 0.625, 0, 0.625);
@@ -1836,7 +1894,7 @@ local MENU = {
 local function BuildMenu()
 	menu = Panel(root, 0.97);
 	menu:SetWidth(196); menu:SetHeight(#MENU * 34 + 52);
-	menu:SetPoint("TOPLEFT", root.menuButton, "BOTTOMLEFT", -6, -6);
+	menu:SetPoint("TOPRIGHT", root.menuButton, "BOTTOMRIGHT", 6, -6);
 	menu:SetFrameStrata("DIALOG");
 	menu:EnableMouse(true);
 	local title = menu:CreateFontString(nil, "OVERLAY", "GlueFontNormal");
@@ -1878,22 +1936,23 @@ local function Build()
 	root.menuButton = SmallButton("TemucraftSelectMenuButton", root.top, "Menu", 110, function()
 		if ( menu:IsShown() ) then menu:Hide(); else menu:Show(); end
 	end);
-	root.menuButton:SetPoint("LEFT", root.top, "LEFT", 14, 0);
+	-- Menu at the right of the top bar, Back at its left (Ryan, PTR test of 2026-11-26)
+	root.menuButton:SetPoint("RIGHT", root.top, "RIGHT", -14, 0);
 	root.realms = SmallButton("TemucraftSelectRealms", root.top, "Realms", 110, function()
 		if ( menu ) then menu:Hide(); end
 		CharacterSelect_ChangeRealm();
 	end);
-	root.realms:SetPoint("LEFT", root.menuButton, "RIGHT", 6, 0);
+	root.realms:SetPoint("RIGHT", root.menuButton, "LEFT", -6, 0);
 	-- Temucraft: Live or PTR is chosen in the launcher (it writes realmName), so no realm list in game.
 	-- Set TEMUCRAFT_SHOW_REALMS = true (e.g. in TemucraftScenes.lua) to bring the button back.
 	if ( not TEMUCRAFT_SHOW_REALMS ) then root.realms:Hide(); end
-	-- Back sits at the right of the top bar, as Menu at its left (the stock one is put away in HideStock): the client's
+	-- Back sits at the left of the top bar, Menu at its right (the stock one is put away in HideStock): the client's
 	-- own CharacterSelect_Exit, as the stock button and Escape do
 	root.back = SmallButton("TemucraftSelectBackButton", root.top, BACK or "Back", 110, function()
 		if ( menu ) then menu:Hide(); end
 		CharacterSelect_Exit();
 	end);
-	root.back:SetPoint("RIGHT", root.top, "RIGHT", -14, 0);
+	root.back:SetPoint("LEFT", root.top, "LEFT", 14, 0);
 	root.realm = root.top:CreateFontString(nil, "OVERLAY", "GlueFontNormal");
 	root.realm:SetPoint("CENTER", root.top, "CENTER", 0, 0);
 	root.realmWarning = root:CreateFontString(nil, "OVERLAY", "GlueFontNormalLarge");

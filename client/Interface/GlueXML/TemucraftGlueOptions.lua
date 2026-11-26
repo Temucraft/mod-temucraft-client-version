@@ -144,6 +144,15 @@ L.PAGES = {
 				{ kind = "slider", cvar = "maxFPSBk", label = "Max Background Frame Rate", min = 0, max = 200, step = 5, tooltip = "Frames per second at most while the game is in the background (0 = no limit)." },
 			},
 		} },
+		{ title = "Character Screens", rows = {
+			{ kind = "checks",
+				-- saved in the saved account list (TemucraftGlueSetting_Set, TemucraftCharSelect.lua): the glue screens
+				-- can't register a CVar of their own
+				{ kind = "check", label = "Classic race portraits", tooltip = "Character create shows the old race icons instead of the sharp retail portraits.",
+				  get = function() return TemucraftRacePortraits_IsClassic and TemucraftRacePortraits_IsClassic(); end,
+				  set = function(on) if ( TemucraftRacePortraits_SetClassic ) then TemucraftRacePortraits_SetClassic(on); end end },
+			},
+		} },
 	} },
 	{ key = "audio", title = "Audio", frame = "AudioOptionsFrame", panels = { S },
 	  hide = { S.."Title", S.."SubText", S.."Playback", S.."Hardware", S.."Volume" },
@@ -375,8 +384,13 @@ local function OurControl(item, parent)
 		r = CreateFrame("CheckButton", "TemucraftGlueOptionsCheck"..rowCount, parent, "OptionsCheckButtonTemplate");
 		local text = _G[r:GetName().."Text"];
 		if ( text ) then text:SetText(item.label); end
-		r:SetScript("OnClick", function(self) SetCVar(item.cvar, self:GetChecked() and "1" or "0"); end);
-		r.Update = function(self) self:SetChecked(GetCVarSafe(item.cvar) == "1"); end;
+		-- a CVar, or (item.get / item.set) a setting kept elsewhere
+		r:SetScript("OnClick", function(self)
+			if ( item.set ) then item.set(self:GetChecked() and true or false); else SetCVar(item.cvar, self:GetChecked() and "1" or "0"); end
+		end);
+		r.Update = function(self)
+			if ( item.get ) then self:SetChecked(item.get() and true or false); else self:SetChecked(GetCVarSafe(item.cvar) == "1"); end
+		end;
 	end
 	r.item = item;
 	r:SetScript("OnEnter", function(self) Tooltip(self, item.tooltip and (item.label.."\n|cffffffff"..item.tooltip.."|r") or item.label); end);

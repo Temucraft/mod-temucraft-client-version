@@ -36,7 +36,10 @@ ran. `^` ranks above every other Data patch with interface files. It holds:
   own): F6 when free, `/issuekey <key>` or `/issuekey none` to change it. `TemucraftIssueBug.blp` is its icon.
 - [`Interface\GlueXML\TemucraftCharCreate.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/GlueXML/TemucraftCharCreate.lua),
   [`TemucraftCharSelect.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/GlueXML/TemucraftCharSelect.lua),
-  `TemucraftGlueData.lua` and `TemucraftGlueSafety.lua`: the retail-style login screens (see *Login screens* below).
+  `TemucraftGlueData.lua`, `TemucraftNameFilters.lua`, `TemucraftRacialsData.lua`, `TemucraftRacePortraits.lua`
+  (+ the `Interface\Glues\CharacterCreate\TemucraftRace_*.blp` portraits) and `TemucraftGlueSafety.lua`: the
+  retail-style login screens (see *Login screens* below). `build_mpq.py` first runs `gen_name_filters.py`,
+  `gen_racials.py` and `gen_race_portraits.py` when the release folder is there (`--no-gen` packs the committed files).
 - `Interface\TemucraftScenes.lua`: the character screens' settings ("old" scenes here; the launcher writes its own
   loose copy with the player's choice).
 - `FrameXML.toc` and `GlueXML.toc`: the client's own lists (copies in `client/base/`) with those files added, in the
@@ -652,31 +655,50 @@ hidden holder and ours sit on top. The "Classic" choice here is `TEMUCRAFT_LOGIN
     the word for the client's language (ruRU УДАЛИТЬ, deDE LÖSCHEN, frFR SUPPRIMER, esES/esMX BORRAR, koKR 삭제,
     zhCN 删除, zhTW 刪除), always the English DELETE, and Latin spellings (UDALIT, LOESCHEN / LOSCHEN); non-English
     clients show "(or DELETE)". Cyrillic and Latin-1 upper case is done by `Logic.Upper` (Lua's only knows a-z).
-  - A top bar with Menu (a gold-bordered panel of red buttons: Options, AddOns, Credits, Cinematics, Exit) on the left,
-    the realm's name in the middle and Back on the right (the client's `CharacterSelect_Exit`, as Escape; the stock
-    Back button is put away); the PTR client on a realm that isn't the PTR gets a red warning and Enter World off. The
+  - A top bar with Back on the left (the client's `CharacterSelect_Exit`, as Escape; the stock Back button is put
+    away), the realm's name in the middle and Menu (a gold-bordered panel of red buttons: Options, AddOns, Credits,
+    Cinematics, Exit) on the right; the selected card gets a 2 px gold frame on its own edge and the gold glow over the
+    whole card, and every card shows its number ("1." also with one character; the name no longer hangs on the
+    number, so it can't ride up onto the edge); the PTR client on a realm that isn't the PTR gets a red warning and Enter World off. The
     eye button (or Alt-Z) hides the interface; Escape or Alt-Z brings it back. The Realms button is hidden (Live or PTR
     is picked in the launcher).
   - Groups and order are kept per account and realm in Config.wtf's `accountList` as a segment after `~`
     (`GetSavedAccountList` / `SetSavedAccountList` are wrapped so AccountLogin.lua still sees only the saved
     accounts). An entry is a name or a group header `#` + kind (`*` default, `=` the player's) + state (`+` open,
     `-` closed) + name; only the default group, open and not renamed, is saved as plain names, exactly the old
-    format, so orders saved before groups read the same.
+    format, so orders saved before groups read the same. The login screens' own settings (they can't register a
+    CVar) are one more line there, account `*` realm `temucraft`, entries `name=value` (`Logic.GetSetting` /
+    `SetSetting`; `TemucraftGlueSetting_Get` / `_Set` for the other glue files).
   - Not doable: retail's camp with up to four characters in the scene. The 3.3.5 glue screen has one character model
     (the CharacterSelect ModelFFX), so only the selected character stands in the scene.
 - **Character create** (`TemucraftCharCreate.lua`): Alliance races in two columns on the left, Horde on the right,
   classes along the bottom, male / female at the top. Race buttons are round portraits with a thin gold ring (the glue
   screen's own ring art, centred on the portrait), the selected race the ring bright with a soft glow; class buttons
   are square with a thin gold edge, the stock gold square glow when selected and the square highlight on hover.
-  Tooltips are our own (title gold, text white, reasons red, left-aligned, laid out fresh each time). Step 2 Customize:
-  the name box in the middle of the screen with the random-name dice on its left and a name check on its right (green
-  tick / red cross, hover for why); option rows with the name left and "3 / 9" right in each bar (totals from the DBCs
-  in `TemucraftGlueData.lua`, made by `gen_glue_data.py`; long names are cut before the count), Randomize Appearance.
+  Tooltips are our own (title gold, text white, reasons red, left-aligned, laid out fresh each time). The race
+  portraits are Ryan's 130 px retail ones (`gen_race_portraits.py`: 128x128 round DXT5 BLPs with mips,
+  `Interface\Glues\CharacterCreate\TemucraftRace_<FILE>_<MALE|FEMALE>.blp`, the selected gender's; Dracthyr use the
+  visage pictures, the model the client shows); Options > Graphics > Character Screens > "Classic race portraits"
+  brings back the old icons (RyansRacesRound) for the races that have one there. The **race tooltip**: name (gold),
+  faction, then the race's racial abilities, each with its icon, name and one line (`TemucraftRacialsData.lua`, made by
+  `gen_racials.py` from the PTR's Spell.dbc / SkillLineAbility.dbc with the Temucraft racials: the racial skill lines'
+  spells the line teaches, the racial heal, Running Wild; $s1 / $o1 / $d ... resolved), and "Hold Alt to see the
+  lore" in grey; with Alt held the lore and "Release Alt to see racials". Step 2 Customize:
+  the name box in the middle of the screen (the typed name centred, white, the screen's edit box font) with the
+  random-name dice on its left and a name check on its right (green tick / red cross; its tooltip right of the
+  mark); option rows with the name left and "3 / 9" right in each bar, both centred on the bar's visible art (its rows
+  5-22) (totals in `TemucraftGlueData.lua`, made by `gen_glue_data.py` from the PTR's CharSections (patch-6) as the
+  client cycles them: the retail-made races really have that many, Nightborne 240 skin colours, 224 facial hair styles
+  and 154 hair colours; long names are cut before the count), Randomize Appearance.
   The name check uses the server's rules (AzerothCore `CheckPlayerName` with the worldserver.conf defaults
   `MinPlayerName = 2`, `StrictPlayerNames = 0`, 12 letters max: letters only, one alphabet, no letter three times in a
   row; the tooltip shows the name as the server saves it, "Thrall"); `TEMUCRAFT_NAME_RULES = { min, max, strict }`
-  changes them. Taken, reserved and profane names are only known after Finish (3.3.5 has no name query): the server's
-  answer turns the check red until the name changes. Left / Right arrow keys turn the character (held), the eye or
+  changes them. Reserved and profane names: the client's own NamesReserved.dbc / NamesProfanity.dbc (every locale,
+  `TemucraftNameFilters.lua`, made by `gen_name_filters.py`): "This name is reserved" / "This name isn't allowed",
+  the word never shown. Whole-name rows are exactly what the server refuses (it loads the same DBCs and compares whole
+  names, `StrictNames.Reserved` / `.Profanity` = 1; plus every name ending in "gm"); rows for a part of the name or
+  with wildcards become Lua patterns. Taken names and the server's `reserved_name` / `profanity_name` tables are only
+  known after Finish (3.3.5 has no name query): the server's answer turns the check red until the name changes. Left / Right arrow keys turn the character (held), the eye or
   Alt-Z hides the interface (a click, Escape or Alt-Z brings it back). Zoom is not possible here: the scene's camera
   belongs to the scene model (moving or scaling the model moves the camera with it) and the glue API can't move the
   character inside the scene.
@@ -691,7 +713,8 @@ hidden holder and ours sit on top. The "Classic" choice here is `TEMUCRAFT_LOGIN
   **Audio**; each is one scrolling list with section headers like retail's: Graphics = Display (resolution, refresh
   rate, multisampling, windowed / maximized / disable resize, vsync, triple buffering, hardware cursor, reduce input
   lag, desktop gamma, gamma), Quality (the video quality preset and every detail slider), Effects (specular, full
-  screen glow, death effect, projected textures), Frame Rate (`maxFPS`, `maxFPSBk`); Audio = Volume (master, sound,
+  screen glow, death effect, projected textures), Frame Rate (`maxFPS`, `maxFPSBk`), Character Screens (Classic race
+  portraits: a login-screen setting, `TemucraftGlueSetting_Set`, a check row with `get` / `set` instead of a CVar); Audio = Volume (master, sound,
   music, ambience), Playback (every sound check), Output (device, channels, hardware, quality), Other
   (`Sound_ListenerAtCharacter`, `Sound_ZoneMusicNoDelay`). Bottom: Defaults (the stock All / Current Settings confirm;
   both reset the whole page here, our rows too), Reset User Options (the stock button and its confirm), Classic,
@@ -738,7 +761,7 @@ hidden holder and ours sit on top. The "Classic" choice here is `TEMUCRAFT_LOGIN
 Stub tests (no client; run from the module folder with Lua 5.1) for the grouping, search, paging, collection and
 loadout logic, the player UI, the login screens and the protocols: `lua5.1 client/tests/spellbook_test.lua`,
 `collections_test.lua`, `interface_test.lua`, `taxi_test.lua`, `issues_test.lua`, `guild_test.lua`,
-`reputation_test.lua`, `glue_test.lua`, `glueoptions_test.lua` (the login screens' Options window), `loadouts_test.lua` (the server loadouts protocol), `dragonui_test.lua` (the DragonUI step-aside switch), `professions_test.lua` (the Professions window's list, filters, favourites, stats and recipe helpers), `achievements_test.lua` (the Achievements window's category tree, progress, filter and search, tracking cap, series and criteria helpers), `groupfinder_test.lua` (the Group Finder and PvP window: key binding and Classic routing, toggles, roles, the Find Group and List buttons, random dungeon choice, list search, queue status, the Raid Browser filter, the Adventure Guide link, battleground order, queues, arena points and /pvp), `adventureguide_test.lua` (the Adventure Guide data's shape and the hand-checked sample instances, tabs, expansion filter, search, level suggestions, loot, the TAG asks and the journal merge), `tutorial_test.lua` (the new-player tutorial's start rules and step machine, fed fake events) and `options_test.lua` (the Options pages, search, sliders, key names, binding groups, the AddOns list, server answers and the Esc menu rows; all in `client/tests/`). Also check every file with `luac5.1 -p`.
+`reputation_test.lua`, `glue_test.lua`, `gen_racials_test.py` (python3: the racial tooltip token resolver), `glueoptions_test.lua` (the login screens' Options window), `loadouts_test.lua` (the server loadouts protocol), `dragonui_test.lua` (the DragonUI step-aside switch), `professions_test.lua` (the Professions window's list, filters, favourites, stats and recipe helpers), `achievements_test.lua` (the Achievements window's category tree, progress, filter and search, tracking cap, series and criteria helpers), `groupfinder_test.lua` (the Group Finder and PvP window: key binding and Classic routing, toggles, roles, the Find Group and List buttons, random dungeon choice, list search, queue status, the Raid Browser filter, the Adventure Guide link, battleground order, queues, arena points and /pvp), `adventureguide_test.lua` (the Adventure Guide data's shape and the hand-checked sample instances, tabs, expansion filter, search, level suggestions, loot, the TAG asks and the journal merge), `tutorial_test.lua` (the new-player tutorial's start rules and step machine, fed fake events) and `options_test.lua` (the Options pages, search, sliders, key names, binding groups, the AddOns list, server answers and the Esc menu rows; all in `client/tests/`). Also check every file with `luac5.1 -p`.
 
 ## Also in this module
 
