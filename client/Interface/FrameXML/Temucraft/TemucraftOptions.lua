@@ -1458,7 +1458,7 @@ local addonExpanded = {};
 local function TemucraftPanel() return _G.TemucraftInterfaceOptionsPanel; end
 
 -- DragonUI's settings are a page here, not a window of their own (the DragonUI-Temucraft fork's Panel:Embed, patch
--- 0005; DragonUI_Host in TemucraftDragonUI.lua sends /dui and its Interface Options entry here): AddOns > DragonUI,
+-- 0006; DragonUI_Host in TemucraftDragonUI.lua sends /dui and its Interface Options entry here): AddOns > DragonUI,
 -- its categories under it ("+"). DragonUI_Options loads on demand the first time the AddOns list is built out of
 -- combat. Edit Mode and Quick Keybind (DragonUI's footer buttons) sit where Defaults does.
 local dragonLink = { name = "DragonUI", link = true, dragon = true };
