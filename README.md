@@ -527,7 +527,7 @@ experience yet when the answer doesn't come), unless tutorials are off.
 | hands | centred panel "Position your hands and click Okay" (keyboard with W A S D lit, a mouse) | Okay (or moving) |
 | look | bar "Look around" (mouse, right button red, arrows) | the camera turned with a mouse button held (`GetPlayerFacing` while mouselooking, or a left-button drag) |
 | walk | bar "Walk around" (W A S D) | moving 1.5 s (`GetUnitSpeed`) |
-| talk | bar "Talk to the quest giver (!)", later "Talk to <NPC>" (`UnitName("npc")` of the last quest giver) | `GOSSIP_SHOW` / `QUEST_DETAIL` / `QUEST_GREETING` |
+| talk | bar "Talk to the quest giver (!)" (right-click mouse and the speech cursor), later "Talk to <NPC>" (`UnitName("npc")` of the last quest giver) | `GOSSIP_SHOW` / `QUEST_DETAIL` / `QUEST_GREETING` |
 | accept | bar "Accept the quest" | `QUEST_ACCEPTED` or a new quest in the log (window closed without it: back to talk) |
 | target | bar "Target a <mob>" (the quest's "<mob> slain" objective) | a hostile target (`UnitCanAttack`) |
 | cast | pointer at the action button: "Press 1 to cast <spell>" (first spell on slots 1-12 that isn't Attack / Auto Shot / Shoot, its key binding), "Don't move while casting." (`SPELL_FAILED_MOVING`, or interrupted while moving), "Again!" | the target dies; target lost: back to target |
@@ -543,7 +543,10 @@ done when any spellbook opens; given up at level 6).
   minimap guide arrow (`Interface\Minimap\ROTATING-MINIMAPGUIDEARROW`, turned by texture coordinates, bouncing in
   `OnUpdate`), `UI-ActionButton-Border` as the glow; the keyboard and mouse are drawn from plain textures with key labels.
 - **Never in the way**: the prompts don't take the mouse; only their small buttons do. Every prompt has an "x" (skips
-  that step), the panel and the bars a "Skip tutorial".
+  that step), the panel and the bar a gold "Skip tutorial" button (the whole tutorial, saved as `done`).
+- **The game's tip button** (`TutorialFrameAlertButton`, the square with a count badge at the bottom centre) only shows
+  while this tutorial runs; on every other character (level 80, finished, skipped) it is hidden at login, after
+  `/reload` and whenever the game shows it again.
 - **DragonUI**: pointers anchor to the real frames, first shown one wins: `ActionButton<n>` (wherever DragonUI put it),
   `DragonUI_XPBar` / `MainMenuExpBar`, `DragonUIObjectiveTracker` / `Questie_BaseFrame` / `WatchFrame`,
   `TemucraftMicroButton_spellbook` / `SpellbookMicroButton`; a screen position when none is shown
@@ -554,6 +557,51 @@ done when any spellbook opens; given up at level 6).
 - **Options**: Gameplay > Interface > Help, "Tutorials" (in place of the stock box: it turns this tutorial and the
   game's tips, CVar `showTutorials`, on or off together) and "Reset Tutorials" (clears the three values and calls
   `ResetTutorials()`; on a level 1 character it starts again at once). `/ttutorial [reset | skip | on | off]`.
+
+### How to add or change a tutorial step
+
+The steps live in [`TemucraftTutorialSteps.lua`](client/Interface/FrameXML/Temucraft/TemucraftTutorialSteps.lua), next to
+`TemucraftTutorial.lua`. Edit it, run the tests (`lua5.1 client/tests/tutorial_test.lua`), rebuild the patch
+(`python3 client/build_mpq.py`) and ship `patch-^.MPQ`. No server change.
+
+Each step is one table: `id`, `text`, `kind` (`"panel"`, `"bar"`, `"pointer"`), `icon` (bars: `look`, `wasd`, `talk`,
+`left`, `right`, `quest` or a texture path), `pointer` (pointers: `action`, `xp`, `tracker`, `book`, `bags`, `map`,
+`micro` or any frame name), and the optional filters `zones` (zone or subzone names, or map area ids), `races`
+(English race tokens: `Orc`, `Scourge`, `BloodElf` ...), `classes` (`WARRIOR`, `MAGE` ...) and `off = true`.
+`{npc}`, `{mob}`, `{a}`, `{spell}`, `{key}`, `{objective}` in a text are filled in; when one isn't known the step's
+`fallback` text shows instead.
+
+- **Change a text**: edit `text` of the step, e.g. `{ id = "walk", kind = "bar", icon = "wasd", text = "Use W A S D to walk" }`.
+- **Main chain steps** (`hands`, `look`, `walk`, `talk`, `accept`, `follow`, `target`, `cast`, `turnin`, and beside them
+  `xp`, `book`) keep their ids and order: the code knows when each is done. Give one a filter and characters it doesn't
+  match pass over it, e.g. `{ id = "look", ..., zones = { "Northshire" } }` shows "Look around" only in Northshire.
+- **Add a step**: any other id is an extra step, shown once per character beside the chain when its `trigger` happens,
+  closed by its `done` or its x (saved per character, so it doesn't come back after a relog). Triggers and dones:
+  `{ start = true }`, `{ after = "<chain step>" }`, `{ quest = <id>, on = "accepted" | "complete" | "turnedin" }`,
+  `{ level = <n> }`, `{ event = "<game event>" }`, and for `done` also `{ seconds = <n> }`. `quest = <id>` alone means
+  "from accepting it until it is turned in". Extra steps run while the tutorial runs (until the chain and the spellbook
+  prompt are done).
+
+A Valley of Trials-only step (orcs and trolls, or anyone who starts there):
+
+```lua
+{ id = "vot_cactus", zones = { "Valley of Trials" }, kind = "bar", icon = "quest",
+  text = "Cactus Apples grow all over the valley: right-click one to pick it.",
+  trigger = { after = "follow" }, done = { seconds = 20 } },
+```
+
+A class-specific step (hunters, pointing at the player frame at level 2):
+
+```lua
+{ id = "hunter_pet", classes = { "HUNTER" }, kind = "pointer", pointer = "PlayerFrame",
+  text = "At level 10 you can tame a pet.", trigger = { level = 2 }, done = { seconds = 15 } },
+```
+
+A step for one quest (from accepting it until it is turned in), any starting zone:
+
+```lua
+{ id = "first_bag", quest = 4641, kind = "pointer", pointer = "bags", text = "Your bags are here: click to open them." },
+```
 
 ## Login screens (GlueXML)
 

@@ -69,7 +69,7 @@ FRAME_FILES = ["Temucraft\\TemucraftCore.lua",
                # after TemucraftCore.lua (the version), TemucraftStore.lua and TemucraftTooltips.lua (its lines come first)
                "Temucraft\\TemucraftIssues.lua",
                # the new-player tutorial (after TemucraftStore.lua; the Options window's Tutorials row calls it)
-               "Temucraft\\TemucraftTutorial.lua",
+               "Temucraft\\TemucraftTutorialSteps.lua", "Temucraft\\TemucraftTutorial.lua",
                # the starting zone window (mod-temucraft-starting-zone; after TemucraftStyle.lua)
                "Temucraft\\TemucraftStartingZone.lua"]
 # pictures (not in FrameXML.toc): Interface\\FrameXML\\<file>

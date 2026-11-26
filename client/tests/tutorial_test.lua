@@ -1,5 +1,6 @@
 -- Stub tests for the new-player tutorial's step machine (no client): lua5.1 client/tests/tutorial_test.lua (from the module folder)
 local dir = string.match(arg and arg[0] or "", "^(.*)[/\\]tests[/\\]") or "client";
+dofile(dir.."/Interface/FrameXML/Temucraft/TemucraftTutorialSteps.lua");
 dofile(dir.."/Interface/FrameXML/Temucraft/TemucraftTutorial.lua");
 local L = TemucraftTutorialLogic;
 local failed = 0;
@@ -124,6 +125,46 @@ check("resume: window steps go back", L.New("accept").step == "talk" and L.New("
 m = L.New("end");
 L.Handle(m, "LEVEL", 6);
 check("gives up the spellbook at level 6", m.done);
+
+
+-- [[ TemucraftTutorialSteps.lua: texts, filters, extra steps ]]
+check("talk icon from the steps file", main(L.New("talk")).icon == "talk");
+local orcHere = { zone = "Durotar", subzone = "Valley of Trials", mapId = 4, race = "Orc", class = "WARRIOR", level = 1 };
+check("filters", L.Matches({ zones = { "Valley of Trials" } }, orcHere) and not L.Matches({ zones = { "Northshire" } }, orcHere)
+	and L.Matches({ zones = { 4 } }, orcHere) and L.Matches({ races = { "orc" } }, orcHere)
+	and not L.Matches({ classes = { "MAGE" } }, orcHere) and not L.Matches({ off = true }, orcHere) and L.Matches(nil, orcHere));
+check("fill", L.Fill("Talk to {npc}", { npc = "Kaltunk" }) == "Talk to Kaltunk" and L.Fill("Talk to {npc}", {}) == nil);
+local saved = TemucraftTutorialSteps;
+TemucraftTutorialSteps = {
+	{ id = "hands", kind = "panel", text = "Hands" },
+	{ id = "look", kind = "bar", icon = "look", text = "Look!", zones = { "Northshire" } },
+	{ id = "walk", kind = "bar", icon = "wasd", text = "Walk, {npc}?", fallback = "Walk now" },
+	{ id = "vot", zones = { "Valley of Trials" }, kind = "bar", text = "Valley tip", trigger = { after = "walk" }, done = { seconds = 5 } },
+	{ id = "war", classes = { "WARRIOR" }, kind = "pointer", pointer = "PlayerFrame", text = "Warrior tip", trigger = { level = 2 } },
+	{ id = "mage", classes = { "MAGE" }, kind = "bar", text = "Mage tip", trigger = { start = true } },
+	{ id = "q", kind = "bar", text = "Quest tip", quest = 4641 },
+};
+m = L.New(nil, orcHere);
+check("custom text", main(m).text == "Hands");
+L.Handle(m, "OKAY");
+check("a step not for this zone is skipped", m.step == "walk" and main(m).text == "Walk now");
+check("zone step after walk", L.View(m).extra and L.View(m).extra.text == "Valley tip");
+check("other class step never shows", L.View(m).extra.id ~= "mage");
+L.Handle(m, "TICK", 3);
+check("not done yet", L.View(m).extra and L.View(m).extra.id == "vot");
+L.Handle(m, "TICK", 3);
+check("done after its seconds", L.View(m).extra == nil and m.extrasDone.vot);
+L.Handle(m, "LEVEL", 2);
+check("class step at level 2", L.View(m).extra and L.View(m).extra.id == "war" and L.View(m).extra.anchor == "PlayerFrame");
+L.Handle(m, "CLOSE", "extra");
+check("x closes the extra", L.View(m).extra == nil and m.extrasDone.war);
+L.Handle(m, "QUEST", { id = 4641, on = "accepted" });
+check("quest step", L.View(m).extra and L.View(m).extra.id == "q");
+L.Handle(m, "QUEST", { id = 4641, on = "turnedin" });
+check("quest step done at turn-in", L.View(m).extra == nil);
+check("extras saved", string.find(L.Progress(m), ";e=q,vot,war") ~= nil);
+check("extras restored", L.New(L.Progress(m), orcHere).extrasDone.war);
+TemucraftTutorialSteps = saved;
 
 if ( failed > 0 ) then print(failed.." failed"); os.exit(1); end
 print("all passed");

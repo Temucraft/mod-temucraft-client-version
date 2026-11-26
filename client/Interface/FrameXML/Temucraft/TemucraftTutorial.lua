@@ -11,8 +11,11 @@
 --   until it is turned in, and the chain goes on with the next quest giver. Beside the chain: "You've gained experience!"
 --   at the XP bar (first experience), "Open your Spellbook and find <spell>" at the spellbook micro button, which
 --   glows (a spell learned; done when a spellbook opens).
--- Nothing blocks input: only the small buttons take the mouse. Each prompt has an "x" (skips that step), the bars and
--- the panel a "Skip tutorial". Pointers follow DragonUI's frames (ActionButton<n> wherever DragonUI put it,
+-- The texts, icons, pointers and who gets each step (zones, races, classes), and extra steps of your own, are in
+-- TemucraftTutorialSteps.lua (README.md: "How to add or change a tutorial step").
+-- Nothing blocks input: only the small buttons take the mouse. Each prompt has an "x" (skips that step), the bar and
+-- the panel a "Skip tutorial" button (the whole tutorial). The game's own tip button (TutorialFrameAlertButton, the
+-- square with a count badge) only shows while this tutorial runs; on every other character it stays hidden. Pointers follow DragonUI's frames (ActionButton<n> wherever DragonUI put it,
 -- DragonUI_XPBar, DragonUI's quest tracker, the moved SpellbookMicroButton) or ours (TemucraftMicroButton_spellbook),
 -- with a screen position when none is shown.
 -- Saved with TemucraftStore: per account "tutorial.off" ("1" = tutorials off) and "tutorial.seen" ("1" = one character
@@ -86,37 +89,168 @@ function L.LearnedName(msg, patterns)
 	return nil;
 end
 
+-- [[ the steps (TemucraftTutorialSteps.lua) ]] --
+local CHAIN = { hands = true, look = true, walk = true, talk = true, accept = true, follow = true, target = true, cast = true,
+	turnin = true, xp = true, book = true };
+-- the next chain step when one is closed with its x, or skipped because it isn't for this character
+L.NEXT = { hands = "look", look = "walk", walk = "talk", talk = "target", accept = "target", follow = "target",
+	target = "turnin", cast = "turnin" };
+
+function L.Def(id)
+	for _, s in ipairs(TemucraftTutorialSteps or {}) do
+		if ( s.id == id ) then return s; end
+	end
+	return nil;
+end
+
+-- "{npc}" etc. filled in from vars; nil if one of them isn't known
+function L.Fill(text, vars)
+	if ( type(text) ~= "string" ) then return nil; end
+	local missing = false;
+	local out = string.gsub(text, "{(%w+)}", function(k)
+		local v = vars and vars[k];
+		if ( v == nil or v == "" ) then missing = true; return ""; end
+		return tostring(v);
+	end);
+	if ( missing ) then return nil; end
+	return out;
+end
+
+-- a step's text (field "text" or another one, "moving" ...), the fallback when a {value} isn't known, else default
+function L.Text(id, field, vars, default)
+	local d = L.Def(id);
+	local text = d and d[field or "text"];
+	local out = L.Fill(text, vars);
+	if ( out ) then return out; end
+	if ( (field or "text") == "text" and d and d.fallback ) then
+		out = L.Fill(d.fallback, vars);
+		if ( out ) then return out; end
+	end
+	return L.Fill(default, vars) or default;
+end
+
+local function Lower(s) return type(s) == "string" and string.lower(s) or s; end
+local function InList(list, ...)
+	for _, want in ipairs(list) do
+		for i = 1, select("#", ...) do
+			local have = select(i, ...);
+			if ( have ~= nil and (want == have or Lower(want) == Lower(have)) ) then return true; end
+		end
+	end
+	return false;
+end
+
+-- the step is for this character here: ctx = { zone, subzone, mapId, race, class }
+function L.Matches(def, ctx)
+	if ( not def ) then return true; end
+	if ( def.off ) then return false; end
+	ctx = ctx or {};
+	if ( def.zones and #def.zones > 0 and not InList(def.zones, ctx.zone, ctx.subzone, ctx.mapId) ) then return false; end
+	if ( def.races and #def.races > 0 and not InList(def.races, ctx.race, ctx.raceName) ) then return false; end
+	if ( def.classes and #def.classes > 0 and not InList(def.classes, ctx.class, ctx.className) ) then return false; end
+	return true;
+end
+
+-- the extra steps (not part of the chain)
+function L.Extras()
+	local out = {};
+	for _, s in ipairs(TemucraftTutorialSteps or {}) do
+		if ( s.id and not CHAIN[s.id] and not s.off ) then table.insert(out, s); end
+	end
+	return out;
+end
+
+-- does this event fire a trigger / done table? (m for the chain step and level)
+function L.Fires(cond, m, ev, arg)
+	if ( not cond ) then return false; end
+	if ( cond.start ) then return true; end
+	if ( cond.after ) then return m.step == cond.after; end
+	if ( cond.level ) then return (m.level or 1) >= cond.level; end
+	if ( cond.event ) then return ev == "EVENT" and arg == cond.event; end
+	if ( cond.quest ) then
+		return ev == "QUEST" and type(arg) == "table" and arg.id == cond.quest and arg.on == (cond.on or "accepted");
+	end
+	if ( cond.seconds ) then return ev == "TICK" and (m.extraTime or 0) >= cond.seconds; end
+	return false;
+end
+
+local function ExtraTrigger(def)
+	if ( def.trigger ) then return def.trigger; end
+	if ( def.quest ) then return { quest = def.quest, on = "accepted" }; end
+	return nil;
+end
+local function ExtraDone(def)
+	if ( def.done ) then return def.done; end
+	if ( def.quest ) then return { quest = def.quest, on = "turnedin" }; end
+	return nil;
+end
+
 -- resume: steps that only make sense with a window open or a target go back one
 local RESUME = { hands = "hands", accept = "talk", cast = "target" };
 
--- a machine: progress = the saved string ("look", "turnin;x;b" ...) or nil
-function L.New(progress)
+local Go;
+-- a machine: progress = the saved string ("look", "turnin;x;b;e=a,b" ...) or nil; ctx = see L.Matches
+function L.New(progress, ctx)
 	local m = { step = "hands", npc = nil, spell = nil, text = nil, ready = false, follows = 0,
-		xpShown = false, bookDone = false, side = nil, mainDone = false, done = false, changed = true };
+		xpShown = false, bookDone = false, side = nil, mainDone = false, done = false, changed = true,
+		ctx = ctx, extrasDone = {}, level = ctx and ctx.level or 1 };
 	if ( progress and progress ~= "" ) then
 		local step, flags = string.match(progress, "^([^;]*)(.*)$");
 		if ( step == "end" ) then m.mainDone = true; m.step = nil; else m.step = RESUME[step] or step; end
 		m.xpShown = string.find(flags, ";x") ~= nil;
 		m.bookDone = string.find(flags, ";b") ~= nil;
+		local extras = string.match(flags, ";e=([^;]*)");
+		for id in string.gmatch(extras or "", "[^,]+") do m.extrasDone[id] = true; end
 		local valid = m.step == nil;
 		for _, s in ipairs(L.STEPS) do if ( s == m.step ) then valid = true; end end
 		if ( not valid ) then m.step = "look"; end
 		if ( m.step == "turnin" or m.step == "follow" ) then m.step = "talk"; end   -- the quest is not known after a relog
 	end
+	if ( m.step ) then Go(m, m.step); end
+	if ( not L.Matches(L.Def("xp"), ctx) ) then m.xpShown = true; end
+	if ( not L.Matches(L.Def("book"), ctx) ) then m.bookDone = true; end
+	m.changed = true;
 	return m;
 end
 
 -- what to save
 function L.Progress(m)
 	if ( m.done ) then return "done"; end
-	return (m.step or "end")..(m.xpShown and ";x" or "")..(m.bookDone and ";b" or "");
+	local extras = {};
+	for id in pairs(m.extrasDone or {}) do table.insert(extras, id); end
+	table.sort(extras);
+	return (m.step or "end")..(m.xpShown and ";x" or "")..(m.bookDone and ";b" or "")
+		..(#extras > 0 and (";e="..table.concat(extras, ",")) or "");
 end
 
-local function Go(m, step)
+-- to a chain step; steps not for this character (TemucraftTutorialSteps: zones, races, classes, off) are passed over
+function Go(m, step)
+	while ( step and not L.Matches(L.Def(step), m.ctx) ) do step = L.NEXT[step]; end
 	m.step = step;
 	m.text = nil;
 	m.changed = true;
 	if ( step == nil ) then m.mainDone = true; end
+end
+
+-- the extra steps: start one whose trigger fires, end the shown one when its done fires
+local function HandleExtras(m, ev, arg)
+	if ( m.extra ) then
+		local def = L.Def(m.extra);
+		if ( not def or (ev == "CLOSE" and arg == "extra") or L.Fires(ExtraDone(def), m, ev, arg) ) then
+			m.extrasDone[m.extra] = true;
+			m.extra = nil; m.extraTime = nil;
+			m.changed = true;
+		end
+	end
+	if ( not m.extra ) then
+		for _, def in ipairs(L.Extras()) do
+			if ( not m.extrasDone[def.id] and L.Matches(def, m.ctx) and L.Fires(ExtraTrigger(def), m, ev, arg) ) then
+				m.extra = def.id; m.extraTime = 0;
+				m.changed = true;
+				break;
+			end
+		end
+	end
 end
 
 local function CheckDone(m, level)
@@ -127,12 +261,29 @@ end
 -- TURNIN (npc name), TARGET
 -- ({ hostile = bool, spell = { slot, name, key } or nil }), CAST_MOVED, CAST_DONE, KILL, READY, TURNIN, XP, LEARN
 -- (spell name), BOOK_OPEN, XP_TIMEOUT, CLOSE ("main" | "side"), SKIP, LEVEL (n). Returns true if what shows changed.
+local HandleChain;
 function L.Handle(m, ev, arg)
 	m.changed = false;
+	if ( m.done ) then return false; end
+	if ( ev == "LEVEL" and type(arg) == "number" ) then m.level = arg; end
+	if ( ev == "TICK" ) then
+		if ( not m.extra ) then return false; end
+		m.extraTime = (m.extraTime or 0) + (arg or 0);
+		HandleExtras(m, ev, arg);
+		return m.changed;
+	end
+	if ( ev == "CTX" ) then m.ctx = arg; HandleExtras(m, ev, arg); return m.changed; end
+	local changed = HandleChain(m, ev, arg);
+	if ( not m.done ) then HandleExtras(m, ev, arg); end
+	return changed or m.changed;
+end
+
+function HandleChain(m, ev, arg)
 	if ( m.done ) then return false; end
 	local s = m.step;
 	if ( ev == "SKIP" ) then
 		m.step = nil; m.mainDone = true; m.side = nil; m.bookDone = true; m.done = true; m.skipped = true; m.changed = true;
+		m.extra = nil;
 		return true;
 	end
 	-- quest facts kept whatever the step
@@ -181,7 +332,7 @@ function L.Handle(m, ev, arg)
 		if ( ev == "MOVE" ) then Go(m, "talk"); end
 	elseif ( s == "talk" ) then
 		if ( ev == "TALK" ) then Go(m, "accept");
-		elseif ( ev == "ACCEPT" ) then m.step = "accept"; return L.Handle(m, ev, arg) or true; end
+		elseif ( ev == "ACCEPT" ) then m.step = "accept"; return HandleChain(m, ev, arg) or true; end
 	elseif ( s == "accept" ) then
 		if ( ev == "ACCEPT" ) then
 			arg = arg or {};
@@ -231,48 +382,71 @@ function L.Handle(m, ev, arg)
 end
 
 -- what shows: main = { kind = "panel" | "bar" | "pointer", text, icon, anchor } or nil, side = the same or nil
+local function Kind(id, default) local d = L.Def(id); return d and d.kind or default; end
+local function IconOf(id, default) local d = L.Def(id); return d and d.icon or default; end
+local function PointerOf(id, default) local d = L.Def(id); return d and d.pointer or default; end
+
+-- one step's box: { kind, text, icon, anchor }
+local function Box(id, text, defKind, defIcon, defAnchor)
+	local kind = Kind(id, defKind);
+	return { kind = kind, text = text, icon = IconOf(id, defIcon), anchor = PointerOf(id, defAnchor) };
+end
+
 function L.View(m)
 	if ( m.done ) then return {}; end
 	local v = {};
 	local s = m.step;
 	if ( s == "hands" ) then
-		v.main = { kind = "panel", text = "Position your hands and click Okay" };
+		v.main = Box("hands", L.Text("hands", "text", nil, "Position your hands and click Okay"), "panel");
 	elseif ( s == "look" ) then
-		v.main = { kind = "bar", text = "Look around", icon = "look" };
+		v.main = Box("look", L.Text("look", "text", nil, "Look around"), "bar", "look");
 	elseif ( s == "walk" ) then
-		v.main = { kind = "bar", text = "Walk around", icon = "wasd" };
+		v.main = Box("walk", L.Text("walk", "text", nil, "Walk around"), "bar", "wasd");
 	elseif ( s == "talk" ) then
-		v.main = { kind = "bar", text = m.npc and ("Talk to "..m.npc) or "Talk to the quest giver (!)", icon = "right" };
+		v.main = Box("talk", L.Text("talk", "text", { npc = m.npc }, m.npc and ("Talk to "..m.npc) or "Talk to the quest giver (!)"), "bar", "talk");
 	elseif ( s == "accept" ) then
-		v.main = { kind = "bar", text = "Accept the quest", icon = "left" };
+		v.main = Box("accept", L.Text("accept", "text", nil, "Accept the quest"), "bar", "left");
 	elseif ( s == "follow" ) then
 		local o = m.objective;
 		if ( o and #o > 70 ) then o = string.sub(o, 1, 67).."..."; end
-		v.main = { kind = "bar", text = o and o ~= "" and ("Your quest: "..o) or "Follow your quest", icon = "quest" };
+		if ( o == "" ) then o = nil; end
+		v.main = Box("follow", L.Text("follow", "text", { objective = o }, o and ("Your quest: "..o) or "Follow your quest"), "bar", "quest");
 	elseif ( s == "target" ) then
 		local mob = m.mob;
-		local an = mob and (string.find(mob, "^[AEIOUaeiou]") and "an " or "a ") or "";
-		v.main = { kind = "bar", text = mob and ("Target "..an..mob) or "Target an enemy", icon = "left" };
+		local an = mob and (string.find(mob, "^[AEIOUaeiou]") and "an" or "a") or nil;
+		v.main = Box("target", L.Text("target", "text", { mob = mob, a = an }, mob and ("Target "..an.." "..mob) or "Target an enemy"), "bar", "left");
 	elseif ( s == "cast" ) then
 		if ( m.spell ) then
 			local text;
-			if ( m.text == "moving" ) then text = "Don't move while casting.";
-			elseif ( m.text == "again" ) then text = "Again!";
-			else text = "Press "..(m.spell.key or tostring(m.spell.slot)).." to cast "..m.spell.name; end
+			local key = m.spell.key or tostring(m.spell.slot);
+			if ( m.text == "moving" ) then text = L.Text("cast", "moving", nil, "Don't move while casting.");
+			elseif ( m.text == "again" ) then text = L.Text("cast", "again", nil, "Again!");
+			else text = L.Text("cast", "text", { key = key, spell = m.spell.name }, "Press "..key.." to cast "..(m.spell.name or "")); end
 			v.main = { kind = "pointer", text = text, anchor = "action", slot = m.spell.slot };
 		else
-			v.main = { kind = "bar", text = "Right-click the enemy to attack", icon = "right" };
+			local d = L.Def("cast");
+			v.main = { kind = "bar", text = L.Text("cast", "melee", nil, "Right-click the enemy to attack"), icon = d and d.meleeIcon or "right" };
 		end
 	elseif ( s == "turnin" ) then
 		if ( m.ready ) then
-			v.main = { kind = "pointer", text = "Quest complete! Return to the questgiver.", anchor = "tracker" };
+			v.main = Box("turnin", L.Text("turnin", "text", nil, "Quest complete! Return to the questgiver."), "pointer", nil, "tracker");
 		end
 	end
 	if ( m.side == "xp" ) then
-		v.side = { kind = "pointer", text = "You've gained experience! You'll level up when this bar is filled.", anchor = "xp" };
+		v.side = Box("xp", L.Text("xp", "text", nil, "You've gained experience! You'll level up when this bar is filled."), "pointer", nil, "xp");
+		v.side.kind = "pointer";
 	elseif ( m.side == "book" ) then
-		v.side = { kind = "pointer", text = m.bookSpell and ("Open your Spellbook and find "..m.bookSpell) or "Open your Spellbook to see your new spell",
-			anchor = "book", glow = true };
+		v.side = Box("book", L.Text("book", "text", { spell = m.bookSpell },
+			m.bookSpell and ("Open your Spellbook and find "..m.bookSpell) or "Open your Spellbook to see your new spell"), "pointer", nil, "book");
+		v.side.kind = "pointer";
+		v.side.glow = true;
+	end
+	if ( m.extra ) then
+		local d = L.Def(m.extra);
+		if ( d ) then
+			v.extra = { kind = d.kind == "pointer" and "pointer" or "bar", text = L.Fill(d.text, { npc = m.npc, mob = m.mob, spell = m.spell and m.spell.name })
+				or d.fallback or d.text or "", icon = d.icon, anchor = d.pointer, id = d.id };
+		end
 	end
 	return v;
 end
@@ -289,6 +463,9 @@ L.ANCHORS = {
 	xp = { "DragonUI_XPBar", "MainMenuExpBar" },
 	tracker = { "DragonUIObjectiveTracker", "DragonUI_QuestTrackerFrame", "Questie_BaseFrame", "WatchFrame" },
 	book = { "TemucraftMicroButton_spellbook", "SpellbookMicroButton" },
+	bags = { "MainMenuBarBackpackButton" },
+	map = { "MiniMapWorldMapButton", "MinimapCluster" },
+	micro = { "CharacterMicroButton" },
 };
 -- with nothing shown: a point on the screen (UIParent point, x, y)
 L.FALLBACK = {
@@ -306,7 +483,7 @@ local function Set(scope, key, text) if ( TemucraftStore_Set ) then TemucraftSto
 function TemucraftTutorial_IsEnabled() return Get("A", "tutorial.off") ~= "1"; end
 
 local machine;               -- the running tutorial, or nil
-local Show, Stop, Begin;     -- below
+local Show, Stop, Begin, Context;   -- below
 
 function TemucraftTutorial_SetEnabled(on)
 	Set("A", "tutorial.off", on and "" or "1");
@@ -383,27 +560,45 @@ local function SmallArrow(parent, dir, size)
 	return t;
 end
 
--- the bar's icons, built once each
-local icons = {};
+-- the bar's icons, built once per bar
 local function Icon(holder, kind)
+	holder.icons = holder.icons or {};
+	local icons = holder.icons;
 	if ( icons[kind] ) then return icons[kind]; end
 	local f = CreateFrame("Frame", nil, holder);
 	f:SetAllPoints(holder);
 	if ( kind == "look" ) then
-		local m = Mouse(f, 20, "right"); m:SetPoint("CENTER");
-		SmallArrow(f, "left", 16):SetPoint("RIGHT", m, "LEFT", 2, 0);
-		SmallArrow(f, "right", 16):SetPoint("LEFT", m, "RIGHT", -2, 0);
+		local m = Mouse(f, 22, "right"); m:SetPoint("CENTER");
+		SmallArrow(f, "left", 18):SetPoint("RIGHT", m, "LEFT", 2, 0);
+		SmallArrow(f, "right", 18):SetPoint("LEFT", m, "RIGHT", -2, 0);
+	elseif ( kind == "talk" ) then
+		-- right-click (a bigger mouse, the right button red) on someone: the speech cursor beside it
+		local m = Mouse(f, 26, "right"); m:SetPoint("CENTER", f, "CENTER", -12, 0);
+		local speak = f:CreateTexture(nil, "OVERLAY");
+		speak:SetTexture("Interface\\Cursor\\Speak");
+		speak:SetWidth(30); speak:SetHeight(30);
+		speak:SetPoint("LEFT", m, "RIGHT", 2, 4);
 	elseif ( kind == "right" or kind == "left" ) then
-		Mouse(f, 22, kind):SetPoint("CENTER");
+		Mouse(f, 26, kind):SetPoint("CENTER");
 	elseif ( kind == "wasd" ) then
-		Key(f, "W", 16, 16, true):SetPoint("BOTTOM", f, "CENTER", 0, 1);
-		Key(f, "S", 16, 16, true):SetPoint("TOP", f, "CENTER", 0, -1);
-		local a = Key(f, "A", 16, 16, true); a:SetPoint("TOP", f, "CENTER", -17, -1);
-		local d = Key(f, "D", 16, 16, true); d:SetPoint("TOP", f, "CENTER", 17, -1);
+		-- W over A S D, the block centred in the icon space
+		local size, gap = 18, 2;
+		local block = CreateFrame("Frame", nil, f);
+		block:SetWidth(size * 3 + gap * 2); block:SetHeight(size * 2 + gap);
+		block:SetPoint("CENTER");
+		Key(block, "W", size, size, true):SetPoint("TOP", block, "TOP", 0, 0);
+		Key(block, "A", size, size, true):SetPoint("BOTTOMLEFT", block, "BOTTOMLEFT", 0, 0);
+		Key(block, "S", size, size, true):SetPoint("BOTTOM", block, "BOTTOM", 0, 0);
+		Key(block, "D", size, size, true):SetPoint("BOTTOMRIGHT", block, "BOTTOMRIGHT", 0, 0);
 	elseif ( kind == "quest" ) then
 		local t = f:CreateTexture(nil, "ARTWORK");
 		t:SetTexture("Interface\\GossipFrame\\AvailableQuestIcon");
-		t:SetWidth(24); t:SetHeight(24); t:SetPoint("CENTER");
+		t:SetWidth(26); t:SetHeight(26); t:SetPoint("CENTER");
+	else
+		-- a texture path from TemucraftTutorialSteps.lua
+		local t = f:CreateTexture(nil, "ARTWORK");
+		t:SetTexture(kind);
+		t:SetWidth(32); t:SetHeight(32); t:SetPoint("CENTER");
 	end
 	icons[kind] = f;
 	return f;
@@ -422,18 +617,34 @@ local function CloseX(parent, onClick)
 	return b;
 end
 
-local function SkipLink(parent)
+local function SkipTutorial()
+	if ( machine ) then L.Handle(machine, "SKIP"); Show(); end
+	Set("C", "tutorial", "done");
+	Say("tutorial skipped. Options > Gameplay > Interface > Reset Tutorials shows it again.");
+end
+
+-- "Skip tutorial": a readable button, gold text on dark with a gold edge (the "x" beside it skips only the step)
+local function SkipButton(parent)
 	local b = CreateFrame("Button", nil, parent);
-	b:SetHeight(16);
-	local t = b:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall");
+	b:SetHeight(24);
+	b:SetBackdrop({ bgFile = "Interface\\Tooltips\\UI-Tooltip-Background", edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+		edgeSize = 10, insets = { left = 2, right = 2, top = 2, bottom = 2 } });
+	b:SetBackdropColor(0.08, 0.06, 0.02, 1);
+	b:SetBackdropBorderColor(0.8, 0.62, 0.1, 1);
+	local t = b:CreateFontString(nil, "OVERLAY", "GameFontNormal");
 	t:SetPoint("CENTER"); t:SetText("Skip tutorial");
-	b:SetWidth(t:GetStringWidth() + 10);
-	b:SetScript("OnEnter", function() t:SetTextColor(1, 0.82, 0); end);
-	b:SetScript("OnLeave", function() t:SetTextColor(0.5, 0.5, 0.5); end);
-	b:SetScript("OnClick", function()
-		if ( machine ) then L.Handle(machine, "SKIP"); Show(); end
-		Say("tutorial skipped. Options > Gameplay > Interface > Reset Tutorials shows it again.");
+	t:SetTextColor(1, 0.82, 0);
+	b.label = t;
+	b:SetWidth(t:GetStringWidth() + 20);
+	b:SetScript("OnEnter", function(self)
+		self:SetBackdropBorderColor(1, 0.9, 0.3, 1); t:SetTextColor(1, 1, 0.6);
+		GameTooltip:SetOwner(self, "ANCHOR_TOP");
+		GameTooltip:SetText("Skip tutorial");
+		GameTooltip:AddLine("Ends the whole tutorial on this character. The x skips only this step.", 1, 1, 1, 1);
+		GameTooltip:Show();
 	end);
+	b:SetScript("OnLeave", function(self) self:SetBackdropBorderColor(0.8, 0.62, 0.1, 1); t:SetTextColor(1, 0.82, 0); GameTooltip:Hide(); end);
+	b:SetScript("OnClick", SkipTutorial);
 	return b;
 end
 
@@ -470,28 +681,48 @@ do
 	ok:SetText(OKAY or "Okay");
 	ok:SetScript("OnClick", function() if ( machine ) then L.Handle(machine, "OKAY"); Show(); end end);
 	CloseX(panel, function() if ( machine ) then L.Handle(machine, "CLOSE", "main"); Show(); end end);
-	SkipLink(panel):SetPoint("BOTTOMRIGHT", -10, 8);
+	SkipButton(panel):SetPoint("BOTTOMRIGHT", -12, 14);
 end
 
--- [[ the bar at the lower centre ]] --
-local bar = CreateFrame("Frame", "TemucraftTutorialBar", UIParent);
-bar:SetHeight(52); bar:SetWidth(320);
-bar:SetPoint("BOTTOM", UIParent, "BOTTOM", 0, 190);
-bar:SetFrameStrata("HIGH");
-bar:EnableMouse(false);
-bar:SetBackdrop({ bgFile = "Interface\\Tooltips\\UI-Tooltip-Background", edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-	tile = true, tileSize = 16, edgeSize = 20, insets = { left = 5, right = 5, top = 5, bottom = 5 } });
-bar:SetBackdropColor(0, 0, 0, 0.8);
-bar:SetBackdropBorderColor(0.35, 0.35, 0.35, 1);
-bar:Hide();
-bar.iconHolder = CreateFrame("Frame", nil, bar);
-bar.iconHolder:SetWidth(56); bar.iconHolder:SetHeight(44);
-bar.iconHolder:SetPoint("LEFT", 8, 0);
-bar.text = bar:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge");
-bar.text:SetPoint("LEFT", bar.iconHolder, "RIGHT", 6, 0);
-bar.text:SetTextColor(GOLD[1], GOLD[2], GOLD[3]);
-CloseX(bar, function() if ( machine ) then L.Handle(machine, "CLOSE", "main"); Show(); end end);
-SkipLink(bar):SetPoint("TOP", bar, "BOTTOM", 0, -2);
+-- [[ the bar at the lower centre: icon, text, "Skip tutorial", x ]] --
+local function MakeBar(name, which, y, withSkip)
+	local b = CreateFrame("Frame", name, UIParent);
+	b:SetHeight(56); b:SetWidth(320);
+	b:SetPoint("BOTTOM", UIParent, "BOTTOM", 0, y);
+	b:SetFrameStrata("HIGH");
+	b:EnableMouse(false);
+	b:SetBackdrop({ bgFile = "Interface\\Tooltips\\UI-Tooltip-Background", edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
+		tile = true, tileSize = 16, edgeSize = 20, insets = { left = 5, right = 5, top = 5, bottom = 5 } });
+	b:SetBackdropColor(0, 0, 0, 0.8);
+	b:SetBackdropBorderColor(0.35, 0.35, 0.35, 1);
+	b:Hide();
+	b.iconHolder = CreateFrame("Frame", nil, b);
+	b.iconHolder:SetWidth(72); b.iconHolder:SetHeight(48);
+	b.iconHolder:SetPoint("LEFT", 8, 0);
+	b.text = b:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge");
+	b.text:SetPoint("LEFT", b.iconHolder, "RIGHT", 6, 0);
+	b.text:SetTextColor(GOLD[1], GOLD[2], GOLD[3]);
+	CloseX(b, function() if ( machine ) then L.Handle(machine, "CLOSE", which); Show(); end end);
+	if ( withSkip ) then
+		b.skip = SkipButton(b);
+		b.skip:SetPoint("RIGHT", b, "RIGHT", -26, 0);
+	end
+	return b;
+end
+local bar = MakeBar("TemucraftTutorialBar", "main", 190, true);
+local extraBar = MakeBar("TemucraftTutorialExtraBar", "extra", 252, false);
+
+local function FillBar(b, view)
+	if ( b.shownIcon ) then b.shownIcon:Hide(); end
+	b.shownIcon = view.icon and Icon(b.iconHolder, view.icon);
+	if ( b.shownIcon ) then b.shownIcon:Show(); end
+	b.text:ClearAllPoints();
+	if ( b.shownIcon ) then b.text:SetPoint("LEFT", b.iconHolder, "RIGHT", 6, 0); else b.text:SetPoint("LEFT", b, "LEFT", 18, 0); end
+	b.text:SetText(view.text);
+	local w = b.text:GetStringWidth() + (b.shownIcon and 86 or 18) + 34 + (b.skip and (b.skip:GetWidth() + 14) or 0);
+	b:SetWidth(math.max(300, w));
+	b:Show();
+end
 
 -- [[ pointer boxes: yellow frame, white text, bouncing arrow ]] --
 local function Pointer(name, which)
@@ -524,6 +755,7 @@ local function Pointer(name, which)
 end
 local mainPointer = Pointer("TemucraftTutorialPointer", "main");
 local sidePointer = Pointer("TemucraftTutorialSidePointer", "side");
+local extraPointer = Pointer("TemucraftTutorialExtraPointer", "extra");
 
 local function Usable(f)
 	return f and f.IsVisible and f:IsVisible() and f:GetLeft() ~= nil and (f:GetEffectiveAlpha() or 1) > 0.05;
@@ -534,9 +766,10 @@ local function AnchorFrame(view)
 		local b = _G["ActionButton"..(view.slot or 1)];
 		return Usable(b) and b or nil;
 	end
-	for _, name in ipairs(L.ANCHORS[view.anchor] or {}) do
-		local f = _G[name];
-		if ( Usable(f) ) then return f; end
+	-- a name from L.ANCHORS, or any frame's own name (TemucraftTutorialSteps.lua "pointer")
+	for _, name in ipairs(L.ANCHORS[view.anchor] or { view.anchor }) do
+		local f = type(name) == "string" and _G[name];
+		if ( type(f) == "table" and Usable(f) ) then return f; end
 	end
 	return nil;
 end
@@ -593,8 +826,26 @@ local function Fill(p, view)
 	p:Show();
 end
 
+-- [[ the game's own tutorial tips (the square TutorialFrameAlertButton with its count badge, bottom centre) ]] --
+-- They only show while this tutorial runs on a new character; on every other character (level 80, done, skipped)
+-- they stay hidden, also after /reload and relog.
+local STOCK_TIPS = { "TutorialFrameAlertButton", "TutorialFrameAlertButton1", "TutorialFrameAlertButton2",
+	"TutorialFrameAlertButton3", "TutorialFrame" };
+local stockHooked = {};
+local function StockTips()
+	for _, name in ipairs(STOCK_TIPS) do
+		local f = _G[name];
+		if ( type(f) == "table" and f.Hide ) then
+			if ( not stockHooked[name] and f.HookScript ) then
+				stockHooked[name] = true;
+				f:HookScript("OnShow", function(self) if ( not machine ) then self:Hide(); end end);
+			end
+			if ( not machine and f:IsShown() ) then f:Hide(); end
+		end
+	end
+end
+
 -- [[ showing the machine's view ]] --
-local barIcon;
 local function Save()
 	if ( not machine ) then return; end
 	Set("C", "tutorial", L.Progress(machine));
@@ -608,21 +859,14 @@ function Show()
 	if ( not machine ) then return; end
 	Save();
 	local v = L.View(machine);
-	local main, side = v.main, v.side;
+	local main, side, extra = v.main, v.side, v.extra;
 	if ( main and main.kind == "panel" ) then panel:Show(); else panel:Hide(); end
-	if ( main and main.kind == "bar" ) then
-		if ( barIcon ) then barIcon:Hide(); end
-		barIcon = main.icon and Icon(bar.iconHolder, main.icon);
-		if ( barIcon ) then barIcon:Show(); end
-		bar.text:SetText(main.text);
-		bar:SetWidth(math.max(260, bar.text:GetStringWidth() + 56 + 50));
-		bar:Show();
-	else
-		bar:Hide();
-	end
+	if ( main and main.kind == "bar" ) then FillBar(bar, main); else bar:Hide(); end
 	if ( main and main.kind == "pointer" ) then Fill(mainPointer, main); else mainPointer:Hide(); mainPointer.glow:Hide(); end
 	if ( side ) then Fill(sidePointer, side); else sidePointer:Hide(); sidePointer.glow:Hide(); end
 	if ( side and side.anchor == "xp" ) then sidePointer.xpTime = sidePointer.xpTime or 0; else sidePointer.xpTime = nil; end
+	if ( extra and extra.kind == "bar" ) then FillBar(extraBar, extra); else extraBar:Hide(); end
+	if ( extra and extra.kind == "pointer" ) then Fill(extraPointer, extra); else extraPointer:Hide(); extraPointer.glow:Hide(); end
 	if ( machine.done ) then
 		if ( machine.skipped ) then Set("A", "tutorial.seen", "1"); end
 		Stop(true);
@@ -676,8 +920,8 @@ end
 local function QuestTitles()
 	local titles = {};
 	for i = 1, GetNumQuestLogEntries() do
-		local title, _, _, _, isHeader, _, isComplete = GetQuestLogTitle(i);
-		if ( title and not isHeader ) then titles[title] = { index = i, complete = isComplete == 1 }; end
+		local title, _, _, _, isHeader, _, isComplete, _, questID = GetQuestLogTitle(i);
+		if ( title and not isHeader ) then titles[title] = { index = i, complete = isComplete == 1, id = questID }; end
 	end
 	return titles;
 end
@@ -688,6 +932,18 @@ local function QuestLogChanged()
 	if ( knownQuests ) then
 		for title, q in pairs(titles) do
 			if ( not knownQuests[title] and machine.step == "accept" ) then Feed("ACCEPT", QuestInfo(q.index)); end
+		end
+	end
+	-- quest ids for the extra steps (TemucraftTutorialSteps.lua: quest = <id>): complete, and gone after a turn-in
+	if ( knownQuests ) then
+		for title, q in pairs(titles) do
+			local old = knownQuests[title];
+			if ( q.id and q.complete and not (old and old.complete) ) then Feed("QUEST", { id = q.id, on = "complete" }); end
+		end
+		for title, old in pairs(knownQuests) do
+			if ( not titles[title] and old.id and watch.turnedInAt and clock - watch.turnedInAt < 10 ) then
+				Feed("QUEST", { id = old.id, on = "turnedin" });
+			end
 		end
 	end
 	knownQuests = titles;
@@ -726,10 +982,30 @@ watch:SetScript("OnUpdate", function(self, elapsed)
 			if ( sidePointer.xpTime > 12 ) then sidePointer.xpTime = nil; Feed("XP_TIMEOUT"); end
 		end
 	end
+	if ( extraPointer:IsShown() ) then Place(extraPointer, extraPointer.view, clock); end
+	-- extra steps that end after some seconds
+	self.tick = (self.tick or 0) + elapsed;
+	if ( self.tick >= 0.5 ) then
+		local t = self.tick; self.tick = 0;
+		if ( machine and machine.extra ) then Feed("TICK", t); end
+	end
 end);
 watch:Hide();
 
-local EVENTS = { "GOSSIP_SHOW", "QUEST_DETAIL", "QUEST_GREETING", "GOSSIP_CLOSED", "QUEST_FINISHED", "QUEST_ACCEPTED",
+-- where and who: for the zones / races / classes of TemucraftTutorialSteps.lua
+function Context()
+	local race, raceToken = UnitRace("player");
+	local class, classToken = UnitClass("player");
+	local mapId;
+	if ( GetCurrentMapAreaID and not (WorldMapFrame and WorldMapFrame:IsShown()) ) then
+		if ( SetMapToCurrentZone ) then SetMapToCurrentZone(); end
+		mapId = GetCurrentMapAreaID();
+	end
+	return { zone = GetRealZoneText and GetRealZoneText() or GetZoneText(), subzone = GetSubZoneText(), mapId = mapId,
+		race = raceToken, raceName = race, class = classToken, className = class, level = UnitLevel("player") };
+end
+
+local EVENTS = { "ZONE_CHANGED", "ZONE_CHANGED_NEW_AREA", "ZONE_CHANGED_INDOORS", "GOSSIP_SHOW", "QUEST_DETAIL", "QUEST_GREETING", "GOSSIP_CLOSED", "QUEST_FINISHED", "QUEST_ACCEPTED",
 	"QUEST_LOG_UPDATE", "QUEST_COMPLETE", "PLAYER_TARGET_CHANGED", "UNIT_SPELLCAST_INTERRUPTED", "UNIT_SPELLCAST_SUCCEEDED",
 	"UI_ERROR_MESSAGE", "CHAT_MSG_COMBAT_XP_GAIN", "PLAYER_XP_UPDATE", "CHAT_MSG_SYSTEM", "LEARNED_SPELL_IN_TAB",
 	"PLAYER_LEVEL_UP" };
@@ -739,6 +1015,12 @@ for _, g in ipairs({ "ERR_LEARN_SPELL_S", "ERR_LEARN_ABILITY_S" }) do
 end
 if ( #LEARN_PATTERNS == 0 ) then LEARN_PATTERNS = { "You have learned a new spell: %s.", "You have learned a new ability: %s." }; end
 local learnedName, lastXP;
+local customEvents = {};
+for _, def in ipairs(L.Extras()) do
+	for _, c in ipairs({ def.trigger or {}, def.done or {} }) do
+		if ( c.event ) then customEvents[c.event] = true; end
+	end
+end
 
 watch:SetScript("OnEvent", function(self, event, a1, a2)
 	if ( not machine ) then return; end
@@ -751,10 +1033,13 @@ watch:SetScript("OnEvent", function(self, event, a1, a2)
 		if ( machine.step == "accept" or machine.step == "talk" ) then
 			Feed("ACCEPT", QuestInfo(a1));
 		end
+		local id = a1 and select(9, GetQuestLogTitle(a1));
+		if ( id ) then Feed("QUEST", { id = id, on = "accepted" }); end
 		knownQuests = QuestTitles();
 	elseif ( event == "QUEST_LOG_UPDATE" ) then
 		QuestLogChanged();
 	elseif ( event == "QUEST_COMPLETE" ) then
+		self.turnedInAt = clock;
 		Feed("TURNIN", UnitName("npc"));
 	elseif ( event == "PLAYER_TARGET_CHANGED" ) then
 		local hostile = UnitExists("target") and UnitCanAttack("player", "target") and not UnitIsDead("target") and true or false;
@@ -783,7 +1068,11 @@ watch:SetScript("OnEvent", function(self, event, a1, a2)
 		self.learnAt = clock + 0.3;
 	elseif ( event == "PLAYER_LEVEL_UP" ) then
 		Feed("LEVEL", a1);
+	elseif ( event == "ZONE_CHANGED" or event == "ZONE_CHANGED_NEW_AREA" or event == "ZONE_CHANGED_INDOORS" ) then
+		Feed("CTX", Context());
 	end
+	-- the game events the extra steps wait for
+	if ( customEvents[event] ) then Feed("EVENT", event); end
 end);
 
 -- the delayed bits (a quest window closing, the learned spell's name)
@@ -814,13 +1103,15 @@ local function HookBooks()
 end
 
 function Begin(progress)
-	machine = L.New(progress);
+	machine = L.New(progress, Context());
 	lastFacing, turned, leftHeld, moved = nil, 0, 0, 0;
 	lastXP = UnitXP("player");
 	knownQuests = QuestTitles();
 	HookBooks();
 	for _, e in ipairs(EVENTS) do pcall(watch.RegisterEvent, watch, e); end
+	for e in pairs(customEvents) do pcall(watch.RegisterEvent, watch, e); end
 	watch:Show();
+	Feed("CTX", Context());   -- extra steps with trigger = { start = true }
 	Show();
 end
 
@@ -832,6 +1123,8 @@ function Stop(finished)
 	panel:Hide(); bar:Hide();
 	mainPointer:Hide(); mainPointer.glow:Hide();
 	sidePointer:Hide(); sidePointer.glow:Hide();
+	extraBar:Hide(); extraPointer:Hide(); extraPointer.glow:Hide();
+	StockTips();
 end
 
 -- [[ "This account already finished the tutorial. Skip it?" ]] --
@@ -870,13 +1163,20 @@ local function Decide()
 	if ( what == "start" ) then Begin(nil);
 	elseif ( what == "resume" ) then Begin(Get("C", "tutorial"));
 	elseif ( what == "ask" ) then ask:Show(); end
+	StockTips();   -- not running: the game's tip button stays hidden
 end
 
 local login = CreateFrame("Frame");
 login:RegisterEvent("PLAYER_LOGIN");
+login:RegisterEvent("PLAYER_ENTERING_WORLD");
 login:RegisterEvent("TIME_PLAYED_MSG");
 login:SetScript("OnEvent", function(self, event, total)
+	if ( event == "PLAYER_ENTERING_WORLD" ) then
+		StockTips();
+		return;
+	end
 	if ( event == "PLAYER_LOGIN" ) then
+		StockTips();
 		TemucraftStore_OnReady(function()
 			if ( not TemucraftTutorial_IsEnabled() or Get("C", "tutorial") == "done" or UnitLevel("player") > 1 ) then
 				Decide();
@@ -927,9 +1227,7 @@ SlashCmdList["TEMUCRAFTTUTORIAL"] = function(msg)
 	msg = string.lower(msg or "");
 	if ( msg == "reset" ) then TemucraftTutorial_Reset();
 	elseif ( msg == "skip" ) then
-		if ( machine ) then L.Handle(machine, "SKIP"); Show(); end
-		Set("C", "tutorial", "done");
-		Say("tutorial skipped.");
+		SkipTutorial();
 	elseif ( msg == "off" ) then TemucraftTutorial_SetEnabled(false); Say("tutorials off.");
 	elseif ( msg == "on" ) then TemucraftTutorial_SetEnabled(true); Say("tutorials on."); Decide();
 	else
