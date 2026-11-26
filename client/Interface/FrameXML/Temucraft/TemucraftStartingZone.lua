@@ -35,6 +35,11 @@ function L.OnMessage(message)
 		if ( zone.index ) then table.insert(L.incoming, zone); end
 		return nil;
 	elseif ( kind == "END" and L.incoming ) then
+		-- the zone the character is in first ("Stay in ..."), whatever order the list came in; the rest as sent
+		local here, rest = {}, {};
+		for _, z in ipairs(L.incoming) do table.insert(z.here and here or rest, z); end
+		for _, z in ipairs(rest) do table.insert(here, z); end
+		L.incoming = here;
 		L.zones = L.incoming;
 		L.incoming = nil;
 		return "show";
