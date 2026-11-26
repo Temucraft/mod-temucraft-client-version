@@ -58,7 +58,9 @@ FRAME_FILES = ["Temucraft\\TemucraftCore.lua",
                "Temucraft\\TemucraftReputationData.lua", "Temucraft\\TemucraftReputation.lua",
                "Temucraft\\TemucraftCurrency.lua", "Temucraft\\TemucraftRenown.lua",
                # after TemucraftCore.lua (the version), TemucraftStore.lua and TemucraftTooltips.lua (its lines come first)
-               "Temucraft\\TemucraftIssues.lua"]
+               "Temucraft\\TemucraftIssues.lua",
+               # the new-player tutorial (after TemucraftStore.lua; the Options window's Tutorials row calls it)
+               "Temucraft\\TemucraftTutorial.lua"]
 # pictures (not in FrameXML.toc): Interface\\FrameXML\\<file>
 ART_FILES = ["Temucraft\\TemucraftIssueBug.blp"]
 # pictures for the login screens: Interface\\Glues\\<file>

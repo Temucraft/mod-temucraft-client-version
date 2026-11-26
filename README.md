@@ -327,6 +327,46 @@ one kept: at the first login with DragonUI's tracker on, Questie's own tracker i
 (`Questie.db.profile.trackerEnabled = false`, flagged `temucraftTracker` in that Questie profile, so turning it back
 on in Questie's options sticks).
 
+## New-player tutorial
+
+[`TemucraftTutorial.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftTutorial.lua)
+(client only, no server part) walks a new character through its first minutes the way retail's Exile's Reach does.
+It starts for a level 1 character with under 15 minutes played (`RequestTimePlayed`, its chat lines kept quiet; no
+experience yet when the answer doesn't come), unless tutorials are off.
+
+| Step | Shows | Done when |
+|---|---|---|
+| hands | centred panel "Position your hands and click Okay" (keyboard with W A S D lit, a mouse) | Okay (or moving) |
+| look | bar "Look around" (mouse, right button red, arrows) | the camera turned with a mouse button held (`GetPlayerFacing` while mouselooking, or a left-button drag) |
+| walk | bar "Walk around" (W A S D) | moving 1.5 s (`GetUnitSpeed`) |
+| talk | bar "Talk to the quest giver (!)", later "Talk to <NPC>" (`UnitName("npc")` of the last quest giver) | `GOSSIP_SHOW` / `QUEST_DETAIL` / `QUEST_GREETING` |
+| accept | bar "Accept the quest" | `QUEST_ACCEPTED` or a new quest in the log (window closed without it: back to talk) |
+| target | bar "Target a <mob>" (the quest's "<mob> slain" objective) | a hostile target (`UnitCanAttack`) |
+| cast | pointer at the action button: "Press 1 to cast <spell>" (first spell on slots 1-12 that isn't Attack / Auto Shot / Shoot, its key binding), "Don't move while casting." (`SPELL_FAILED_MOVING`, or interrupted while moving), "Again!" | the target dies; target lost: back to target |
+| turnin | pointer at the quest tracker: "Quest complete! Return to the questgiver." once the quest is complete | `QUEST_COMPLETE` (the reward window) |
+
+A quest without a kill objective shows "Your quest: <objective>" until it is turned in, then the chain goes on with the
+next quest giver (by name); after four such quests it ends anyway. Beside the chain: "You've gained experience! You'll
+level up when this bar is filled." at the XP bar (first experience, 12 s), and "Open your Spellbook and find <spell>"
+at the spellbook micro button, which glows (a spell learned: `LEARNED_SPELL_IN_TAB` with the "You have learned" line;
+done when any spellbook opens; given up at level 6).
+
+- **Art**: stock 3.3.5 textures only: tooltip background and border (dark bar; gold-tinted for the pointer box), the
+  minimap guide arrow (`Interface\Minimap\ROTATING-MINIMAPGUIDEARROW`, turned by texture coordinates, bouncing in
+  `OnUpdate`), `UI-ActionButton-Border` as the glow; the keyboard and mouse are drawn from plain textures with key labels.
+- **Never in the way**: the prompts don't take the mouse; only their small buttons do. Every prompt has an "x" (skips
+  that step), the panel and the bars a "Skip tutorial".
+- **DragonUI**: pointers anchor to the real frames, first shown one wins: `ActionButton<n>` (wherever DragonUI put it),
+  `DragonUI_XPBar` / `MainMenuExpBar`, `DragonUIObjectiveTracker` / `Questie_BaseFrame` / `WatchFrame`,
+  `TemucraftMicroButton_spellbook` / `SpellbookMicroButton`; a screen position when none is shown
+  (`TemucraftTutorialLogic.ANCHORS`, `FALLBACK`).
+- **Saved** (TemucraftStore): per account `tutorial.off` and `tutorial.seen` (a character finished it: the next new
+  one asks "This account already finished the tutorial. Skip it?"), per character `tutorial` (its step, then `done`),
+  so a relog carries on.
+- **Options**: Gameplay > Interface > Help, "Tutorials" (in place of the stock box: it turns this tutorial and the
+  game's tips, CVar `showTutorials`, on or off together) and "Reset Tutorials" (clears the three values and calls
+  `ResetTutorials()`; on a level 1 character it starts again at once). `/ttutorial [reset | skip | on | off]`.
+
 ## Login screens (GlueXML)
 
 The client's own CharacterCreate.lua / CharacterSelect.lua still run and do the work; their frames are moved into a
@@ -390,6 +430,7 @@ hidden holder and ours sit on top. The "Classic" choice here is `TEMUCRAFT_LOGIN
 | J, `/tguild [classic\|new]` | guild window (J is bound to the stock Guild key once per account when both are free) |
 | U (Reputation tab), `/renown [faction]` | reputation, Renown journeys |
 | `/addons` | addon list |
+| `/ttutorial [reset\|skip\|on\|off]` | the new-player tutorial |
 | `/issue`, `/bug`; F6 (`/issuekey <key>\|none`) | Issue Reporter; the key is a click binding, F6 by default when free |
 | `/wardrobe`, `/vanity`, `/tokenpreview <link>`, `/heritage`, `/disguise`, `/tankrole` | module windows |
 | `/missions`, `/tmt`, `/companions`, `/tex`, `/wayfinder` | mission table, companions, expeditions |
@@ -399,7 +440,7 @@ hidden holder and ours sit on top. The "Classic" choice here is `TEMUCRAFT_LOGIN
 Stub tests (no client; run from the module folder with Lua 5.1) for the grouping, search, paging, collection and
 loadout logic, the player UI, the login screens and the protocols: `lua5.1 client/tests/spellbook_test.lua`,
 `collections_test.lua`, `interface_test.lua`, `taxi_test.lua`, `issues_test.lua`, `guild_test.lua`,
-`reputation_test.lua`, `glue_test.lua`, `loadouts_test.lua` (the server loadouts protocol), `dragonui_test.lua` (the DragonUI step-aside switch) and `options_test.lua` (the Options pages, search, sliders, key names, binding groups, the AddOns list, server answers and the Esc menu rows; all in `client/tests/`). Also check every file with `luac5.1 -p`.
+`reputation_test.lua`, `glue_test.lua`, `loadouts_test.lua` (the server loadouts protocol), `dragonui_test.lua` (the DragonUI step-aside switch), `tutorial_test.lua` (the new-player tutorial's start rules and step machine, fed fake events) and `options_test.lua` (the Options pages, search, sliders, key names, binding groups, the AddOns list, server answers and the Esc menu rows; all in `client/tests/`). Also check every file with `luac5.1 -p`.
 
 ## Also in this module
 

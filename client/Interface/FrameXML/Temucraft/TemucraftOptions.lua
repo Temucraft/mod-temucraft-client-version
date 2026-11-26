@@ -106,7 +106,11 @@ L.PAGES = {
 			I("BuffsPanelConsolidateBuffs", nil, "Consolidate Buffs"),
 		} },
 		{ header = "Help", rows = {
-			I("HelpPanelShowTutorials", nil, "Tutorials"),
+			-- the new-player tutorial (TemucraftTutorial.lua) and the stock tips (CVar showTutorials) together
+			{ kind = "tutorials", label = "Tutorials",
+				tooltip = "The new-player tutorial (look, walk, talk, your first quest and spell) for new characters, and the game's tutorial tips." },
+			{ kind = "button", label = "Reset Tutorials", text = RESET or "Reset", click = function() if ( TemucraftTutorial_Reset ) then TemucraftTutorial_Reset(); end end,
+				tooltip = "Shows the tutorials again: the new-player tutorial on this character (if it is level 1) or the next new one, and the game's tutorial tips." },
 			I("HelpPanelLoadingScreenTips", nil, "Loading Screen Tips"),
 			I("HelpPanelEnhancedTooltips", nil, "Enhanced Tooltips"),
 			I("HelpPanelBeginnerTooltips", nil, "Beginner Tooltips"),
@@ -1013,6 +1017,38 @@ local MODIFIER_CHOICES = { { value = "ALT", text = ALT_KEY or "ALT key" }, { val
 
 local function CustomRow(spec)
 	if ( spec.kind == "server" ) then return ServerRow(spec); end
+	if ( spec.kind == "tutorials" ) then
+		local r = NewRow(spec, spec.label);
+		Tooltip(r, spec.tooltip, spec.label);
+		CheckWidget(r, function(on)
+			SetCVar("showTutorials", on and "1" or "0");
+			if ( TemucraftTutorial_SetEnabled ) then TemucraftTutorial_SetEnabled(on); end
+			Refresh();
+		end);
+		r.Update = function()
+			r.check:SetChecked((not TemucraftTutorial_IsEnabled) or TemucraftTutorial_IsEnabled());
+			SetRowEnabled(r, true);
+		end;
+		r.Default = function()
+			SetCVar("showTutorials", "1");
+			if ( TemucraftTutorial_SetEnabled ) then TemucraftTutorial_SetEnabled(true); end
+		end;
+		return r;
+	end
+	-- a row with one button: { kind = "button", label, text = button text, click = func, tooltip }
+	if ( spec.kind == "button" ) then
+		local r = NewRow(spec, spec.label);
+		Tooltip(r, spec.tooltip, spec.label);
+		local b = CreateFrame("Button", nil, r, "UIPanelButtonTemplate");
+		b:SetWidth(spec.width or 120); b:SetHeight(22);
+		b:SetPoint("LEFT", CONTROL_X, 0);
+		b:SetText(spec.text or spec.label);
+		b:SetScript("OnClick", function() PlaySound("igMainMenuOptionCheckBoxOn"); spec.click(); Refresh(); end);
+		r.widgets = { b };
+		r.button = b;
+		r.Update = function() SetRowEnabled(r, true); end;
+		return r;
+	end
 	if ( spec.kind == "cvar" ) then
 		if ( not CVarExists(spec.cvar) ) then return nil; end
 		local r = NewRow(spec, spec.label);

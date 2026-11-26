@@ -31,6 +31,14 @@ end
 check("rows name a stock control of their family, or a custom kind, and a label", stockOk);
 local arach;
 for _, r in ipairs(O.Page("a11ygeneral").groups[1].rows) do if ( r.kind == "server" ) then arach = r; end end
+local tut, reset;
+for _, g in ipairs(O.Page("interface").groups) do
+	for _, r in ipairs(g.rows) do
+		if ( r.kind == "tutorials" ) then tut = r; elseif ( r.kind == "button" and r.label == "Reset Tutorials" ) then reset = r; end
+		if ( r.stock == "InterfaceOptionsHelpPanelShowTutorials" ) then tut = false; end
+	end
+end
+check("Interface > Help: Tutorials box (in place of the stock one) and Reset Tutorials", tut and reset and type(reset.click) == "function");
 check("arachnophobia row", arach and arach.name == "arachnophobia" and string.find(arach.tooltip, "spiders"));
 
 -- search
