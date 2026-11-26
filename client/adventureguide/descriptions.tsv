@@ -1,0 +1,224 @@
+# Adventure Guide texts, read by build_adventure_guide.py. One line each, TAB separated:
+#   map <TAB> map id <TAB> overview of the instance (map id + 100000: the Temucraft heroic of a stock dungeon)
+#   zone <TAB> map id <TAB> where the entrance is (wins over the zone the script works out)
+#   npc <TAB> creature entry <TAB> description of a boss (without one the window writes level and title)
+#   name <TAB> map id <TAB> name to show;  level <TAB> map id <TAB> min-max (first difficulty)
+# Classic
+map	389	Ragefire Chasm is a network of volcanic caves beneath Orgrimmar, where the Searing Blade cult and its troggs plot against the Horde from the city's own foundations.
+zone	389	Orgrimmar
+map	36	Once the greatest gold mine of Westfall, the Deadmines now hide Edwin VanCleef's Defias Brotherhood and the juggernaut they are building to take their revenge on Stormwind.
+zone	36	Westfall
+map	43	The Wailing Caverns lie beneath an oasis of the Barrens. The druid Naralex tried to heal the land from here; his Nightmare twisted the caves and the Druids of the Fang who followed him.
+zone	43	The Barrens
+map	33	Archmage Arugal's keep in Silverpine Forest. His summoned worgen curse turned Baron Silverlaine's halls into a den of beasts, and Arugal still rules them from the tower.
+zone	33	Silverpine Forest
+map	48	Blackfathom Deeps was a temple of Elune on the shore of Ashenvale until it sank. The Twilight's Hammer now gathers there around the old god servant Aku'mai.
+zone	48	Ashenvale
+map	34	The Stockade is Stormwind's prison. A riot led by the Defias and Bazil Thredd has put the inmates in charge of the cells.
+zone	34	Stormwind City
+map	47	Razorfen Kraul is a maze of giant thorny vines, home of the quilboar, where Charlix and Agathelos serve the demigod Agamaggan's fallen children.
+zone	47	The Barrens
+map	90	Once the wonder of gnomish technology, Gnomeregan fell when troggs burst up from below and Mekgineer Thermaplugg flooded it with radiation. The gnomes want their city back.
+zone	90	Dun Morogh
+map	189	The Scarlet Crusade's fortress in Tirisfal Glades: the Graveyard, the Library, the Armory and the Cathedral, where High Inquisitor Whitemane and Scarlet Commander Mograine lead the zealots.
+zone	189	Tirisfal Glades
+map	129	The heart of the quilboar's thorny vines in the Barrens, where the Scourge's Lich Amnennar the Coldbringer has raised an undead army among the Razorfen.
+zone	129	The Barrens
+map	70	Uldaman is a titan vault buried in the Badlands. The Dwarves of the Explorers' League and the Dark Iron dig for its secrets while the titans' guardians stir.
+zone	70	Badlands
+map	349	Sacred to the centaur of Desolace, Maraudon is where Zaetar and Theradras are buried. Their children and the corrupted earth below guard the Scepter of Celebras.
+zone	349	Desolace
+map	209	The sandfury trolls' sunbaked city in Tanaris. Chief Ukorz Sandscalp and the witch doctors gather sacrifices for the hydra Gahz'rilla.
+zone	209	Tanaris
+map	109	The Temple of Atal'Hakkar sank into the Swamp of Sorrows when the Atal'ai tried to summon the blood god Hakkar. His priests and the green dragons sent to stop them are still there.
+zone	109	Swamp of Sorrows
+map	230	The Dark Iron dwarves' capital deep in Blackrock Mountain. Emperor Dagran Thaurissan rules it from the Imperial Seat, in the service of Ragnaros.
+zone	230	Blackrock Mountain
+map	429	The ruined night elf city of Eldre'Thalas in Feralas: the ogres of Gordok hold the North, the satyrs and demons the East, and the Shen'dralar's ancient magic the West.
+zone	429	Feralas
+map	229	The upper reaches of Blackrock Mountain, where the Blackrock orcs of Warchief Rend Blackhand and the black dragonflight of General Drakkisath prepare their armies.
+zone	229	Blackrock Mountain
+map	289	The Barov family's crypt on Caer Darrow became the school of necromancy of the Cult of the Damned, run by Darkmaster Gandling.
+zone	289	Western Plaguelands
+map	329	The Scourge's hold of Stratholme, the city Arthas purged: Baron Rivendare rules the undead side, and the Scarlet Crusade fights on in the living side.
+zone	329	Eastern Plaguelands
+map	531	Beneath the Scarab Wall of Silithus, the old god C'Thun stirs in the temple city of the qiraji, ready to lead his insects out against Azeroth.
+zone	531	Silithus
+map	469	Nefarian's lair at the peak of Blackrock Mountain, where he breeds the chromatic dragonflight for his war on his father's foes.
+zone	469	Blackrock Mountain
+map	409	Molten Core lies at the bottom of Blackrock Mountain: Ragnaros, the Firelord, waits here with his lieutenants, the core hounds and the molten giants.
+zone	409	Blackrock Mountain
+map	509	The outer city of Ahn'Qiraj, where General Rajaxx and Ossirian the Unscarred hold the gates of the qiraji empire.
+zone	509	Silithus
+map	309	The capital of the Gurubashi trolls in Stranglethorn, where the Atal'ai priests have summoned Hakkar the Soulflayer, the blood god.
+zone	309	Stranglethorn Vale
+map	249	The black dragon Onyxia, daughter of Deathwing, guards her lair in the Dustwallow Marsh with her brood of whelps.
+zone	249	Dustwallow Marsh
+# The Burning Crusade
+map	543	The Hellfire Ramparts are the outer walls of Hellfire Citadel, held by the fel orcs of the Fel Horde and their dragon Nazan.
+zone	543	Hellfire Peninsula
+map	542	In the Blood Furnace the Fel Horde turns orcs into fel orcs with the blood of the pit lord Magtheridon.
+zone	542	Hellfire Peninsula
+map	540	The Shattered Halls, the heart of Hellfire Citadel, where Warchief Kargath Bladefist commands the Fel Horde.
+zone	540	Hellfire Peninsula
+map	544	Magtheridon, the pit lord who ruled Outland for Illidan, lies chained beneath Hellfire Citadel while the Fel Horde drains his blood.
+zone	544	Hellfire Peninsula
+map	547	The naga of Lady Vashj pump the waters of Zangarmarsh into Coilfang Reservoir. The Slave Pens hold the broken and the Lost Ones who do the work.
+zone	547	Zangarmarsh
+map	546	The Underbog: the marsh's fungal giants and hydras live in the caves of Coilfang Reservoir, among the naga's experiments.
+zone	546	Zangarmarsh
+map	545	In the Steamvault the naga drain Zangarmarsh's water for Lady Vashj, guarded by Warlord Kalithresh.
+zone	545	Zangarmarsh
+map	548	Serpentshrine Cavern, the deepest chamber of Coilfang Reservoir, where Lady Vashj gives her orders.
+zone	548	Zangarmarsh
+map	557	The Mana-Tombs of Auchindoun, robbed of their power by the ethereal Prince-Nexus Shaffar and his Consortium.
+zone	557	Terokkar Forest
+map	558	The Auchenai Crypts, the draenei's burial grounds in Auchindoun, now held by the Auchenai death cult.
+zone	558	Terokkar Forest
+map	556	The Sethekk Halls of Auchindoun, where the arakkoa of the Sethekk worship their god Anzu.
+zone	556	Terokkar Forest
+map	555	The Shadow Labyrinth, Auchindoun's heart, where the Shadow Council summons demons under Murmur's gaze.
+zone	555	Terokkar Forest
+map	560	The Caverns of Time take you to Durnholde Keep in the past, to help young Thrall escape his captors before the Infinite Dragonflight can change history.
+zone	560	Tanaris
+map	269	At the Black Morass, the Infinite Dragonflight tries to keep Medivh from opening the Dark Portal. The timeline must stay as it was.
+zone	269	Tanaris
+map	534	At Mount Hyjal, in the past, Archimonde marches on the World Tree. Hold the line with Jaina, Thrall and Tyrande.
+zone	534	Tanaris
+map	585	The Magisters' Terrace on the Isle of Quel'Danas, where Prince Kael'thas Sunstrider returns in the service of Kil'jaeden.
+zone	585	Isle of Quel'Danas
+map	552	The Arcatraz: Tempest Keep's prison, where the Sha'tar's enemies are held and Harbinger Skyriss gathers power.
+zone	552	Netherstorm
+map	553	The Botanica, Tempest Keep's garden, where the blood elves twist the plants of Outland.
+zone	553	Netherstorm
+map	554	The Mechanar, Tempest Keep's engine room, whose machines and Pathaleon the Calculator guard the way to the Eye.
+zone	554	Netherstorm
+map	550	The Eye of Tempest Keep, the naaru fortress taken by Prince Kael'thas, where he waits with his advisors and the phoenix Al'ar.
+zone	550	Netherstorm
+map	564	The Black Temple, once the draenei temple of Karabor, is Illidan Stormrage's seat in Shadowmoon Valley. His lieutenants guard the way to the Betrayer.
+zone	564	Shadowmoon Valley
+map	565	Gruul the Dragonkiller rules the gronn of Blade's Edge Mountains from his lair, with his sons and High King Maulgar.
+zone	565	Blade's Edge Mountains
+map	532	Medivh's tower in Deadwind Pass. The Last Guardian is gone, but his ghosts, his servants and the demon Prince Malchezaar haunt it still.
+zone	532	Deadwind Pass
+map	580	The Sunwell Plateau: Kil'jaeden is trying to step through the Sunwell into Azeroth. Stop the Burning Legion's lord before he arrives.
+zone	580	Isle of Quel'Danas
+map	568	The Amani trolls' city in Ghostlands, where Zul'jin gathers the animal gods' avatars for his revenge on the elves.
+zone	568	Ghostlands
+# Wrath of the Lich King
+map	574	Utgarde Keep in Howling Fjord, where the vrykul of the Dragonflayer clan raise their dead for the Lich King.
+zone	574	Howling Fjord
+map	575	Utgarde Pinnacle, the top of the vrykul fortress, where King Ymiron has turned his people to the Lich King.
+zone	575	Howling Fjord
+map	576	The Nexus, home of the blue dragonflight in Coldarra, where Malygos's dragons gather the world's magic.
+zone	576	Borean Tundra
+map	578	The Oculus, a floating ring above the Nexus. Ride the dragons of the red, green and bronze flights against Malygos's servants.
+zone	578	Borean Tundra
+map	616	The Eye of Eternity: Malygos the Spell-Weaver, Aspect of Magic, wages his Nexus War from here.
+zone	616	Borean Tundra
+map	601	Azjol-Nerub, the nerubian kingdom beneath Dragonblight, where Anub'arak serves the Lich King.
+zone	601	Dragonblight
+map	619	Ahn'kahet: The Old Kingdom, beneath Azjol-Nerub, where the Faceless Ones serve Yogg-Saron.
+zone	619	Dragonblight
+map	600	Drak'Tharon Keep, a Drakkari fortress taken by the Scourge on the border of Grizzly Hills and Zul'Drak.
+zone	600	Zul'Drak
+map	608	The Violet Hold, Dalaran's prison. The blue dragonflight is breaking in to free its prisoners.
+zone	608	Dalaran
+map	604	Gundrak, the capital of the Drakkari trolls, where they sacrifice their own gods for power against the Scourge.
+zone	604	Zul'Drak
+map	599	The Halls of Stone in Ulduar. Help Brann Bronzebeard read the Tribunal of Ages' history of the earthen.
+zone	599	The Storm Peaks
+map	602	The Halls of Lightning, where Loken, a titan keeper turned to Yogg-Saron, rules the iron dwarves.
+zone	602	The Storm Peaks
+map	603	Ulduar, the titans' city in the Storm Peaks, where the old god Yogg-Saron lies imprisoned and has corrupted the keepers.
+zone	603	The Storm Peaks
+map	595	The Culling of Stratholme: the Caverns of Time take you back to the day Arthas Menethil purged the plagued city.
+zone	595	Tanaris
+map	650	The Trial of the Champion: the Argent Crusade's Coliseum tests the champions of the Alliance and the Horde.
+zone	650	Icecrown
+map	649	The Trial of the Crusader: the Argent Crusade's tournament pits the strongest against the Lich King's beasts and champions.
+zone	649	Icecrown
+map	632	The Forge of Souls, the first of the Frozen Halls of Icecrown Citadel, where souls are bound to the Lich King's will.
+zone	632	Icecrown
+map	658	Pit of Saron, where Forgemaster Garfrost's slaves mine the saronite for the Lich King's armies.
+zone	658	Icecrown
+map	668	The Halls of Reflection, where Frostmourne's power is kept. The Lich King himself waits behind them.
+zone	668	Icecrown
+map	631	Icecrown Citadel, the Lich King's fortress. Face his lieutenants and the Lich King on the Frozen Throne.
+zone	631	Icecrown
+map	533	Naxxramas, Kel'Thuzad's floating necropolis, has returned over Dragonblight to carry the Scourge's war across Northrend.
+zone	533	Dragonblight
+map	615	The Obsidian Sanctum beneath Wyrmrest Temple, where Sartharion and the black dragonflight guard the twilight eggs.
+zone	615	Dragonblight
+map	724	The Ruby Sanctum beneath Wyrmrest Temple, where Halion and the Twilight dragonflight attack the red dragons.
+zone	724	Dragonblight
+map	624	The Vault of Archavon in Wintergrasp Fortress. Whoever holds the fortress may face the stone watchers inside.
+zone	624	Wintergrasp
+# Temucraft
+map	100036	Temucraft's heroic Deadmines: the Cataclysm version of the dungeon for level 80. Vanessa VanCleef has rebuilt the Brotherhood and wants her father's revenge.
+zone	100036	Westfall
+map	100033	Temucraft's heroic Shadowfang Keep: the Cataclysm version for level 80. Lord Godfrey and his men, raised as Forsaken, have taken the keep.
+zone	100033	Silverpine Forest
+map	657	The Vortex Pinnacle, a city of air spirits above Uldum, where Al'Akir's servants guard the way to the Skywall.
+zone	657	Uldum
+map	644	The Halls of Origination, the titans' vault in Uldum. Its keepers judge whoever tries to use the titans' machines to rewrite the world.
+zone	644	Uldum
+map	755	The Lost City of the Tol'vir, where the Neferset tol'vir, who sided with Deathwing, hold the lost city.
+zone	755	Uldum
+map	754	The Throne of the Four Winds, Al'Akir's home in the Skywall, high above Uldum.
+zone	754	Uldum
+map	720	The Firelands, Ragnaros's home in the Elemental Plane, where the Firelord prepares his return to Mount Hyjal.
+zone	720	Mount Hyjal
+map	960	The Temple of the Jade Serpent in the Jade Forest, where the sha of doubt rises in the temple of Yu'lon.
+zone	960	The Jade Forest
+map	1008	Mogu'shan Vaults in Kun-Lai Summit, where the mogu's ancient emperors and their guardians wake.
+zone	1008	Kun-Lai Summit
+map	1136	The Siege of Orgrimmar: Garrosh Hellscream has used the heart of Y'Shaarj. Take the city back from him.
+zone	1136	Vale of Eternal Blossoms
+# Boss descriptions (hand-checked sample: Ragefire Chasm, the Deadmines, Molten Core, Karazhan, Naxxramas)
+npc	11517	The troggs of Ragefire Chasm follow Oggleflint, the largest of them, who lurks at the entrance.
+npc	11518	A warlock of the Searing Blade, Jergosh calls on curses and fire to defend the cult's caverns.
+npc	11519	Bazzalan leads the Searing Blade and plots against Thrall from beneath Orgrimmar.
+npc	11520	The demon Taragaman feeds on the Searing Blade's sacrifices. He strikes with hellfire and his fiery fists.
+npc	644	The foreman of the Defias miners. He keeps them digging with his fists.
+npc	643	The Defias's lumbermaster drives his shredder at anyone who comes near his mill.
+npc	1763	Gilnid, the Defias smelter, melts the gold mine's ores down for VanCleef's war chest.
+npc	646	The first mate of the Defias's ship. Mr. Smite switches weapons as the fight goes on and stuns those close to him.
+npc	645	The ship's cook. Cookie throws his food at you and heals himself with it.
+npc	647	Captain Greenskin commands the Defias's ship and its crew of pirates.
+npc	639	The Defias Kingpin and master stonemason. Edwin VanCleef blames Stormwind for his unpaid wages and calls his guards when the fight turns against him.
+npc	12118	Lucifron brings curses and doom to his foes, with his two Flamewaker Protectors at his side.
+npc	11982	The great core hound Magmadar breathes lava and sends his foes fleeing in panic.
+npc	12259	Gehennas curses his foes so that they can hardly be healed, and rains fire down on them.
+npc	12057	Garr, the firelord, is surrounded by Firesworn that burst when they die.
+npc	12264	Shazzrah, a flamewaker sorcerer, blinks among his foes and curses their magic.
+npc	12056	Baron Geddon turns his foes into living bombs and blows the fire of the core across the room.
+npc	12098	Ragnaros's herald, Sulfuron Harbinger, fights with four Flamewaker Priests who heal him.
+npc	11988	Golemagg the Incinerator commands two core ragers that cannot die while he lives.
+npc	12018	Majordomo Executus, the steward of the Firelord, defends his master's chambers with his elite guards.
+npc	11502	Ragnaros the Firelord, the elemental lord of fire. Banished into the Molten Core, he waits to burn the world. He submerges and sends his Sons of Flame when wounded.
+npc	16152	Attumen the Huntsman rides his horse Midnight through Karazhan's stables, a ghost of the tower's hunts.
+npc	15687	Moroes, the tower's steward, still holds the dinner party for his master's guests, all of whom have died.
+npc	16457	The Maiden of Virtue, a titan construct, punishes the wicked who enter her chamber.
+npc	16812	Barnes, the stage manager, presents the opera: the Wizard of Oz, Romulo and Julianne or the Big Bad Wolf.
+npc	15691	The Curator, an arcane construct, defends the tower's library and summons Astral Flares.
+npc	15688	The warlock Terestian Illhoof binds his imps and his demon chains in the tower's attic.
+npc	16524	The Shade of Aran, Medivh's father, still guards his library with fire, frost and arcane magic.
+npc	15689	Netherspite, a nether dragon, feeds on the tower's beams of power. Turn them on him to weaken him.
+npc	22520	The chess board of Karazhan: you play Medivh's own game with the pieces as your army.
+npc	15690	Prince Malchezaar, a demon prince of the Burning Legion, has taken Karazhan's top tower. His infernals rain down from the sky.
+npc	17225	Nightbane, the black dragon Medivh once slew, comes back to life when the urn on the terrace is used.
+npc	15956	Anub'Rekhan, the nerubian lord who served Arthas, swarms his foes with locusts in the Arachnid Quarter.
+npc	15953	Grand Widow Faerlina leads the Cult of the Damned's worshippers who serve Kel'Thuzad.
+npc	15952	Maexxna, the great spider of Naxxramas, wraps her foes in webs and poisons them.
+npc	15954	Noth the Plaguebringer, the alchemist who brewed the plague, teleports and raises his skeletal servants.
+npc	15936	Heigan the Unclean makes the floor erupt with plague: dance between the safe parts of his room.
+npc	16011	Loatheb, a giant spore creature, stops all but the strongest healing magic.
+npc	16061	Instructor Razuvious trains the death knights of Naxxramas. Use his understudies against him.
+npc	16060	Gothik the Harvester summons living and dead troops on both sides of his room.
+npc	16028	Patchwerk, Kel'Thuzad's champion abomination, strikes the toughest foes near him with Hateful Strikes.
+npc	15931	Grobbulus, an abomination of slime, sprays mutating injections on his foes.
+npc	15932	Gluth, a giant plague hound, feasts on zombies to heal himself and decimates everyone around him.
+npc	15928	Thaddius, an abomination made from tortured souls, charges his foes with positive and negative polarity.
+npc	15989	Sapphiron, the frost wyrm, freezes his foes in ice blocks and breathes frost on them.
+npc	15990	Kel'Thuzad, the lich who rules Naxxramas for the Lich King, summons his minions from the walls before he fights.

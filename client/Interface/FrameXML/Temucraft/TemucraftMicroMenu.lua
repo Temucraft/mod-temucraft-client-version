@@ -1,6 +1,6 @@
 -- Temucraft micro menu (retail look): one row of buttons at the bottom right of the screen, on a dark strip:
 -- Character, Spellbook & Talents (the Temucraft window), Achievements, Quest Log, Guild & Communities (right click:
--- friends), Group Finder (right click: PvP), Collections, Shop, Game Menu, Help. The stock micro buttons leave the main
+-- friends), Group Finder (right click: PvP), Collections, Adventure Guide, Shop, Game Menu, Help. The stock micro buttons leave the main
 -- bar (in a vehicle they come back on the vehicle bar, like stock). Every button calls what its stock button calls,
 -- and takes its stock button's state (pushed while its window is open, disabled below its level), so key bindings,
 -- level limits and the "pushed" looks keep working. "Classic micro menu" (Interface Options > Temucraft, /tui) puts
@@ -20,6 +20,7 @@ L.BUTTONS = {
 	{ key = "lfd",          label = "Group Finder",           stock = "LFDMicroButton", texture = "LFG", binding = "TOGGLELFGPARENT",
 		right = "Right click: Player vs. Player" },
 	{ key = "collections",  label = "Collections",            icon = "Interface\\Icons\\Ability_Mount_RidingHorse" },
+	{ key = "adventure",    label = "Adventure Guide",        icon = "Interface\\Icons\\INV_Misc_Book_09" },
 	{ key = "shop",         label = "Shop",                   icon = "Interface\\Icons\\INV_Misc_Coin_02" },
 	{ key = "menu",         label = "Game Menu",              stock = "MainMenuMicroButton", texture = "MainMenu", binding = "TOGGLEGAMEMENU" },
 	{ key = "help",         label = "Help",                   stock = "HelpMicroButton", texture = "Help" },
@@ -67,6 +68,7 @@ local ACTIONS = {
 		end
 	end,
 	collections = function() if ( TemucraftCollections_Toggle ) then TemucraftCollections_Toggle(); end end,
+	adventure = function() if ( TemucraftAdventureGuide_Toggle ) then TemucraftAdventureGuide_Toggle(); end end,
 	shop = function() TemucraftShop_Toggle(); end,
 	menu = function()
 		if ( GameMenuFrame:IsShown() ) then
@@ -160,12 +162,13 @@ local function Mirror()
 	end
 	Pushed(buttons.spellbook, Shown("TemucraftPlayerSpellsFrame") or Shown("SpellBookFrame") or Shown("PlayerTalentFrame"));
 	Pushed(buttons.collections, Shown("TemucraftCollectionsFrame"));
+	Pushed(buttons.adventure, Shown("TemucraftAdventureGuideFrame"));
 	if ( LFDMicroButton:IsEnabled() ~= 1 and PVPMicroButton:IsEnabled() == 1 ) then buttons.lfd:Enable(); end
 end
 hooksecurefunc("UpdateMicroButtons", Mirror);
-if ( TemucraftCollectionsFrame ) then
-	TemucraftCollectionsFrame:HookScript("OnShow", Mirror);
-	TemucraftCollectionsFrame:HookScript("OnHide", Mirror);
+for _, name in ipairs({ "TemucraftCollectionsFrame", "TemucraftAdventureGuideFrame" }) do
+	local f = _G[name];
+	if ( f ) then f:HookScript("OnShow", Mirror); f:HookScript("OnHide", Mirror); end
 end
 
 -- bottom right of the screen when there is room beside the main bar (smaller if need be), else above the main bar's

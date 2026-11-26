@@ -46,6 +46,8 @@ FRAME_FILES = ["Temucraft\\TemucraftCore.lua",
                "Temucraft\\TemucraftFlyouts.lua", "Temucraft\\TemucraftSpellBook.lua", "Temucraft\\TemucraftTalentsData.lua",
                "Temucraft\\TemucraftTalents.lua", "Temucraft\\TemucraftCollectionsData.lua",
                "Temucraft\\TemucraftCollections.lua",
+               # the Adventure Guide (after the style, DragonUI and collections files it uses; before the micro menu)
+               "Temucraft\\TemucraftAdventureGuideData.lua", "Temucraft\\TemucraftAdventureGuide.lua",
                # the player UI overhaul (after the spellbook and collections they open)
                "Temucraft\\TemucraftInterface.lua", "Temucraft\\TemucraftGossip.lua", "Temucraft\\TemucraftTooltips.lua",
                "Temucraft\\TemucraftCharacter.lua", "Temucraft\\TemucraftMicroMenu.lua",

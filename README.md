@@ -63,12 +63,54 @@ Addon message `TCC` (Collections previews, `src/TemucraftCollectionsCache.cpp`):
 48 a message); each one the world has gets the creature query response (`HandleCreatureQueryOpcode`), so the client's
 `Model:SetCreature` can show it. No setting.
 
+Addon message `TAG` (Adventure Guide loot, `src/TemucraftAdventureGuideCache.cpp`): a comma list of item entries (up to
+48 a message); each one the world has gets the item query response (`HandleItemQuerySingleOpcode`), so the guide's loot
+tooltips and shift-click links work for items the player has never seen. No setting.
+
 ## Install
 
 Put this folder in `modules/`, copy the conf, re-run CMake and build. The SQL adds the module's texts
 (`module_string`, module `mod-temucraft-client-version`; translations in `module_string_locale`).
 
 Part of the Temucraft modules for AzerothCore 3.3.5a.
+
+## Adventure Guide
+[`TemucraftAdventureGuide.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftAdventureGuide.lua)
+is retail's Encounter Journal for 3.3.5 (micro menu button after Collections; with DragonUI's micro menu a button in
+its look just left of its first button; `/adventure`, `/ag`, `/ej`, `ToggleEncounterJournal()`). Same window look as the
+others (`TemucraftStyle.lua`), stock 3.3.5 art only (the LFG dungeon backgrounds and icons, `UI-LFG-ICON-HEROIC`,
+world map skulls).
+- Tabs **Suggested Content** (a big card and six small ones: dungeons, zones and raids whose levels fit yours, the
+  closest first, zones of your faction), **Dungeons** and **Raids** (a card per instance, nine a page, mouse wheel
+  pages), an expansion menu (Classic, Burning Crusade, Wrath of the Lich King, Temucraft; it starts on your level's)
+  and a search box (instance, zone or boss names, every expansion).
+- An instance: name, zone, levels and players for the chosen difficulty (menu: Normal / Heroic, 10 / 25 / 40 Player,
+  Heroic), the bosses on the left, then Overview (the instance's description and facts, or the boss's), Abilities
+  (the boss's spells: icon, name, the client's own tooltip text; hover for the tooltip, shift-click links) and Loot
+  (the boss's, or with no boss every boss's: icon, name in its quality colour, "Head, Plate"; hover for the tooltip,
+  shift-click links, ctrl-click the dressing room, click tries it on your character in the model). The model shows the
+  boss (`SetCreature`, its entry asked with the Collections window's `TCC`, retried 6 s); Show Boss / Show Character.
+- Opened inside a dungeon or raid it shows that one at its difficulty (`GetInstanceInfo`).
+- Items the client hasn't cached are asked from the server once (`TAG`, four messages a second); the list has the
+  names and qualities from the data meanwhile.
+- **Data** ([`TemucraftAdventureGuideData.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftAdventureGuideData.lua)),
+  written by `python3 client/adventureguide/build_adventure_guide.py [--dbc folder] [--world folder] [--extra sql...]`:
+  instances from Map.dbc, LFGDungeons.dbc (levels, art; seasonal rows left out) and MapDifficulty.dbc (difficulties,
+  players); bosses from DungeonEncounter.dbc and `instance_encounters`; on maps with no encounters (Temucraft's
+  Cataclysm / Mists instances, and the Cataclysm heroics of the Deadmines and Shadowfang Keep as "(Heroic)") the
+  creatures the module SQL spawns there with a `boss_` script or boss rank; abilities from `creature_template_spell`,
+  SmartAI casts and the `SPELL_` enums of the boss's C++ script (core `src/server/scripts`, mod-temucraft-instances),
+  visuals / triggers / credits left out; loot from `creature_loot_template` with references, quality 2+, no quest
+  items, references used by more than 25 creatures (world drops) and far-too-low weapons / armour left out; the
+  overviews, zones and a sample of boss texts (Ragefire Chasm, Deadmines, Molten Core, Karazhan, Naxxramas) from
+  `client/adventureguide/descriptions.tsv`. Defaults: `_dev/server-dbc/dbc`, the core's `data/sql/base/db_world`, and
+  mod-temucraft-world's and mod-temucraft-instances' SQL. For the live server's own changes (and the Lost Lands, whose
+  SQL builds its tables through temporary tables) dump the world database one file per table and pass it as
+  `--world`: `creature_template creature_loot_template reference_loot_template item_template instance_encounters
+  creature_template_spell smart_scripts dungeon_access_template areatrigger_teleport creature map_dbc`
+  (`mysqldump acore_world <table> > <table>.sql` each), with `--extra` given no files.
+  Instances in mod-temucraft-journal's export (`TemucraftJournalData`, when that addon is loaded) that the data lacks
+  are added under Temucraft.
 
 ## Token preview
 [`TemucraftTokenPreview.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftTokenPreview.lua): a tier token's tooltip says how many items it buys for your class; alt-click it (or
@@ -202,8 +244,8 @@ sat on their bottom tabs), except the spellbook and talents.
   frame, { title })` and open them with `TemucraftCharacter_Open(key [, toggle])`.
 - **Micro menu** ([`TemucraftMicroMenu.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftMicroMenu.lua)): a row at the bottom right (smaller
   if need be, or above the main bar when there's no room beside it): Character, Spellbook & Talents (right click:
-  talents), Achievements, Quest Log, Guild (right click: friends), Group Finder (right click: PvP), Collections, Shop,
-  Game Menu (latency / memory tooltip), Help. Each calls what its stock button calls and copies its stock button's
+  talents), Achievements, Quest Log, Guild (right click: friends), Group Finder (right click: PvP), Collections, Adventure
+  Guide, Shop, Game Menu (latency / memory tooltip), Help. Each calls what its stock button calls and copies its stock button's
   state (pushed, disabled below its level); the stock buttons are hidden, and come back on vehicle bars.
 - **Guild & Communities** ([`TemucraftGuild.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftGuild.lua), J, the micro menu's guild button, `/tguild`,
   `/tguild classic|new`): the guild's card on the left (name, your rank, online count, message of the day, Add Member,
@@ -516,6 +558,7 @@ hidden holder and ours sit on top. The "Classic" choice here is `TEMUCRAFT_LOGIN
 | C, `/tchar [classic\|new]` | character window (Character tab) |
 | P / N, `/tsb [classic\|new]`, `/ttf [classic\|new]` | spellbook / talents |
 | `/collections`, `/tcol` | collections |
+| `/adventure`, `/ag`, `/ej` [`dungeons` \| `raids` \| `suggested`] | the Adventure Guide |
 | J, `/tguild [classic\|new]` | guild window (J is bound to the stock Guild key once per account when both are free) |
 | U (Reputation tab), `/renown [faction]` | reputation, Renown journeys |
 | `/addons` | addon list |
@@ -531,7 +574,7 @@ hidden holder and ours sit on top. The "Classic" choice here is `TEMUCRAFT_LOGIN
 Stub tests (no client; run from the module folder with Lua 5.1) for the grouping, search, paging, collection and
 loadout logic, the player UI, the login screens and the protocols: `lua5.1 client/tests/spellbook_test.lua`,
 `collections_test.lua`, `interface_test.lua`, `taxi_test.lua`, `issues_test.lua`, `guild_test.lua`,
-`reputation_test.lua`, `glue_test.lua`, `loadouts_test.lua` (the server loadouts protocol), `dragonui_test.lua` (the DragonUI step-aside switch), `professions_test.lua` (the Professions window's list, filters, favourites, stats and recipe helpers), `achievements_test.lua` (the Achievements window's category tree, progress, filter and search, tracking cap, series and criteria helpers), `tutorial_test.lua` (the new-player tutorial's start rules and step machine, fed fake events) and `options_test.lua` (the Options pages, search, sliders, key names, binding groups, the AddOns list, server answers and the Esc menu rows; all in `client/tests/`). Also check every file with `luac5.1 -p`.
+`reputation_test.lua`, `glue_test.lua`, `loadouts_test.lua` (the server loadouts protocol), `dragonui_test.lua` (the DragonUI step-aside switch), `professions_test.lua` (the Professions window's list, filters, favourites, stats and recipe helpers), `achievements_test.lua` (the Achievements window's category tree, progress, filter and search, tracking cap, series and criteria helpers), `adventureguide_test.lua` (the Adventure Guide data's shape and the hand-checked sample instances, tabs, expansion filter, search, level suggestions, loot, the TAG asks and the journal merge), `tutorial_test.lua` (the new-player tutorial's start rules and step machine, fed fake events) and `options_test.lua` (the Options pages, search, sliders, key names, binding groups, the AddOns list, server answers and the Esc menu rows; all in `client/tests/`). Also check every file with `luac5.1 -p`.
 
 ## Also in this module
 

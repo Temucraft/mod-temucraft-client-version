@@ -56,7 +56,7 @@ check("slot columns", #C.LEFT == 8 and #C.RIGHT == 8 and #C.BOTTOM == 3);
 -- micro menu
 local keys = {};
 for _, b in ipairs(M.BUTTONS) do table.insert(keys, b.key); end
-check("micro order", table.concat(keys, ",") == "character,spellbook,achievements,quests,guild,lfd,collections,shop,menu,help");
+check("micro order", table.concat(keys, ",") == "character,spellbook,achievements,quests,guild,lfd,collections,adventure,shop,menu,help");
 local x = M.Layout(3, 28, -2);
 check("micro layout right to left", x[3] == 0 and x[2] == -26 and x[1] == -52);
 
