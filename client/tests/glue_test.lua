@@ -144,6 +144,79 @@ local _, code = S.SplitSaved(big);
 check("order segment capped", string.len(code) <= S.MAX_SAVED and S.GetOrder(big, "acc30", "realm") and not S.GetOrder(big, "acc1", "realm"));
 check("utf8 cut", S.Utf8Sub("Jaína", 3) == "Jaí" and S.Utf8Len("Jaína") == 5);
 
+
+-- select: groups (saved in the same "~" segment; the old names-only orders read as one "Characters" group)
+local oldBlob = S.SetOrder(accounts, "ryan", "Temucraft", { "Jaina", "Thrall" });
+local g0 = S.GetGroups(oldBlob, "ryan", "Temucraft");
+check("groups: an old order is the default group", #g0 == 1 and g0[1].default and S.GroupName(g0[1]) == "Characters" and table.concat(g0[1].names, ",") == "Jaina,Thrall");
+check("groups: one plain group saves as the old format", S.SetGroups(accounts, "ryan", "Temucraft", g0) == oldBlob);
+check("groups: none saved", S.GetGroups(oldBlob, "alt", "Temucraft") == nil);
+local gi, gerr = S.AddGroup(g0, "  Favorites  ");
+check("groups: add before the default", gi == 1 and g0[1].name == "Favorites" and g0[2].default);
+check("groups: no twins, no empty names", select(2, S.AddGroup(g0, "favorites")) == "exists" and select(2, S.AddGroup(g0, "   ")) == "empty"
+	and select(2, S.AddGroup(g0, "characters")) == "exists");
+check("groups: move into a group", S.MoveName(g0, "Thrall", 1, nil) and table.concat(g0[1].names, ",") == "Thrall" and table.concat(g0[2].names, ",") == "Jaina");
+check("groups: move before a card of another group", S.MoveName(g0, "Jaina", 1, "Thrall") and table.concat(g0[1].names, ",") == "Jaina,Thrall" and #g0[2].names == 0);
+check("groups: within a group like Move", S.MoveName(g0, "Jaina", 1, "Thrall") and table.concat(g0[1].names, ",") == "Thrall,Jaina");
+check("groups: nowhere", not S.MoveName(g0, "Gone", 1, nil) and not S.MoveName(g0, "Thrall", 9, nil) and not S.MoveName(g0, "Jaina", 1, nil));
+S.AddGroup(g0, "Alternative");
+g0[1].collapsed = true;
+local blob2 = S.SetGroups(accounts, "ryan", "Temucraft", g0);
+local g1 = S.GetGroups(blob2, "ryan", "Temucraft");
+check("groups: saved and read back", #g1 == 3 and g1[1].name == "Favorites" and g1[1].collapsed and g1[2].name == "Alternative" and not g1[2].collapsed
+	and g1[3].default and table.concat(g1[1].names, ",") == "Thrall,Jaina" and #g1[2].names == 0);
+check("groups: accounts untouched", S.AccountsPart(blob2) == accounts and tcShow(string.sub(blob2, 5, #accounts)) == "ryan\tsecret\nalt\t");
+check("groups: GetOrder gives every name in order", table.concat(S.GetOrder(blob2, "ryan", "Temucraft"), ",") == "Thrall,Jaina");
+check("groups: rename", S.RenameGroup(g1, 2, "Alts") and S.GroupName(g1[2]) == "Alts" and select(2, S.RenameGroup(g1, 2, "favorites")) == "exists"
+	and select(2, S.RenameGroup(g1, 2, "")) == "empty");
+check("groups: rename the default", S.RenameGroup(g1, 3, "Mains") and S.GroupName(g1[3]) == "Mains" and S.RenameGroup(g1, 3, "") and S.GroupName(g1[3]) == "Characters");
+S.RenameGroup(g1, 3, "Mains");
+local g2 = S.GetGroups(S.SetGroups("", "a", "r", g1), "a", "r");
+check("groups: renamed default kept", g2[3].default and g2[3].name == "Mains");
+check("groups: delete sends the cards to the default", S.DeleteGroup(g1, 1) and #g1 == 2 and table.concat(g1[2].names, ",") == "Thrall,Jaina" and not S.DeleteGroup(g1, 2));
+-- arrange and rows
+local roster5 = { { id = 1, name = "A", level = 10 }, { id = 2, name = "B", level = 20 }, { id = 3, name = "C", level = 30 }, { id = 4, name = "New", level = 1 } };
+local ga = S.GroupsFromEntries({ "#=+Fav", "C", "Gone", "#*+", "B", "A" });
+local ar = S.Arrange(roster5, ga);
+check("arrange: groups, gone dropped, new into the default", table.concat(ar[1].names, ",") == "C" and table.concat(ar[2].names, ",") == "B,A,New"
+	and roster5[3].group == 1 and roster5[4].group == 2 and roster5[3].place == 1 and roster5[4].place == 4);
+check("arrange: flatten", names(S.Flatten(ar)) == "C,B,A,New");
+local r1, s1 = S.Rows(ar, "");
+check("rows: headers and cards", #r1 == 6 and r1[1].kind == "header" and r1[1].count == 1 and r1[3].kind == "header" and r1[4].c.name == "B" and #s1 == 4);
+ar[2].collapsed = true;
+local r2, s2 = S.Rows(ar, "");
+check("rows: a closed group shows its header only", #r2 == 3 and #s2 == 1);
+local r3, s3 = S.Rows(ar, "20");
+check("rows: search opens the groups with a match and hides the others", #r3 == 2 and r3[1].group == 2 and r3[2].c.name == "B" and #s3 == 1);
+check("groups: names first, then a header (default first)", (function() local g = S.GroupsFromEntries({ "A", "#=-X", "B" }); return #g == 2 and g[1].default and g[2].collapsed and g[2].names[1] == "B"; end)());
+check("groups: junk entries", (function() local g = S.GroupsFromEntries({ "#?", "#=+", "A", "A" }); return #g == 1 and #g[1].names == 2 and g[1].names[1] == "#?"; end)());
+
+-- select: delete confirmation (any case, the client's word, always DELETE, Latin letters)
+check("upper: latin, cyrillic, german", S.Upper("delete") == "DELETE" and S.Upper("удалить") == "УДАЛИТЬ" and S.Upper("ёжик") == "ЁЖИК" and S.Upper("löschen") == "LÖSCHEN");
+check("delete enUS", S.DeleteOk("delete", "enUS", "DELETE") and S.DeleteOk("  DeLeTe ", "enUS", nil) and not S.DeleteOk("delet", "enUS", "DELETE") and not S.DeleteOk("", "enUS", "DELETE"));
+check("delete ruRU", S.DeleteOk("удалить", "ruRU", "УДАЛИТЬ") and S.DeleteOk("УдАлИтЬ", "ruRU", nil) and S.DeleteOk("udalit", "ruRU", "УДАЛИТЬ")
+	and S.DeleteOk("delete", "ruRU", "УДАЛИТЬ") and not S.DeleteOk("удалит", "ruRU", "УДАЛИТЬ"));
+check("delete deDE", S.DeleteOk("löschen", "deDE", nil) and S.DeleteOk("LOESCHEN", "deDE", nil) and S.DeleteOk("loschen", "deDE", nil) and S.DeleteOk("Delete", "deDE", nil));
+check("delete other locales", S.DeleteOk("supprimer", "frFR") and S.DeleteOk("borrar", "esMX") and S.DeleteOk("삭제", "koKR") and S.DeleteOk("删除", "zhCN") and S.DeleteOk("刪除", "zhTW"));
+check("delete instructions", S.DeleteInstructions("enUS", "DELETE", "Type \"DELETE\" into the field to confirm.") == "Type \"DELETE\" into the field to confirm."
+	and string.find(S.DeleteInstructions("ruRU", "УДАЛИТЬ", "Введите \"УДАЛИТЬ\""), "(or DELETE)", 1, true)
+	and string.find(S.DeleteInstructions("deDE", nil, nil), "\"LÖSCHEN\"", 1, true) and string.find(S.DeleteInstructions("deDE", nil, nil), "(or DELETE)", 1, true));
+
+-- select: card style, money, tooltip
+local on, off = S.CardStyle(true), S.CardStyle(false);
+check("card style: selected gold, crest in colour", on.glow and not on.crestDesaturated and on.crestAlpha == 1 and on.bg[1] > on.bg[3] and on.border[2] > 0.7);
+check("card style: others dark, crest grey", not off.glow and off.crestDesaturated and off.crestAlpha < 1 and off.bg[1] < 0.3);
+check("money", S.Money(162575561) == "16,257 g 55 s 61 c" and S.Money(61) == "61 c" and S.Money(5501) == "55 s 1 c" and S.Money(1234567890000) == "123,456,789 g 0 s 0 c");
+check("money icons", string.find(S.Money(10000, true), "UI-GoldIcon", 1, true) ~= nil);
+local druid = { name = "Malfurion", class = "Druid", classFile = "DRUID", level = 85, zone = "Moonglade" };
+local tl = S.TooltipLines(druid, "Temucraft", { spec = "Restoration", professions = { "Mining", "Herbalism" }, money = 162575561 }, nil, false);
+check("tooltip with the summary", tl[1] == "|cffffd100Malfurion|r" and tl[2] == "|cff9d9d9dTemucraft|r" and tl[3] == "|cffff7d0aRestoration Druid|r"
+	and tl[4] == "|cffffffffLevel 85|r" and tl[5] == "|cff9d9d9dMoonglade|r" and tl[6] == "|cffffffffMining, Herbalism|r" and tl[7] == "|cffffffff16,257 g 55 s 61 c|r");
+local tl2 = S.TooltipLines(druid, "Temucraft", nil, "hint");
+check("tooltip without it", #tl2 == 6 and tl2[3] == "|cffff7d0aDruid|r" and string.find(tl2[6], "hint"));
+check("summary lookup and mail", S.Summary({ R = { A = { mail = { "Thrall", "Jaina" } } } }, "R", "A") and S.Summary({}, "R", "A") == nil and S.Summary(nil, "R", "A") == nil
+	and S.MailText({ mail = { "Thrall", "Jaina" } }) == "Unread mail from:\nThrall, Jaina" and S.MailText({ mail = true }) == "Unread mail" and S.MailText({ mail = {} }) == nil);
+
 ---------------------------------------------------------------------------------------------------------------------
 -- 2. stub load
 ---------------------------------------------------------------------------------------------------------------------
@@ -193,6 +266,8 @@ function W:GetBottom() return self.bottom; end
 function W:GetEffectiveScale() return 1; end
 function W:SetAlpha(a) self.alpha = a; end
 function W:GetStringWidth() return string.len(self.text or "") * 6; end   -- 6 px a byte
+function W:SetDesaturated(d) self.desaturated = d and true or false; end
+function W:SetFocus() self.focus = true; end
 function W:CreateTexture() local r = new("Texture"); table.insert(self.regions, r); return r; end
 function W:CreateFontString() local r = new("FontString"); table.insert(self.regions, r); return r; end
 function W:GetNormalTexture() return new("Texture"); end
@@ -337,10 +412,10 @@ local ok4, err4 = pcall(function() CharacterSelect:Show(); end);
 check("select shows", ok4 or print(err4));
 check("stock list hidden", not CharacterSelectCharacterFrame:IsVisible() and TemucraftCharSelectFrame:IsVisible());
 check("cards", TemucraftSelectCard1:IsShown() and TemucraftSelectCard3:IsShown() and not TemucraftSelectCard4:IsShown());
--- card names without the "1. " place in front (grey)
-local function cardName(n) return (string.gsub(_G["TemucraftSelectCard"..n].name.text or "", "^|cff%x%x%x%x%x%x%d+%.|r ", "")); end
+-- card names (the "1." place is its own small text in front)
+local function cardName(n) return _G["TemucraftSelectCard"..n].name.text or ""; end
 local function cardNames() local t = {}; for n = 1, 3 do t[n] = cardName(n); end return table.concat(t, ","); end
-check("cards show their place first", string.find(TemucraftSelectCard1.name.text, "^|cff9d9d9d1%.|r Jaina") ~= nil);
+check("cards show their place first", TemucraftSelectCard1.num.text == "1." and TemucraftSelectCard3.num.text == "3." and TemucraftSelectCard1.name.text == "Jaina");
 check("cards in the saved order, new ones after", cardNames() == "Jaina,Thrall,Lorewalker");
 check("cards keep the client's index", TemucraftSelectCard1.id == 2 and TemucraftSelectCard2.id == 1 and TemucraftSelectCard3.id == 3);
 check("card zone bracket", TemucraftSelectCard1.zone.text == "Dalaran (Wrath of the Lich King)" and TemucraftSelectCard2.zone.text == "Orgrimmar");
@@ -415,6 +490,113 @@ TemucraftSelectRealms:Click();
 check("realms", state.realms);
 TemucraftSelectCreate:Click();
 check("create", state.screen == "charcreate");
+
+-- the new pieces: highlight, delete dialog, groups, summary
+CharacterSelect.selectedIndex, state.selected = 1, 1;   -- Thrall
+TemucraftSelectSearch:SetText("");
+TemucraftCharSelect_Refresh();
+local function cardByName(name) for n = 1, 8 do local b = _G["TemucraftSelectCard"..n]; if ( b:IsShown() and b.char and b.char.name == name ) then return b; end end end
+local thrallCard, loreCard = cardByName("Thrall"), cardByName("Lorewalker");
+check("selected card gold, crest in colour; others grey", thrallCard.isSelected and thrallCard.selected.shown and thrallCard.crest.desaturated == false
+	and not loreCard.isSelected and not loreCard.selected.shown and loreCard.crest.desaturated == true and loreCard.crest.alpha < 1);
+check("default group header", TemucraftSelectHeader1:IsShown() and TemucraftSelectHeader1.text.text == "Characters" and TemucraftSelectHeader1.count.text == "(3)");
+check("plus, delete and restore buttons", TemucraftSelectPlus and TemucraftSelectDelete.enabled and TemucraftSelectRestore and TemucraftSelectRestore:IsShown());
+-- delete
+local deleted;
+function DeleteCharacter(id) deleted = id; end
+state.deleted = nil;
+TemucraftSelectDelete:Click();
+check("delete opens our dialog", TemucraftDeleteDialog:IsShown() and not state.deleted and not TemucraftDeleteOkay.enabled);
+check("delete dialog names the character", string.find(TemucraftDeleteDialog.text.text, "Thrall Level 80 |cff0070deShaman|r", 1, true) ~= nil
+	and TemucraftDeleteDialog.hint.text == "Type \"DELETE\" into the field to confirm.");
+TemucraftDeleteEdit:SetText("delet");
+check("okay off until the word is typed", not TemucraftDeleteOkay.enabled);
+TemucraftDeleteEdit:SetText("Delete");
+check("okay on for DELETE in any case", TemucraftDeleteOkay.enabled);
+CharacterSelect_OnKeyDown(CharacterSelect, "ESCAPE");
+check("escape closes the dialog, nothing else", not TemucraftDeleteDialog:IsShown() and state.stockKey ~= "ESCAPE" and deleted == nil);
+TemucraftSelectDelete:Click();
+check("dialog opens empty", TemucraftDeleteEdit:GetText() == "" and not TemucraftDeleteOkay.enabled);
+TemucraftDeleteEdit:SetText("DELETE");
+TemucraftDeleteOkay:Click();
+check("okay deletes the selected character", deleted == 1 and not TemucraftDeleteDialog:IsShown());
+deleted = nil;
+GetLocale = function() return "ruRU"; end
+DELETE_CONFIRM_STRING = "УДАЛИТЬ";
+CONFIRM_CHAR_DELETE_INSTRUCTIONS = "Введите \"УДАЛИТЬ\" в поле для подтверждения.";
+TemucraftSelectDelete:Click();
+check("ruRU: the word and (or DELETE)", string.find(TemucraftDeleteDialog.hint.text, "(or DELETE)", 1, true) and string.find(TemucraftDeleteDialog.hint.text, "УДАЛИТЬ", 1, true));
+TemucraftDeleteEdit:SetText("удалить");
+local ru1 = TemucraftDeleteOkay.enabled;
+TemucraftDeleteEdit:SetText("udalit");
+local ru2 = TemucraftDeleteOkay.enabled;
+TemucraftDeleteEdit:SetText("delete");
+check("ruRU: Cyrillic in any case, Latin, English", ru1 and ru2 and TemucraftDeleteOkay.enabled);
+TemucraftDeleteCancel:Click();
+check("cancel keeps the character", deleted == nil and not TemucraftDeleteDialog:IsShown());
+GetLocale, DELETE_CONFIRM_STRING, CONFIRM_CHAR_DELETE_INSTRUCTIONS = nil, nil, nil;
+-- groups: right-click Lorewalker > Move to group > New group... "Favorites"
+loreCard.scripts.OnMouseDown(loreCard, "RightButton");
+loreCard.scripts.OnClick(loreCard, "RightButton");
+check("right-click opens the card menu", TemucraftSelectPopup1Item1:IsShown() and TemucraftSelectPopup1Item1.text.text == "Move to group");
+TemucraftSelectPopup1Item1:Click();
+check("move to group: the groups and New group", TemucraftSelectPopup2Item1:IsShown() and string.find(TemucraftSelectPopup2Item1.text.text, "New group", 1, true));
+TemucraftSelectPopup2Item1:Click();
+check("new group dialog", TemucraftGroupDialog:IsShown() and not TemucraftSelectPopupBlocker:IsShown());
+TemucraftGroupEdit:SetText("characters");
+TemucraftGroupOkay:Click();
+check("taken name refused", TemucraftGroupDialog:IsShown() and string.find(TemucraftGroupDialog.error.text, "already", 1, true));
+TemucraftGroupEdit:SetText("Favorites");
+TemucraftGroupOkay:Click();
+local saved = S.GetGroups(savedList, "ryan", "Temucraft");
+check("group made, card moved, saved", not TemucraftGroupDialog:IsShown() and saved[1].name == "Favorites" and table.concat(saved[1].names, ",") == "Lorewalker"
+	and table.concat(saved[2].names, ",") == "Thrall,Newbie");
+check("headers on screen", TemucraftSelectHeader1.text.text == "Favorites" and TemucraftSelectHeader2.text.text == "Characters" and cardNames() == "Lorewalker,Thrall,Newbie"
+	and TemucraftSelectCard1.num.text == "1.");
+TemucraftSelectHeader1:Click();
+saved = S.GetGroups(savedList, "ryan", "Temucraft");
+check("header click closes the group (saved)", saved[1].collapsed and cardName(1) == "Thrall" and not TemucraftSelectCard3:IsShown());
+TemucraftSelectHeader1:Click();
+check("and opens it", cardNames() == "Lorewalker,Thrall,Newbie");
+-- drag Newbie (card 3) onto the Favorites header: Header1, Card1, Header2, Card2, Card3
+local y0 = 700;
+for _, f in ipairs({ TemucraftSelectHeader1, TemucraftSelectCard1, TemucraftSelectHeader2, TemucraftSelectCard2, TemucraftSelectCard3 }) do
+	local h = (f == TemucraftSelectHeader1 or f == TemucraftSelectHeader2) and 24 or 64;
+	f.top, f.bottom = y0, y0 - h; y0 = y0 - h - 4;
+end
+cursorY = 690;
+TemucraftSelectCard3.scripts.OnDragStart(TemucraftSelectCard3);
+TemucraftSelectCard3.scripts.OnDragStop(TemucraftSelectCard3);
+saved = S.GetGroups(savedList, "ryan", "Temucraft");
+check("drag onto a header: into that group, last", table.concat(saved[1].names, ",") == "Lorewalker,Newbie" and table.concat(saved[2].names, ",") == "Thrall");
+-- rename and delete from the header's menu
+TemucraftSelectHeader1.scripts.OnClick(TemucraftSelectHeader1, "RightButton");
+check("header menu", TemucraftSelectPopup1Item1.text.text == "Rename" and TemucraftSelectPopup1Item2.text.text == "Delete");
+TemucraftSelectPopup1Item1:Click();
+check("rename dialog has the name", TemucraftGroupDialog:IsShown() and TemucraftGroupEdit:GetText() == "Favorites");
+TemucraftGroupEdit:SetText("Mains");
+TemucraftGroupOkay:Click();
+check("renamed", TemucraftSelectHeader1.text.text == "Mains" and S.GetGroups(savedList, "ryan", "Temucraft")[1].name == "Mains");
+TemucraftSelectHeader2.scripts.OnClick(TemucraftSelectHeader2, "RightButton");
+check("the default group can't be deleted", TemucraftSelectPopup1Item1.text.text == "Rename" and not string.find(TemucraftSelectPopup1Item2.text.text or "", "Delete"));
+CharacterSelect_OnKeyDown(CharacterSelect, "ESCAPE");
+check("escape closes the popup", not TemucraftSelectPopupBlocker:IsShown() and state.stockKey ~= "ESCAPE");
+TemucraftSelectHeader1.scripts.OnClick(TemucraftSelectHeader1, "RightButton");
+TemucraftSelectPopup1Item2:Click();
+saved = S.GetGroups(savedList, "ryan", "Temucraft");
+check("deleted group: its cards back to Characters", #saved == 1 and table.concat(saved[1].names, ",") == "Thrall,Lorewalker,Newbie"
+	and TemucraftSelectHeader1.text.text == "Characters" and not TemucraftSelectHeader2:IsShown());
+check("one plain group saved in the old format again", not string.find(S.Decode(select(2, S.SplitSaved(savedList))), "#", 1, true));
+-- the launcher's summary: mail badge and tooltip
+TEMUCRAFT_CHAR_SUMMARY = { Temucraft = { Thrall = { spec = "Enhancement", professions = { "Mining" }, money = 1234567, mail = { "Jaina" } } } };
+TemucraftCharSelect_Refresh(true);
+thrallCard, loreCard = cardByName("Thrall"), cardByName("Lorewalker");
+check("mail badge", thrallCard.mail:IsShown() and thrallCard.mailText == "Unread mail from:\nJaina" and not loreCard.mail:IsShown());
+thrallCard.scripts.OnEnter(thrallCard);
+local found = false;
+for _, f in ipairs(frames) do if ( f.kind == "FontString" and f.shown and f.text == "|cff0070deEnhancement Shaman|r" ) then found = true; end end
+check("card tooltip with spec and class", found);
+TEMUCRAFT_CHAR_SUMMARY = nil;
 
 -- 2026-11-25 evening: long AreaTable brackets cut, title colours, tooltip wrapping
 check("zone: AreaTable bracket dropped", S.ZoneText("Valley of Trials (Durotar, Classic)") == "Valley of Trials");

@@ -11,6 +11,7 @@ It carries
   - Interface\\GlueXML\\TemucraftVersion.lua: "Temucraft <version>" on the login screen,
   - Interface\\GlueXML\\TemucraftCharCreate.lua / TemucraftCharSelect.lua: the retail-style character create and select
     screens, on top of the client's own (TemucraftGlueData.lua: their data, made by gen_glue_data.py),
+  - Interface\\TemucraftCharSummary.lua: an empty TEMUCRAFT_CHAR_SUMMARY (the launcher writes the real one, loose),
   - Interface\\TemucraftScenes.lua: the character screen scenes ("old" here; the launcher writes a loose Interface\\TemucraftScenes.lua
     with the player's choice: "new" for Character models HD, plus the scenes they picked per race),
   - Interface\\FrameXML\\Temucraft\\TemucraftIssueBug.blp: the Issue Reporter's bug icon (Blizzard's FeedbackUI icon),
@@ -65,7 +66,8 @@ GLUE_ART_FILES = []   # (the race ring now uses the stock MiniMap-TrackingBorder
 # after the client's own glue files (CharacterCreate / CharacterSelect), so they can sit on top of them
 GLUE_FILES = ["TemucraftGlueSafety.lua", "TemucraftVersion.lua", "TemucraftGlueData.lua", "TemucraftCharCreate.lua", "TemucraftCharSelect.lua"]
 # Interface\\<file> (listed as ..\\<file> in GlueXML.toc, like LoginUI.lua): the launcher writes its own loose copy
-ROOT_GLUE_FILES = ["TemucraftScenes.lua"]
+# (TemucraftCharSummary.lua: spec, professions, gold and unread mail for the character select tooltips)
+ROOT_GLUE_FILES = ["TemucraftScenes.lua", "TemucraftCharSummary.lua"]
 
 
 def insert_before(text, marker, lines):

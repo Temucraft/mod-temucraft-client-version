@@ -1,0 +1,12 @@
+-- Temucraft character select: what the character list doesn't carry (spec, professions, gold, unread mail), for the
+-- card tooltips and the mail badge in TemucraftCharSelect.lua. This empty copy is in patch-^.MPQ; the launcher writes
+-- its own Interface\TemucraftCharSummary.lua (a loose file, like Interface\TemucraftScenes.lua) before it starts the
+-- game. Anything missing is simply not shown.
+--   TEMUCRAFT_CHAR_SUMMARY[realm][name] = {
+--     spec = "Restoration",                  -- the talent tree with the most points, in the client's language
+--     professions = { "Mining", "Herbalism" },
+--     money = 162575561,                     -- copper (16,257 g 55 s 61 c)
+--     mail = { "Thrall", "Auction House" },  -- senders of unread mail ({} or nil: none; true: unread, senders unknown)
+--   }
+--   realm: the realm's name as the client shows it (GetServerName), name: the character's name.
+TEMUCRAFT_CHAR_SUMMARY = TEMUCRAFT_CHAR_SUMMARY or {};

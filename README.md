@@ -315,13 +315,41 @@ The client's own CharacterCreate.lua / CharacterSelect.lua still run and do the 
 hidden holder and ours sit on top. The "Classic" choice here is `TEMUCRAFT_LOGIN_UI = "classic"` in
 `Interface\TemucraftScenes.lua` (written by the launcher): both screens are then the stock ones.
 
-- **Character select** (`TemucraftCharSelect.lua`): character cards on the right (name, level, class colour, zone
-  with its version bracket from `TemucraftGlueData.lua`, faction crest), a search box (name, class, zone, level "70", "60-70", "80+", role
-  words such as "tank" / "healer"), a top bar with Menu (Options, AddOns, Credits, Cinematics, Exit), an eye button
-  that hides the interface, Create / Delete under the cards. The Realms button is hidden (Live or PTR is picked in
-  the launcher). Cards can be reordered by drag and drop or the arrows on the selected card; the order is kept per
-  account and realm in Config.wtf's `accountList` as a segment after `~` (`GetSavedAccountList` /
-  `SetSavedAccountList` are wrapped so AccountLogin.lua still sees only the saved accounts).
+- **Character select** (`TemucraftCharSelect.lua`), retail style, 3.3.5 art only (DialogFrame gold border and dark
+  background, AchievementFrame bars, Glue panel buttons):
+  - **List panel** on the right: a Search box (magnifier, "Search"; name, class, race, faction, zone, level "70",
+    "60-70", "80+", roles "tank" / "heal" / "dps") with an (i) tooltip and a square red "+" (Create Character).
+    Below, the characters in **groups** with dark collapsible headers ("Characters" by default, "(3)", -/+). Right-click
+    a card: Move to group > (groups) / New group...; right-click a header: Rename / Delete (its cards go back to
+    "Characters"; the default group can only be renamed) / New group...; left-click a header opens or closes it.
+    Drag a card onto a card (it takes that place, in that card's group) or onto a header (last in that group).
+  - **Cards**: "1." small and grey, the name in gold, "Level 80 Mage" (class in its colour), the zone on one line with
+    the short version bracket, the faction crest on the right (in colour on the selected card, grey and dim on the
+    others); the selected card has a gold background, border and glow. Double-click enters the world. The paid service
+    button and an unread mail badge sit on the card's left edge.
+  - **Card tooltip** (left of the list): name, realm, spec + class in class colour, level, zone, professions, gold
+    (coin icons). The character list only has name, class, level and zone; spec, professions, gold and mail come from
+    `TEMUCRAFT_CHAR_SUMMARY` in `Interface\TemucraftCharSummary.lua` (empty in patch-^; the launcher writes the real
+    file, loose, like `TemucraftScenes.lua`; the format is in that file) and are left out when it has nothing.
+  - **Bottom**: a red Create Character button (tooltip: the realm), a square Delete Character (trash) and a square
+    Restore Deleted Character button. 3.3.5 can't restore at character select; its tooltip says that the Temucraft
+    Curator (mod-temucraft-shop, in game) brings deleted characters back for tokens.
+  - **Delete** opens our dialog (the stock `CharacterDeleteDialog` is not used): "Do you want to delete <name> Level
+    <n> <class>?", a warning icon, the client's instructions, an edit box, Okay (only when the box holds the word) and
+    Cancel; then the client's `DeleteCharacter(index)`. Accepted, in any case: the client's `DELETE_CONFIRM_STRING`,
+    the word for the client's language (ruRU УДАЛИТЬ, deDE LÖSCHEN, frFR SUPPRIMER, esES/esMX BORRAR, koKR 삭제,
+    zhCN 删除, zhTW 刪除), always the English DELETE, and Latin spellings (UDALIT, LOESCHEN / LOSCHEN); non-English
+    clients show "(or DELETE)". Cyrillic and Latin-1 upper case is done by `Logic.Upper` (Lua's only knows a-z).
+  - A top bar with Menu (a gold-bordered panel of red buttons: Options, AddOns, Credits, Cinematics, Exit) and the
+    realm's name; the PTR client on a realm that isn't the PTR gets a red warning and Enter World off. The eye button
+    hides the interface. The Realms button is hidden (Live or PTR is picked in the launcher).
+  - Groups and order are kept per account and realm in Config.wtf's `accountList` as a segment after `~`
+    (`GetSavedAccountList` / `SetSavedAccountList` are wrapped so AccountLogin.lua still sees only the saved
+    accounts). An entry is a name or a group header `#` + kind (`*` default, `=` the player's) + state (`+` open,
+    `-` closed) + name; only the default group, open and not renamed, is saved as plain names, exactly the old
+    format, so orders saved before groups read the same.
+  - Not doable: retail's camp with up to four characters in the scene. The 3.3.5 glue screen has one character model
+    (the CharacterSelect ModelFFX), so only the selected character stands in the scene.
 - **Character create** (`TemucraftCharCreate.lua`): Alliance races in two columns on the left, Horde on the right,
   classes along the bottom, male / female at the top; step 2 Customize with the name and random-name dice, option
   arrows with "Face 3 / 9" counters (totals from the DBCs in `TemucraftGlueData.lua`, made by `gen_glue_data.py`),

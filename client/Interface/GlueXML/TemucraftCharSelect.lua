@@ -1,18 +1,28 @@
 --[[
-	Temucraft character select, the retail way: character cards on the right (name, level, class colour, zone with its
-	version bracket, faction crest), a search box over them, a top bar with Menu (Options, AddOns, Credits,
-	Cinematics, Exit) and Realms, an eye button that hides the interface to show only the scene, Create / Delete
-	under the cards. Enter World, Back and the rotate buttons stay the client's own.
+	Temucraft character select, the retail way. On the right a dark panel with a gold border: a Search box (magnifier,
+	"Search") with an (i) tooltip and a square "+" (Create Character) beside it; below, the characters in groups
+	("Characters" by default, the player can add, rename and delete groups) with collapsible headers; each card has
+	the place number, the name in gold, "Level 80 Mage" (class in its colour), the zone on one line (short version
+	bracket) and the faction crest (in colour on the selected card, grey on the others). At the bottom a red Create
+	Character button, a square Delete Character (trash) and a square Restore Deleted Character button. A top bar with
+	Menu (Options, AddOns, Credits, Cinematics, Exit) and the realm name; an eye button hides the interface. Enter World,
+	Back and the rotate buttons stay the client's own.
 
 	The client's CharacterSelect.lua (patch-<locale>-C) still runs: its character list is only moved into a hidden
 	holder, and the cards call its functions (CharacterSelect_SelectCharacter, CharacterSelect_EnterWorld ...). The
 	background is the client's too: each character's race scene (SetBackgroundModel in GlueParent.lua, which also
-	applies the player's own picks from Interface\TemucraftScenes.lua).
+	applies the player's own picks from Interface\TemucraftScenes.lua). Delete asks with our own dialog (type DELETE,
+	or the client's own word for it) and then calls the client's DeleteCharacter(index).
 
-	The cards can be put in any order: drag one onto another, or use the arrows on the selected card. The order is kept
-	per account and realm in the client's saved account list (Config.wtf accountList, which AccountLogin.lua already
-	uses for the saved accounts) as its own segment after a "~" (see Logic.SplitSaved). The cards always hand the
-	client its own character index (c.id), whatever their order on screen.
+	Cards are put in any order and group by dragging (onto a card: there; onto a group header: into that group) or by
+	right-click (Move to group > ...). The groups and the order are kept per account and realm in the client's saved
+	account list (Config.wtf accountList, which AccountLogin.lua already uses for the saved accounts) as its own segment
+	after a "~" (see Logic.SplitSaved and Logic.GroupsFromEntries). The cards always hand the client its own character
+	index (c.id), whatever their order on screen.
+
+	The card tooltip (left of the list) shows what the character list has (name, realm, class, level, zone) and, from
+	TEMUCRAFT_CHAR_SUMMARY (Interface\TemucraftCharSummary.lua, written by the launcher), the spec, professions, gold
+	and unread mail; see that file for the format.
 
 	TEMUCRAFT_LOGIN_UI = "classic" (Interface\TemucraftScenes.lua) keeps the old screen.
 --]]
@@ -197,7 +207,7 @@ end
 -- client's own "[%w!]+" reader of that string never mix them up with theirs.
 Logic.ORDER_MARK = "~";
 Logic.ACCOUNTS_TAG = "tc1:";
-Logic.MAX_ORDERS, Logic.MAX_NAMES, Logic.MAX_SAVED = 10, 60, 3000;
+Logic.MAX_ORDERS, Logic.MAX_NAMES, Logic.MAX_SAVED = 10, 80, 3000;   -- MAX_NAMES: entries (names and group headers)
 
 function Logic.SplitSaved(raw)
 	raw = raw or "";
@@ -247,7 +257,8 @@ function Logic.OrderKey(account, realm)
 	return string.upper(account or "").."\t"..(realm or "");
 end
 
--- orders: { keys = { key, ... } (latest first), [key] = { name, ... } }
+-- orders: { keys = { key, ... } (latest first), [key] = { entry, ... } } (entries: names and group headers, see
+-- Logic.GroupsFromEntries; the old saved orders are names only)
 function Logic.ParseOrders(code)
 	local orders = { keys = {} };
 	for line in string.gmatch(Logic.Decode(code), "([^\n]+)") do
@@ -255,9 +266,9 @@ function Logic.ParseOrders(code)
 		if ( account ) then
 			local key = Logic.OrderKey(account, realm);
 			if ( not orders[key] ) then
-				local names = {};
-				for name in string.gmatch(rest, "([^\t]+)") do table.insert(names, name); end
-				orders[key] = names;
+				local entries = {};
+				for entry in string.gmatch(rest, "([^\t]+)") do table.insert(entries, entry); end
+				orders[key] = entries;
 				table.insert(orders.keys, key);
 			end
 		end
@@ -284,27 +295,275 @@ function Logic.SerializeOrders(orders)
 	return code;
 end
 
--- the order saved for an account and realm, from the whole saved account list
-function Logic.GetOrder(raw, account, realm)
-	local _, code = Logic.SplitSaved(raw);
-	return Logic.ParseOrders(code)[Logic.OrderKey(account, realm)];
+-- Groups ------------------------------------------------------------------------------------------------------------
+-- A saved order is a list of entries: character names and group headers. A header is "#", the kind ("*" the default
+-- group, "=" one of the player's), the state ("+" open, "-" collapsed) and the name (the default group's is "" until
+-- the player renames it: it shows as "Characters"). The names after a header are in that group, the names before any
+-- header in the default group. Only the default group, open and not renamed, is saved as names only: exactly the old
+-- format, so orders saved before groups read the same (and an old client reads a header as a name that is gone).
+-- groups: { { name = "", default = true, collapsed = nil, names = { "Jaina", ... } }, ... }, always one default group.
+Logic.DEFAULT_GROUP = "Characters";
+Logic.MAX_GROUP_NAME = 24;
+
+function Logic.NewGroup(name, isDefault)
+	return { name = name or "", default = isDefault and true or nil, names = {} };
 end
 
--- the whole saved account list with this order for an account and realm (it becomes the latest)
-function Logic.SetOrder(raw, account, realm, names)
+function Logic.GroupName(g)
+	return (g and g.name and g.name ~= "") and g.name or Logic.DEFAULT_GROUP;
+end
+
+-- the index of the group shown with this name (any case)
+function Logic.FindGroup(groups, name)
+	name = string.lower(name or "");
+	for i, g in ipairs(groups) do
+		if ( string.lower(Logic.GroupName(g)) == name ) then return i; end
+	end
+	return nil;
+end
+
+function Logic.DefaultGroup(groups)
+	for i, g in ipairs(groups) do
+		if ( g.default ) then return g, i; end
+	end
+	return nil;
+end
+
+function Logic.GroupsFromEntries(entries)
+	local groups, default, cur, seen = {}, nil, nil, {};
+	for _, e in ipairs(entries or {}) do
+		local kind, state, name = string.match(e, "^#([%*=])([%+%-])(.*)$");
+		if ( kind == "*" ) then
+			if ( not default ) then default = Logic.NewGroup("", true); table.insert(groups, default); end
+			default.name = name;
+			default.collapsed = (state == "-") or nil;
+			cur = default;
+		elseif ( kind == "=" ) then
+			local at = Logic.FindGroup(groups, name);
+			if ( at and not groups[at].default ) then
+				cur = groups[at];
+			elseif ( name ~= "" and not at ) then
+				cur = Logic.NewGroup(name);
+				cur.collapsed = (state == "-") or nil;
+				table.insert(groups, cur);
+			end
+		elseif ( e ~= "" and not seen[e] ) then
+			seen[e] = true;
+			if ( not cur ) then
+				if ( not default ) then default = Logic.NewGroup("", true); table.insert(groups, default); end
+				cur = default;
+			end
+			table.insert(cur.names, e);
+		end
+	end
+	if ( not default ) then table.insert(groups, Logic.NewGroup("", true)); end
+	return groups;
+end
+
+function Logic.EntriesFromGroups(groups)
+	local out = {};
+	local only = groups[1];
+	local simple = (#groups == 1 and only.default and not only.collapsed and (only.name or "") == "");
+	for _, g in ipairs(groups) do
+		if ( not simple ) then
+			table.insert(out, "#"..(g.default and "*" or "=")..(g.collapsed and "-" or "+")..(g.name or ""));
+		end
+		for _, n in ipairs(g.names) do
+			if ( n ~= "" and not string.find(n, "[\t\n]") ) then table.insert(out, n); end
+		end
+	end
+	return out;
+end
+
+function Logic.FlatNames(groups)
+	local out = {};
+	for _, g in ipairs(groups) do
+		for _, n in ipairs(g.names) do table.insert(out, n); end
+	end
+	return out;
+end
+
+-- The characters (in the client's order) in their groups: each group gets .chars, its .names become the names of
+-- the characters it has (gone ones drop out), characters in no group go last into the default group. Every character
+-- gets .group (its group's index) and .place (its place counting down all the groups).
+function Logic.Arrange(chars, groups)
+	groups = groups or { Logic.NewGroup("", true) };
+	local byName, used, out, default = {}, {}, {}, nil;
+	for _, c in ipairs(chars) do
+		if ( c.name and not byName[c.name] ) then byName[c.name] = c; end
+	end
+	for _, g in ipairs(groups) do
+		local ng = { name = g.name or "", default = g.default, collapsed = g.collapsed, names = {}, chars = {} };
+		for _, n in ipairs(g.names or {}) do
+			local c = byName[n];
+			if ( c and not used[c] ) then
+				used[c] = true;
+				table.insert(ng.chars, c);
+				table.insert(ng.names, n);
+			end
+		end
+		if ( ng.default and not default ) then default = ng; elseif ( ng.default ) then ng.default = nil; end
+		table.insert(out, ng);
+	end
+	if ( not default ) then
+		default = { name = "", default = true, names = {}, chars = {} };
+		table.insert(out, default);
+	end
+	for _, c in ipairs(chars) do
+		if ( not used[c] ) then
+			used[c] = true;
+			table.insert(default.chars, c);
+			if ( c.name ) then table.insert(default.names, c.name); end
+		end
+	end
+	local place = 0;
+	for gi, g in ipairs(out) do
+		for _, c in ipairs(g.chars) do
+			place = place + 1;
+			c.group, c.place = gi, place;
+		end
+	end
+	return out;
+end
+
+function Logic.Flatten(groups)
+	local out = {};
+	for _, g in ipairs(groups) do
+		for _, c in ipairs(g.chars or {}) do table.insert(out, c); end
+	end
+	return out;
+end
+
+function Logic.FindName(groups, name)
+	for gi, g in ipairs(groups) do
+		for ni, n in ipairs(g.names) do
+			if ( n == name ) then return gi, ni; end
+		end
+	end
+	return nil;
+end
+
+-- Move a character into group toGroup: where beforeName is (in its own group: like Logic.Move, it takes the other's
+-- place; from another group: just before it), or last when beforeName is nil or not in that group.
+function Logic.MoveName(groups, name, toGroup, beforeName)
+	local gi, ni = Logic.FindName(groups, name);
+	local target = groups[toGroup];
+	if ( not gi or not target or beforeName == name ) then return false; end
+	local ti;
+	if ( beforeName ) then
+		local bgi, bni = Logic.FindName(groups, beforeName);
+		if ( bgi == toGroup ) then ti = bni; end
+	end
+	if ( gi == toGroup ) then
+		if ( ti ) then return Logic.Move(target.names, ni, ti); end
+		if ( ni == #target.names ) then return false; end
+		table.insert(target.names, table.remove(target.names, ni));
+		return true;
+	end
+	table.remove(groups[gi].names, ni);
+	if ( ti ) then table.insert(target.names, ti, name); else table.insert(target.names, name); end
+	return true;
+end
+
+function Logic.CleanGroupName(text)
+	text = string.gsub(text or "", "[%c|]", "");
+	text = string.match(text, "^%s*(.-)%s*$") or "";
+	return (Logic.Utf8Sub(text, Logic.MAX_GROUP_NAME));
+end
+
+-- a new group (before the default group); returns its index, or nil and "empty" / "exists"
+function Logic.AddGroup(groups, text)
+	local name = Logic.CleanGroupName(text);
+	if ( name == "" ) then return nil, "empty"; end
+	if ( Logic.FindGroup(groups, name) ) then return nil, "exists"; end
+	local _, at = Logic.DefaultGroup(groups);
+	at = at or (#groups + 1);
+	table.insert(groups, at, Logic.NewGroup(name));
+	return at;
+end
+
+function Logic.RenameGroup(groups, index, text)
+	local g = groups[index];
+	if ( not g ) then return nil, "missing"; end
+	local name = Logic.CleanGroupName(text);
+	if ( g.default and (name == "" or string.lower(name) == string.lower(Logic.DEFAULT_GROUP)) ) then
+		g.name = "";
+		return index;
+	end
+	if ( name == "" ) then return nil, "empty"; end
+	local other = Logic.FindGroup(groups, name);
+	if ( other and other ~= index ) then return nil, "exists"; end
+	g.name = name;
+	return index;
+end
+
+-- a group goes, its characters go to the end of the default group (the default group itself can't go)
+function Logic.DeleteGroup(groups, index)
+	local g = groups[index];
+	if ( not g or g.default ) then return false; end
+	local default = Logic.DefaultGroup(groups);
+	for _, n in ipairs(g.names) do table.insert(default.names, n); end
+	table.remove(groups, index);
+	return true;
+end
+
+-- What the list shows: { kind = "header", group = i, count = n } and { kind = "card", c = char, group = i }, and the
+-- cards shown, in order. A collapsed group shows only its header; while searching only the groups with a match show,
+-- open.
+function Logic.Rows(groups, query)
+	local rows, shownChars = {}, {};
+	local searching = string.find(query or "", "%S") ~= nil;
+	for gi, g in ipairs(groups) do
+		local chars = searching and Logic.Filter(g.chars or {}, query) or (g.chars or {});
+		if ( not searching or #chars > 0 ) then
+			table.insert(rows, { kind = "header", group = gi, count = #(g.chars or {}) });
+			if ( searching or not g.collapsed ) then
+				for _, c in ipairs(chars) do
+					table.insert(rows, { kind = "card", c = c, group = gi });
+					table.insert(shownChars, c);
+				end
+			end
+		end
+	end
+	return rows, shownChars;
+end
+
+local function SetEntries(raw, account, realm, entries)
 	local accounts, code = Logic.SplitSaved(raw);
 	local orders = Logic.ParseOrders(code);
 	local key = Logic.OrderKey(account, realm);
 	for i = #orders.keys, 1, -1 do
 		if ( orders.keys[i] == key ) then table.remove(orders.keys, i); end
 	end
-	local clean = {};
-	for _, name in ipairs(names or {}) do
-		if ( name ~= "" and not string.find(name, "[\t\n]") ) then table.insert(clean, name); end
-	end
-	orders[key] = clean;
+	orders[key] = entries;
 	table.insert(orders.keys, 1, key);
 	return Logic.JoinSaved(accounts, Logic.SerializeOrders(orders));
+end
+
+-- the order saved for an account and realm (the names, down all the groups), from the whole saved account list
+function Logic.GetOrder(raw, account, realm)
+	local _, code = Logic.SplitSaved(raw);
+	local entries = Logic.ParseOrders(code)[Logic.OrderKey(account, realm)];
+	return entries and Logic.FlatNames(Logic.GroupsFromEntries(entries)) or nil;
+end
+
+-- the groups saved for an account and realm, or nil
+function Logic.GetGroups(raw, account, realm)
+	local _, code = Logic.SplitSaved(raw);
+	local entries = Logic.ParseOrders(code)[Logic.OrderKey(account, realm)];
+	return entries and Logic.GroupsFromEntries(entries) or nil;
+end
+
+-- the whole saved account list with this order (one group) for an account and realm (it becomes the latest)
+function Logic.SetOrder(raw, account, realm, names)
+	local g = Logic.NewGroup("", true);
+	for _, name in ipairs(names or {}) do table.insert(g.names, name); end
+	return SetEntries(raw, account, realm, Logic.EntriesFromGroups({ g }));
+end
+
+-- the same with groups
+function Logic.SetGroups(raw, account, realm, groups)
+	return SetEntries(raw, account, realm, Logic.EntriesFromGroups(groups));
 end
 
 -- Cut a text to n characters (UTF-8), for the one-line zone
@@ -327,6 +586,136 @@ function Logic.WrongRealm(maxRaces, server)
 	return (tonumber(maxRaces) or 0) >= 30 and server ~= nil and server ~= "" and not string.find(string.upper(server), "PTR", 1, true);
 end
 
+-- Delete confirmation ------------------------------------------------------------------------------------------------
+-- The word to type: the client's own (DELETE_CONFIRM_STRING, e.g. "УДАЛИТЬ" in ruRU), the one for the client's
+-- language, always the English DELETE, and the word in Latin letters where it has others (for players without that
+-- keyboard), any case.
+Logic.DELETE_WORDS = {
+	enUS = { "DELETE" }, enGB = { "DELETE" },
+	ruRU = { "УДАЛИТЬ", "UDALIT" }, deDE = { "LÖSCHEN", "LOESCHEN", "LOSCHEN" }, frFR = { "SUPPRIMER" },
+	esES = { "BORRAR" }, esMX = { "BORRAR" }, koKR = { "삭제" }, zhCN = { "删除" }, zhTW = { "刪除" },
+};
+
+-- Upper case for a-z, Cyrillic (а-я, ё ...) and Latin-1 letters (ö, é ...); string.upper only knows a-z, and only
+-- a-z is touched here, whatever the C library's locale does to other bytes
+function Logic.Upper(text)
+	text = string.gsub(text or "", "[a-z]", function(ch) return string.char(string.byte(ch) - 32); end);
+	return (string.gsub(text, "([\192-\223])([\128-\191])", function(a, b)
+		local x, y = string.byte(a), string.byte(b);
+		if ( x == 208 and y >= 176 ) then return string.char(208, y - 32); end                      -- а-п
+		if ( x == 209 and y <= 143 ) then return string.char(208, y + 32); end                      -- р-я
+		if ( x == 209 and y <= 159 ) then return string.char(208, y - 16); end                      -- ѐ-џ (ё)
+		if ( x == 195 and y >= 160 and y <= 190 and y ~= 183 ) then return string.char(195, y - 32); end   -- à-þ
+		return a..b;
+	end));
+end
+
+function Logic.Trim(text)
+	return string.match(text or "", "^%s*(.-)%s*$") or "";
+end
+
+function Logic.DeleteWords(locale, localized)
+	local out, set = {}, {};
+	local function add(w)
+		w = Logic.Upper(Logic.Trim(w));
+		if ( w ~= "" and not set[w] ) then set[w] = true; table.insert(out, w); end
+	end
+	if ( type(localized) == "string" ) then add(localized); end
+	for _, w in ipairs(Logic.DELETE_WORDS[locale or ""] or {}) do add(w); end
+	add("DELETE");
+	return out, set;
+end
+
+function Logic.DeleteOk(text, locale, localized)
+	local _, set = Logic.DeleteWords(locale, localized);
+	return set[Logic.Upper(Logic.Trim(text))] or false;
+end
+
+-- the word the dialog asks for, and its instructions: the client's own text, with "(or DELETE)" when the word isn't
+-- the English one
+function Logic.DeleteWord(locale, localized)
+	if ( type(localized) == "string" and localized ~= "" ) then return localized; end
+	local words = Logic.DELETE_WORDS[locale or ""];
+	return words and words[1] or "DELETE";
+end
+
+function Logic.DeleteInstructions(locale, localized, stock)
+	local word = Logic.DeleteWord(locale, localized);
+	local text = (type(stock) == "string" and stock ~= "") and stock or ("Type \""..word.."\" into the field to confirm.");
+	if ( Logic.Upper(word) ~= "DELETE" ) then
+		text = text.." (or DELETE)";
+	end
+	return text;
+end
+
+-- Cards and their tooltip ------------------------------------------------------------------------------------------
+-- the selected card: gold background and border, its crest in colour; the others dark, the crest grey and dim
+function Logic.CardStyle(selected)
+	if ( selected ) then
+		return { bg = { 0.62, 0.47, 0.12, 0.95 }, border = { 1, 0.82, 0, 1 }, crestDesaturated = false, crestAlpha = 1, glow = true };
+	end
+	return { bg = { 0.17, 0.17, 0.19, 0.92 }, border = { 0.42, 0.42, 0.46, 0.9 }, crestDesaturated = true, crestAlpha = 0.5, glow = false };
+end
+
+function Logic.Thousands(n)
+	local s = tostring(math.floor(tonumber(n) or 0));
+	local k;
+	repeat s, k = string.gsub(s, "^(%d+)(%d%d%d)", "%1,%2"); until ( k == 0 );
+	return s;
+end
+
+Logic.COIN_ICONS = {
+	g = "|TInterface\\MoneyFrame\\UI-GoldIcon:12:12:2:0|t", s = "|TInterface\\MoneyFrame\\UI-SilverIcon:12:12:2:0|t",
+	c = "|TInterface\\MoneyFrame\\UI-CopperIcon:12:12:2:0|t",
+};
+-- 162575561 -> "16,257 g 55 s 61 c" (or with the coin pictures)
+function Logic.Money(copper, icons)
+	copper = math.floor(tonumber(copper) or 0);
+	local g, s, c = math.floor(copper / 10000), math.floor(copper / 100) % 100, copper % 100;
+	local function unit(u) return icons and Logic.COIN_ICONS[u] or (" "..u); end
+	local parts = {};
+	if ( g > 0 ) then table.insert(parts, Logic.Thousands(g)..unit("g")); end
+	if ( g > 0 or s > 0 ) then table.insert(parts, s..unit("s")); end
+	table.insert(parts, c..unit("c"));
+	return table.concat(parts, " ");
+end
+
+-- what the launcher wrote for a character (Interface\TemucraftCharSummary.lua), or nil
+function Logic.Summary(data, realm, name)
+	local r = type(data) == "table" and data[realm or ""];
+	local s = type(r) == "table" and r[name or ""];
+	return type(s) == "table" and s or nil;
+end
+
+function Logic.MailText(summary)
+	local mail = summary and summary.mail;
+	if ( type(mail) == "table" and #mail > 0 ) then
+		return "Unread mail from:\n"..table.concat(mail, ", ");
+	elseif ( mail == true ) then
+		return "Unread mail";
+	end
+	return nil;
+end
+
+-- the card tooltip, line by line: name, realm (grey), spec and class (class colour), level, zone (grey), professions,
+-- gold; spec, professions and gold only when the launcher's summary has them
+function Logic.TooltipLines(c, realm, summary, hint, icons)
+	local lines = { "|cffffd100"..(c.name or "").."|r" };
+	if ( realm and realm ~= "" ) then table.insert(lines, "|cff9d9d9d"..realm.."|r"); end
+	local spec = summary and type(summary.spec) == "string" and summary.spec ~= "" and summary.spec;
+	local class = (spec and (spec.." ") or "")..(c.class or "");
+	local color = c.classFile and Logic.CLASS_COLORS[c.classFile];
+	if ( class ~= "" ) then table.insert(lines, color and ("|cff"..color..class.."|r") or class); end
+	table.insert(lines, "|cffffffff".."Level "..(c.level or 0).."|r");
+	if ( c.zone and c.zone ~= "" ) then table.insert(lines, "|cff9d9d9d"..c.zone.."|r"); end
+	local prof = summary and summary.professions;
+	if ( type(prof) == "table" and #prof > 0 ) then prof = table.concat(prof, ", "); end
+	if ( type(prof) == "string" and prof ~= "" ) then table.insert(lines, "|cffffffff"..prof.."|r"); end
+	if ( summary and tonumber(summary.money) ) then table.insert(lines, "|cffffffff"..Logic.Money(summary.money, icons).."|r"); end
+	if ( hint ) then table.insert(lines, "|cff7f7f7f"..hint.."|r"); end
+	return lines;
+end
+
 ---------------------------------------------------------------------------------------------------------------------
 -- The screen (only in the client)
 ---------------------------------------------------------------------------------------------------------------------
@@ -334,14 +723,46 @@ if ( not CharacterSelect or not CreateFrame ) then
 	return;
 end
 
-local CARD_HEIGHT, CARD_WIDTH, VISIBLE = 68, 270, 8;
-local ZONE_WIDTH, ZONE_WIDTH_SELECTED = CARD_WIDTH - 62, CARD_WIDTH - 62;   -- the zone line ends before the crest
-local root, holder, cards, eye, menu = nil, nil, {}, nil, nil;
-local list, shown, offset, lastQuery = {}, {}, 0, nil;
+local CARD_HEIGHT, CARD_WIDTH, HEADER_HEIGHT, VISIBLE = 68, 270, 28, 8;
+local AREA = VISIBLE * CARD_HEIGHT;            -- the height the rows (headers and cards) get
+local ROWS_TOP = 56;                           -- below the search row
+local ZONE_WIDTH = CARD_WIDTH - 66;            -- the zone line ends before the crest
+local root, holder, eye, menu, tip = nil, nil, nil, nil, nil;
+local cards, headers, rowFrames = {}, {}, {};
+local roster, groups, list, rows, shown, offset, lastQuery = {}, nil, {}, {}, {}, 0, nil;
 local hiddenByEye;
 local returnToSelect = false;
 local throttle = 0;
 local dragging, dragEnded, dragFrame, dragTick = nil, false, nil, 0;
+local deleteDialog, groupDialog, popups, popupBlocker = nil, nil, {}, nil;
+
+-- 3.3.5 art only (Interface\Glues\Common, Interface\DialogFrame, Interface\Tooltips, Interface\AchievementFrame ...)
+local ART = {
+	panelBg = "Interface\\DialogFrame\\UI-DialogBox-Background-Dark",
+	panelEdge = "Interface\\DialogFrame\\UI-DialogBox-Gold-Border",
+	tipBg = "Interface\\Tooltips\\UI-Tooltip-Background",
+	edge = "Interface\\Tooltips\\UI-Tooltip-Border",
+	card = "Interface\\AchievementFrame\\UI-Achievement-Parchment-Horizontal-Desaturated",
+	header = "Interface\\AchievementFrame\\UI-Achievement-Category-Background",
+	headerHighlight = "Interface\\AchievementFrame\\UI-Achievement-Category-Highlight",
+	selected = "Interface\\Glues\\CharacterSelect\\Glue-CharacterSelect-Highlight",
+	buttonUp = "Interface\\Glues\\Common\\Glue-Panel-Button-Up",
+	buttonDown = "Interface\\Glues\\Common\\Glue-Panel-Button-Down",
+	buttonHighlight = "Interface\\Glues\\Common\\Glue-Panel-Button-Highlight",
+	input = "Interface\\Common\\Common-Input-Border",
+	search = "Interface\\Common\\UI-Searchbox-Icon",
+	plus = "Interface\\Buttons\\UI-PlusButton-Up", minus = "Interface\\Buttons\\UI-MinusButton-Up",
+	trash = "Interface\\Buttons\\UI-GroupLoot-Pass-Up",
+	restore = "Interface\\Icons\\Spell_Holy_Resurrection",
+	mail = "Interface\\Minimap\\Tracking\\Mailbox",
+	ring = "Interface\\Minimap\\MiniMap-TrackingBorder",
+	alert = "Interface\\DialogFrame\\UI-Dialog-Icon-AlertNew",
+	popupHighlight = "Interface\\QuestFrame\\UI-QuestTitleHighlight",
+};
+
+-- 3.3.5 has no restore of deleted characters at character select. On Temucraft the Curator (mod-temucraft-shop)
+-- brings them back in game, for tokens (CharDelete.Method = 1 keeps them), so the button says where.
+local RESTORE_TEXT = "Restore Deleted Character\n|cffff4040Deleted characters can't be restored here: the Temucraft Curator|r\n|cffff4040(in game, the shop) brings them back for tokens.|r";
 
 -- The saved account list: everyone else (AccountLogin.lua's saved accounts, the client's own code) sees it without
 -- the character orders, and keeps them when it writes it (see Logic.SplitSaved)
@@ -369,13 +790,16 @@ end
 local function CurrentRealm()
 	return GetServerName and GetServerName() or "";
 end
-local function LoadOrder()
+local function Locale()
+	return GetLocale and GetLocale() or "enUS";
+end
+local function LoadGroups()
 	if ( not rawGetSaved ) then return nil; end
-	return Logic.GetOrder(rawGetSaved() or "", CurrentAccount(), CurrentRealm());
+	return Logic.GetGroups(rawGetSaved() or "", CurrentAccount(), CurrentRealm());
 end
 local function SaveOrder()
-	if ( not rawSetSaved ) then return; end
-	rawSetSaved(Logic.SetOrder(rawGetSaved() or "", CurrentAccount(), CurrentRealm(), Logic.Names(list)));
+	if ( not rawSetSaved or not groups ) then return; end
+	rawSetSaved(Logic.SetGroups(rawGetSaved() or "", CurrentAccount(), CurrentRealm(), groups));
 end
 
 local function Active()
@@ -393,66 +817,206 @@ local function HideTooltip()
 	if ( GlueTooltip ) then GlueTooltip:Hide(); end
 end
 
-local function Panel(parent)
+---------------------------------------------------------------------------------------------------------------------
+-- Look: the glue screens have no FrameXML templates, so the pieces are made here
+---------------------------------------------------------------------------------------------------------------------
+-- the retail panel: dark, gold metal border
+local function Panel(parent, alpha)
 	local f = CreateFrame("Frame", nil, parent);
-	f:SetBackdrop({ bgFile = "Interface\\Glues\\Common\\Glue-Tooltip-Background", edgeFile = "Interface\\Glues\\Common\\Glue-Tooltip-Border",
-		tile = true, tileSize = 16, edgeSize = 16, insets = { left = 10, right = 5, top = 4, bottom = 9 } });
-	f:SetBackdropColor(0, 0, 0, 0.75);
+	f:SetBackdrop({ bgFile = ART.panelBg, edgeFile = ART.panelEdge, tile = true, tileSize = 32, edgeSize = 24,
+		insets = { left = 6, right = 6, top = 6, bottom = 6 } });
+	f:SetBackdropColor(1, 1, 1, alpha or 0.94);
 	return f;
 end
 
-local function SmallButton(name, parent, text, width, onClick)
-	local b = CreateFrame("Button", name, parent, "GlueButtonSmallTemplate");
+-- a tooltip-like box (the card tooltip, the popups)
+local function TipBox(parent)
+	local f = CreateFrame("Frame", nil, parent);
+	f:SetBackdrop({ bgFile = ART.tipBg, edgeFile = ART.edge, tile = true, tileSize = 16, edgeSize = 16,
+		insets = { left = 4, right = 4, top = 4, bottom = 4 } });
+	f:SetBackdropColor(0.03, 0.03, 0.05, 0.96);
+	f:SetBackdropBorderColor(0.8, 0.65, 0.3, 1);
+	return f;
+end
+
+-- the client's red button
+local function SmallButton(name, parent, text, width, onClick, template)
+	local b = CreateFrame("Button", name, parent, template or "GlueButtonSmallTemplate");
 	b:SetWidth(width); b:SetHeight(28);
 	b:SetText(text);
 	b:SetScript("OnClick", onClick);
 	return b;
 end
 
+-- a square red button with a gold edge and an icon (or a "+")
+local function SquareButton(name, parent, size, icon, label, onClick)
+	local b = CreateFrame("Button", name, parent);
+	b:SetWidth(size); b:SetHeight(size);
+	b:SetBackdrop({ edgeFile = ART.edge, edgeSize = 12, insets = { left = 3, right = 3, top = 3, bottom = 3 } });
+	b:SetBackdropBorderColor(1, 0.78, 0.3, 1);
+	b.face = b:CreateTexture(nil, "BACKGROUND");
+	b.face:SetTexture(ART.buttonUp);
+	b.face:SetTexCoord(0.08, 0.54, 0.1, 0.58);
+	b.face:SetPoint("TOPLEFT", b, "TOPLEFT", 3, -3);
+	b.face:SetPoint("BOTTOMRIGHT", b, "BOTTOMRIGHT", -3, 3);
+	local hl = b:CreateTexture(nil, "HIGHLIGHT");
+	hl:SetTexture(ART.buttonHighlight);
+	hl:SetTexCoord(0.08, 0.54, 0.1, 0.58);
+	hl:SetBlendMode("ADD");
+	hl:SetAllPoints(b.face);
+	if ( icon ) then
+		b.icon = b:CreateTexture(nil, "ARTWORK");
+		b.icon:SetTexture(icon);
+		b.icon:SetPoint("TOPLEFT", b, "TOPLEFT", 7, -7);
+		b.icon:SetPoint("BOTTOMRIGHT", b, "BOTTOMRIGHT", -7, 7);
+	end
+	if ( label ) then
+		b.label = b:CreateFontString(nil, "OVERLAY", "GlueFontNormalLarge");
+		b.label:SetPoint("CENTER", b, "CENTER", 1, 1);
+		b.label:SetText(label);
+	end
+	b:SetScript("OnMouseDown", function(self) if ( self:IsEnabled() ) then self.face:SetTexture(ART.buttonDown); end end);
+	b:SetScript("OnMouseUp", function(self) self.face:SetTexture(ART.buttonUp); end);
+	b:SetScript("OnClick", onClick);
+	b:SetScript("OnLeave", HideTooltip);
+	return b;
+end
+
+local function SetSquareEnabled(b, on)
+	if ( on ) then b:Enable(); else b:Disable(); end
+	if ( b.icon ) then b.icon:SetDesaturated(not on and 1 or nil); end
+	b.face:SetVertexColor(on and 1 or 0.5, on and 1 or 0.5, on and 1 or 0.5);
+end
+
+-- an edit box with the client's input border
+local function InputBox(name, parent, width, height)
+	local e = CreateFrame("EditBox", name, parent);
+	e:SetWidth(width); e:SetHeight(height or 26);
+	e:SetFontObject(GlueFontHighlightSmall);
+	e:SetAutoFocus(false);
+	e:SetTextInsets(8, 8, 0, 0);
+	local fill = e:CreateTexture(nil, "BACKGROUND");
+	fill:SetTexture(0, 0, 0, 0.75);
+	fill:SetPoint("TOPLEFT", e, "TOPLEFT", 2, -3);
+	fill:SetPoint("BOTTOMRIGHT", e, "BOTTOMRIGHT", -2, 3);
+	local l = e:CreateTexture(nil, "BORDER");
+	l:SetTexture(ART.input); l:SetTexCoord(0, 0.0625, 0, 0.625);
+	l:SetWidth(8); l:SetHeight(height or 26);
+	l:SetPoint("LEFT", e, "LEFT", -2, 0);
+	local r = e:CreateTexture(nil, "BORDER");
+	r:SetTexture(ART.input); r:SetTexCoord(0.9375, 1, 0, 0.625);
+	r:SetWidth(8); r:SetHeight(height or 26);
+	r:SetPoint("RIGHT", e, "RIGHT", 2, 0);
+	local m = e:CreateTexture(nil, "BORDER");
+	m:SetTexture(ART.input); m:SetTexCoord(0.0625, 0.9375, 0, 0.625);
+	m:SetHeight(height or 26);
+	m:SetPoint("LEFT", l, "RIGHT", 0, 0);
+	m:SetPoint("RIGHT", r, "LEFT", 0, 0);
+	return e;
+end
+
+---------------------------------------------------------------------------------------------------------------------
+-- The characters
+---------------------------------------------------------------------------------------------------------------------
+local function Rearrange()
+	groups = Logic.Arrange(roster, groups);
+	list = Logic.Flatten(groups);
+end
+
 local function ReadCharacters()
-	list = {};
+	roster = {};
 	for id = 1, GetNumCharacters() do
 		local name, race, class, level, zone, sex, ghost, PCC, PRC, PFC = GetCharacterInfo(id);
 		if ( name ) then
 			local colored = GetColorByClass and GetColorByClass(class) or class;
 			local classFile = Logic.ClassFile(class, colored);
 			local bgFile = GetSelectBackgroundModel and GetSelectBackgroundModel(id);
-			table.insert(list, {
+			table.insert(roster, {
 				id = id, name = name, race = race, class = class, level = level or 0, ghost = ghost,
 				zone = Logic.ZoneText(zone), classFile = classFile, faction = Logic.Faction(race, bgFile),
 				paid = (PFC and PAID_FACTION_CHANGE) or (PRC and PAID_RACE_CHANGE) or (PCC and PAID_CHARACTER_CUSTOMIZATION) or nil,
 			});
 		end
 	end
-	list = Logic.ApplyOrder(list, LoadOrder());
+	groups = LoadGroups();
+	Rearrange();
+end
+
+local function CharById(id)
+	for _, c in ipairs(list) do
+		if ( c.id == id ) then return c; end
+	end
+	return nil;
 end
 
 local Refresh;
 
+local function RowHeight(r)
+	return (r.kind == "header") and HEADER_HEIGHT or CARD_HEIGHT;
+end
+-- the furthest the list scrolls: the last rows just fill it
+local function MaxOffset()
+	local total, k = 0, #rows;
+	while ( k >= 1 and total + RowHeight(rows[k]) <= AREA ) do
+		total = total + RowHeight(rows[k]);
+		k = k - 1;
+	end
+	return k;
+end
 local function Clamp()
-	offset = math.max(0, math.min(offset, #shown - VISIBLE));
+	offset = math.max(0, math.min(offset, MaxOffset()));
+end
+local function Fits(from, to)
+	local total = 0;
+	for i = from + 1, to do total = total + RowHeight(rows[i]); end
+	return total <= AREA;
+end
+local function RowOf(id)
+	for i, r in ipairs(rows) do
+		if ( r.kind == "card" and r.c.id == id ) then return i; end
+	end
+	return nil;
 end
 
 local function ShowSelected()
-	local sel = CharacterSelect.selectedIndex or 0;
-	for i, c in ipairs(shown) do
-		if ( c.id == sel ) then
-			if ( i <= offset ) then offset = i - 1; elseif ( i > offset + VISIBLE ) then offset = i - VISIBLE; end
+	local i = RowOf(CharacterSelect.selectedIndex or 0);
+	if ( i ) then
+		if ( i <= offset ) then
+			offset = i - 1;
+			if ( offset > 0 and rows[offset].kind == "header" ) then offset = offset - 1; end   -- with its header
+		else
+			while ( offset < i - 1 and not Fits(offset, i) ) do offset = offset + 1; end
 		end
 	end
 	Clamp();
 end
 
--- Put character <id> where character <targetId> is, in the saved order
+-- Put character <id> where character <targetId> is (in its group)
 local function MoveCharacter(id, targetId)
-	if ( Logic.Move(list, Logic.IndexOf(list, id), Logic.IndexOf(list, targetId)) ) then
+	local c, t = CharById(id), CharById(targetId);
+	if ( c and t and Logic.MoveName(groups, c.name, t.group, t.name) ) then
+		Rearrange();
 		SaveOrder();
 		return true;
 	end
 	return false;
 end
 
--- The arrows on the selected card: one place up (-1) or down (1) among the cards on screen
+-- Put character <id> last into group <index> (and open it)
+local function MoveToGroup(id, index)
+	local c = CharById(id);
+	if ( c and groups[index] ) then
+		groups[index].collapsed = nil;
+		if ( Logic.MoveName(groups, c.name, index, nil) ) then
+			Rearrange();
+			SaveOrder();
+			return true;
+		end
+	end
+	return false;
+end
+
+-- The arrows (hidden: the order changes by dragging; kept for code that calls them): one place up (-1) or down (1)
 local function MoveSelected(delta)
 	local sel = CharacterSelect.selectedIndex or 0;
 	local i = Logic.IndexOf(shown, sel);
@@ -479,19 +1043,251 @@ local function SetOneLine(fs, text, width)
 	fs:SetText(Logic.Utf8Sub(text, lo).."...");
 end
 
--- Dragging a card: the card under the cursor, and whether the cursor is above the first or below the last card
+---------------------------------------------------------------------------------------------------------------------
+-- Popup menus (right-click) and the small dialogs
+---------------------------------------------------------------------------------------------------------------------
+local function ClosePopups()
+	for _, p in ipairs(popups) do p:Hide(); end
+	if ( popupBlocker ) then popupBlocker:Hide(); end
+end
+TemucraftCharSelect_ClosePopups = ClosePopups;
+
+local OpenPopup;
+local function PopupFrame(level)
+	local p = popups[level];
+	if ( p ) then return p; end
+	p = TipBox(CharacterSelect);
+	p:SetFrameStrata("FULLSCREEN_DIALOG");
+	p:SetFrameLevel(10 + level * 5);
+	p:EnableMouse(true);
+	p:SetWidth(200);
+	p.items = {};
+	p.title = p:CreateFontString(nil, "OVERLAY", "GlueFontNormalSmall");
+	p.title:SetPoint("TOPLEFT", p, "TOPLEFT", 12, -10);
+	p:Hide();
+	popups[level] = p;
+	return p;
+end
+
+local function PopupItem(p, level, i)
+	local b = p.items[i];
+	if ( b ) then return b; end
+	b = CreateFrame("Button", "TemucraftSelectPopup"..level.."Item"..i, p);
+	b:SetWidth(180); b:SetHeight(20);
+	b:RegisterForClicks("LeftButtonUp", "RightButtonUp");
+	b.text = b:CreateFontString(nil, "OVERLAY", "GlueFontHighlightSmall");
+	b.text:SetPoint("LEFT", b, "LEFT", 6, 0);
+	b.arrow = b:CreateFontString(nil, "OVERLAY", "GlueFontNormalSmall");
+	b.arrow:SetPoint("RIGHT", b, "RIGHT", -4, 0);
+	local hl = b:CreateTexture(nil, "HIGHLIGHT");
+	hl:SetTexture(ART.popupHighlight);
+	hl:SetBlendMode("ADD");
+	hl:SetAllPoints(b);
+	b:SetScript("OnClick", function(self)
+		local item = self.item;
+		if ( not item or item.disabled ) then return; end
+		PlaySound("igMainMenuOptionCheckBoxOn");
+		if ( item.sub ) then
+			OpenPopup(level + 1, self, item.sub);
+		else
+			ClosePopups();
+			if ( item.func ) then item.func(); end
+		end
+	end);
+	p.items[i] = b;
+	return b;
+end
+
+-- items: { { text =, func = | sub = items, disabled = }, ... }; level 1 opens left of the anchor, the next ones left
+-- of the item that opened them
+function OpenPopup(level, anchor, items, title)
+	if ( not popupBlocker ) then
+		popupBlocker = CreateFrame("Button", "TemucraftSelectPopupBlocker", CharacterSelect);
+		popupBlocker:SetAllPoints(CharacterSelect);
+		popupBlocker:SetFrameStrata("FULLSCREEN_DIALOG");
+		popupBlocker:SetFrameLevel(2);
+		popupBlocker:RegisterForClicks("LeftButtonUp", "RightButtonUp");
+		popupBlocker:SetScript("OnClick", ClosePopups);
+	end
+	HideTooltip();
+	if ( tip ) then tip:Hide(); end
+	popupBlocker:Show();
+	for l = level, #popups do popups[l]:Hide(); end
+	local p = PopupFrame(level);
+	local top = 10;
+	if ( title ) then
+		p.title:SetText(title);
+		p.title:Show();
+		top = 28;
+	else
+		p.title:Hide();
+	end
+	for i, item in ipairs(items) do
+		local b = PopupItem(p, level, i);
+		b.item = item;
+		b.text:SetText(item.disabled and ("|cff7f7f7f"..item.text.."|r") or item.text);
+		b.arrow:SetText(item.sub and ">" or "");
+		b:ClearAllPoints();
+		b:SetPoint("TOPLEFT", p, "TOPLEFT", 10, -top - (i - 1) * 20);
+		b:Show();
+	end
+	for i = #items + 1, #p.items do p.items[i]:Hide(); p.items[i].item = nil; end
+	p:SetHeight(top + #items * 20 + 10);
+	p:ClearAllPoints();
+	if ( level == 1 ) then
+		p:SetPoint("TOPRIGHT", anchor, "TOPLEFT", -6, 0);
+	else
+		p:SetPoint("TOPRIGHT", anchor, "TOPLEFT", -14, 10);
+	end
+	p:Show();
+	return p;
+end
+
+-- a darkened screen with a panel in the middle
+local function Modal(name, width, height)
+	local m = CreateFrame("Frame", name, CharacterSelect);
+	m:SetAllPoints(CharacterSelect);
+	m:SetFrameStrata("DIALOG");
+	m:EnableMouse(true);
+	local shade = m:CreateTexture(nil, "BACKGROUND");
+	shade:SetAllPoints(m);
+	shade:SetTexture(0, 0, 0, 0.55);
+	m.box = Panel(m, 1);
+	m.box:SetWidth(width); m.box:SetHeight(height);
+	m.box:SetPoint("CENTER", m, "CENTER", 0, 60);
+	m:Hide();
+	return m;
+end
+
+local function ModalShown()
+	return (deleteDialog and deleteDialog:IsShown() and deleteDialog) or (groupDialog and groupDialog:IsShown() and groupDialog) or nil;
+end
+
+-- Group name: new group / rename. onAccept(text) returns nil when done, else the error to show.
+local GROUP_ERRORS = { empty = "Enter a name for the group.", exists = "There is already a group with that name." };
+local function OpenGroupDialog(title, text, onAccept)
+	if ( not groupDialog ) then
+		local d = Modal("TemucraftGroupDialog", 340, 150);
+		d.title = d.box:CreateFontString(nil, "OVERLAY", "GlueFontNormalLarge");
+		d.title:SetPoint("TOP", d.box, "TOP", 0, -20);
+		d.edit = InputBox("TemucraftGroupEdit", d.box, 240, 28);
+		d.edit:SetPoint("TOP", d.title, "BOTTOM", 0, -12);
+		if ( d.edit.SetMaxLetters ) then d.edit:SetMaxLetters(Logic.MAX_GROUP_NAME); end
+		d.error = d.box:CreateFontString(nil, "OVERLAY", "GlueFontHighlightSmall");
+		d.error:SetPoint("TOP", d.edit, "BOTTOM", 0, -4);
+		local function accept()
+			local err = d.onAccept and d.onAccept(d.edit:GetText() or "");
+			if ( err ) then
+				d.error:SetText("|cffff4040"..(GROUP_ERRORS[err] or err).."|r");
+			else
+				d:Hide();
+				Refresh();
+			end
+		end
+		d.okay = SmallButton("TemucraftGroupOkay", d.box, OKAY or "Okay", 110, accept);
+		d.okay:SetPoint("BOTTOMRIGHT", d.box, "BOTTOM", -4, 16);
+		d.cancel = SmallButton("TemucraftGroupCancel", d.box, CANCEL or "Cancel", 110, function() d:Hide(); end);
+		d.cancel:SetPoint("BOTTOMLEFT", d.box, "BOTTOM", 4, 16);
+		d.edit:SetScript("OnEnterPressed", accept);
+		d.edit:SetScript("OnEscapePressed", function() d:Hide(); end);
+		d.edit:SetScript("OnTextChanged", function() d.error:SetText(""); end);
+		groupDialog = d;
+	end
+	ClosePopups();
+	groupDialog.title:SetText(title);
+	groupDialog.onAccept = onAccept;
+	groupDialog:Show();
+	groupDialog.edit:SetText(text or "");
+	groupDialog.error:SetText("");
+	groupDialog.edit:SetFocus();
+end
+TemucraftCharSelect_OpenGroupDialog = OpenGroupDialog;
+
+local function NewGroupFor(id)
+	OpenGroupDialog("New group", "", function(text)
+		local index, err = Logic.AddGroup(groups, text);
+		if ( not index ) then return err; end
+		if ( not (id and MoveToGroup(id, index)) ) then
+			Rearrange();
+			SaveOrder();
+		end
+		return nil;
+	end);
+end
+
+-- Delete: retail's dialog (type the word to confirm), then the client's DeleteCharacter
+local function DeleteWordOk(text)
+	return Logic.DeleteOk(text, Locale(), DELETE_CONFIRM_STRING);
+end
+
+local function OpenDelete()
+	local id = CharacterSelect.selectedIndex or 0;
+	local c = CharById(id);
+	if ( not c ) then return; end
+	if ( CharacterDeleteDialog and CharacterDeleteDialog.Hide ) then CharacterDeleteDialog:Hide(); end
+	if ( not deleteDialog ) then
+		local d = Modal("TemucraftDeleteDialog", 420, 210);
+		d.icon = d.box:CreateTexture(nil, "ARTWORK");
+		d.icon:SetTexture(ART.alert);
+		d.icon:SetWidth(48); d.icon:SetHeight(48);
+		d.icon:SetPoint("TOPLEFT", d.box, "TOPLEFT", 22, -20);
+		d.text = d.box:CreateFontString(nil, "OVERLAY", "GlueFontNormalLarge");
+		d.text:SetPoint("TOP", d.box, "TOP", 20, -24);
+		d.text:SetWidth(320);
+		d.hint = d.box:CreateFontString(nil, "OVERLAY", "GlueFontHighlightSmall");
+		d.hint:SetPoint("TOP", d.text, "BOTTOM", -20, -12);
+		d.hint:SetWidth(380);
+		d.edit = InputBox("TemucraftDeleteEdit", d.box, 200, 28);
+		d.edit:SetPoint("TOP", d.hint, "BOTTOM", 0, -10);
+		if ( d.edit.SetMaxLetters ) then d.edit:SetMaxLetters(32); end
+		local function confirm()
+			if ( not DeleteWordOk(d.edit:GetText()) ) then return; end
+			local delId = d.id;
+			d:Hide();
+			PlaySound("gsCharacterSelectionDelCharacter");
+			if ( delId and delId > 0 ) then DeleteCharacter(delId); end
+		end
+		d.okay = SmallButton("TemucraftDeleteOkay", d.box, OKAY or "Okay", 120, confirm);
+		d.okay:SetPoint("BOTTOMRIGHT", d.box, "BOTTOM", -4, 18);
+		d.cancel = SmallButton("TemucraftDeleteCancel", d.box, CANCEL or "Cancel", 120, function() d:Hide(); end);
+		d.cancel:SetPoint("BOTTOMLEFT", d.box, "BOTTOM", 4, 18);
+		d.edit:SetScript("OnTextChanged", function(self)
+			if ( DeleteWordOk(self:GetText()) ) then d.okay:Enable(); else d.okay:Disable(); end
+		end);
+		d.edit:SetScript("OnEnterPressed", confirm);
+		d.edit:SetScript("OnEscapePressed", function() d:Hide(); end);
+		deleteDialog = d;
+	end
+	local d = deleteDialog;
+	ClosePopups();
+	d.id = id;
+	local color = c.classFile and Logic.CLASS_COLORS[c.classFile];
+	local class = color and ("|cff"..color..(c.class or "").."|r") or (c.class or "");
+	local ok, text = false, nil;
+	if ( CONFIRM_CHAR_DELETE ) then ok, text = pcall(string.format, CONFIRM_CHAR_DELETE, c.name, c.level, class); end
+	d.text:SetText(ok and text or ("Do you want to delete\n"..c.name.." Level "..c.level.." "..class.."?"));
+	d.hint:SetText(Logic.DeleteInstructions(Locale(), DELETE_CONFIRM_STRING, CONFIRM_CHAR_DELETE_INSTRUCTIONS));
+	d:Show();
+	d.edit:SetText("");
+	d.okay:Disable();
+	d.edit:SetFocus();
+	PlaySound("gsCharacterSelectionDelCharacter");
+end
+
+---------------------------------------------------------------------------------------------------------------------
+-- Dragging a card: the row under the cursor, and whether the cursor is above the first or below the last row
+---------------------------------------------------------------------------------------------------------------------
 local function CardUnderCursor()
 	if ( not GetCursorPosition ) then return nil; end
 	local _, y = GetCursorPosition();
 	local first, last;
-	for n = 1, VISIBLE do
-		local b = cards[n];
-		if ( b and b:IsShown() and b.id ) then
+	for _, b in ipairs(rowFrames) do
+		if ( b:IsShown() ) then
 			local scale = (b.GetEffectiveScale and b:GetEffectiveScale()) or 1;
 			local top, bottom = b:GetTop(), b:GetBottom();
 			if ( top and bottom and y ) then
 				local cy = y / scale;
-				local gap = (CARD_HEIGHT - (top - bottom)) / 2 + 1;
+				local gap = (b.rowHeight - (top - bottom)) / 2 + 1;
 				if ( cy <= top + gap and cy >= bottom - gap ) then
 					return b;
 				end
@@ -510,17 +1306,17 @@ local function DragUpdate(_, elapsed)
 	if ( not dragging ) then return; end
 	local b, edge = CardUnderCursor();
 	dragTick = dragTick + (elapsed or 0);
-	if ( edge and dragTick > 0.15 ) then   -- held above or below the cards: scroll
+	if ( edge and dragTick > 0.15 ) then   -- held above or below the rows: scroll
 		dragTick = 0;
 		offset = offset + ((edge == "above") and -1 or 1);
 		Clamp();
 		Refresh(true);
 	end
 	local line = root.dropLine;
-	if ( b and b.id and b.id ~= dragging ) then
-		local from, to = Logic.IndexOf(list, dragging), Logic.IndexOf(list, b.id);
+	if ( b and (b.header or (b.id and b.id ~= dragging)) ) then
 		line:ClearAllPoints();
-		if ( from and to and to > from ) then
+		local from, to = Logic.IndexOf(list, dragging), b.id and Logic.IndexOf(list, b.id);
+		if ( b.header or (from and to and to > from) ) then
 			line:SetPoint("TOP", b, "BOTTOM", 0, 1);
 		else
 			line:SetPoint("BOTTOM", b, "TOP", 0, -1);
@@ -535,11 +1331,13 @@ local function StartDrag(self)
 	if ( not self.id or #list < 2 ) then return; end
 	dragging, dragTick = self.id, 0;
 	HideTooltip();
+	if ( tip ) then tip:Hide(); end
+	ClosePopups();
 	dragFrame:Show();
 	Refresh(true);
 end
 
-local function StopDrag(self)
+local function StopDrag()
 	if ( not dragging ) then return; end
 	local id = dragging;
 	local target = CardUnderCursor();
@@ -547,49 +1345,181 @@ local function StopDrag(self)
 	dragEnded = true;   -- the click that ends a drag does not select
 	dragFrame:Hide();
 	root.dropLine:Hide();
-	if ( target and target.id and target.id ~= id and MoveCharacter(id, target.id) ) then
-		PlaySound("igMainMenuOptionCheckBoxOn");
+	local moved = false;
+	if ( target and target.header ) then
+		moved = MoveToGroup(id, target.group);
+	elseif ( target and target.id and target.id ~= id ) then
+		moved = MoveCharacter(id, target.id);
 	end
+	if ( moved ) then PlaySound("igMainMenuOptionCheckBoxOn"); end
 	Refresh(true);
+end
+
+---------------------------------------------------------------------------------------------------------------------
+-- The card tooltip, left of the list
+---------------------------------------------------------------------------------------------------------------------
+local function ShowCardTip(b)
+	local c = b.char;
+	if ( not c or dragging ) then return; end
+	if ( not tip ) then
+		tip = TipBox(root);
+		tip:SetFrameStrata("TOOLTIP");
+		tip.lines = {};
+	end
+	local summary = Logic.Summary(TEMUCRAFT_CHAR_SUMMARY, CurrentRealm(), c.name);
+	local hint = (#list > 1) and "Drag to move, right-click for groups" or nil;
+	local lines = Logic.TooltipLines(c, CurrentRealm(), summary, hint, true);
+	local width, y = 180, -10;
+	for i, text in ipairs(lines) do
+		local fs = tip.lines[i];
+		if ( not fs ) then
+			fs = tip:CreateFontString(nil, "OVERLAY", (i == 1) and "GlueFontNormalLarge" or "GlueFontHighlightSmall");
+			fs:SetJustifyH("LEFT");
+			tip.lines[i] = fs;
+		end
+		fs:ClearAllPoints();
+		fs:SetPoint("TOPLEFT", tip, "TOPLEFT", 12, y);
+		fs:SetText(text);
+		fs:Show();
+		width = math.max(width, (fs:GetStringWidth() or 0) + 26);
+		y = y - ((i == 1) and 20 or 15);
+	end
+	for i = #lines + 1, #tip.lines do tip.lines[i]:Hide(); end
+	tip:SetWidth(width);
+	tip:SetHeight(-y + 10);
+	tip:ClearAllPoints();
+	tip:SetPoint("TOPRIGHT", b, "TOPLEFT", -24, 0);
+	tip:Show();
+end
+local function HideCardTip()
+	if ( tip ) then tip:Hide(); end
+end
+
+---------------------------------------------------------------------------------------------------------------------
+-- Cards and group headers
+---------------------------------------------------------------------------------------------------------------------
+local function CardMenu(b)
+	local c = b.char;
+	if ( not c ) then return; end
+	local sub = {};
+	for gi, g in ipairs(groups) do
+		if ( gi ~= c.group ) then
+			table.insert(sub, { text = Logic.GroupName(g), func = function() MoveToGroup(c.id, gi); Refresh(); end });
+		end
+	end
+	table.insert(sub, { text = "|cffffd100New group...|r", func = function() NewGroupFor(c.id); end });
+	OpenPopup(1, b, {
+		{ text = "Move to group", sub = sub },
+		{ text = "New group...", func = function() NewGroupFor(nil); end },
+	}, c.name);
+end
+
+local function HeaderMenu(h)
+	local gi = h.group;
+	local g = groups[gi];
+	if ( not g ) then return; end
+	local items = {
+		{ text = "Rename", func = function()
+			OpenGroupDialog("Rename group", Logic.GroupName(g), function(text)
+				local ok, err = Logic.RenameGroup(groups, gi, text);
+				if ( not ok ) then return err; end
+				SaveOrder();
+				return nil;
+			end);
+		end },
+	};
+	if ( not g.default ) then
+		table.insert(items, { text = "Delete", func = function()
+			if ( Logic.DeleteGroup(groups, gi) ) then Rearrange(); SaveOrder(); Refresh(); end
+		end });
+	end
+	table.insert(items, { text = "New group...", func = function() NewGroupFor(nil); end });
+	OpenPopup(1, h, items, Logic.GroupName(g));
+end
+
+local function MakeHeader(n)
+	local h = CreateFrame("Button", "TemucraftSelectHeader"..n, root.list);
+	h:SetWidth(CARD_WIDTH); h:SetHeight(HEADER_HEIGHT - 4);
+	h.rowHeight, h.header = HEADER_HEIGHT, true;
+	h:RegisterForClicks("LeftButtonUp", "RightButtonUp");
+	h.bg = h:CreateTexture(nil, "BACKGROUND");
+	h.bg:SetTexture(ART.header);
+	h.bg:SetTexCoord(0, 0.6640625, 0, 1);
+	h.bg:SetAllPoints(h);
+	h.bg:SetVertexColor(0.55, 0.55, 0.6);
+	local hl = h:CreateTexture(nil, "HIGHLIGHT");
+	hl:SetTexture(ART.headerHighlight);
+	hl:SetTexCoord(0, 0.6640625, 0, 1);
+	hl:SetBlendMode("ADD");
+	hl:SetAllPoints(h);
+	h.text = h:CreateFontString(nil, "OVERLAY", "GlueFontNormal");
+	h.text:SetPoint("LEFT", h, "LEFT", 12, 0);
+	h.count = h:CreateFontString(nil, "OVERLAY", "GlueFontDisableSmall");
+	h.count:SetPoint("LEFT", h.text, "RIGHT", 6, 0);
+	h.toggle = h:CreateTexture(nil, "ARTWORK");
+	h.toggle:SetWidth(18); h.toggle:SetHeight(18);
+	h.toggle:SetPoint("RIGHT", h, "RIGHT", -8, 0);
+	h:SetScript("OnClick", function(self, button)
+		local g = groups[self.group];
+		if ( not g ) then return; end
+		if ( button == "RightButton" ) then
+			HeaderMenu(self);
+			return;
+		end
+		g.collapsed = (not g.collapsed) or nil;
+		PlaySound(g.collapsed and "igMainMenuOptionCheckBoxOff" or "igMainMenuOptionCheckBoxOn");
+		SaveOrder();
+		Refresh(true);
+	end);
+	h:SetScript("OnEnter", function(self)
+		if ( not dragging ) then Tooltip(self, "Click to open or close, right-click to rename or delete"); end
+	end);
+	h:SetScript("OnLeave", HideTooltip);
+	h:EnableMouseWheel(true);
+	h:SetScript("OnMouseWheel", function(_, delta) offset = offset - delta; Clamp(); Refresh(true); end);
+	headers[n] = h;
+	return h;
 end
 
 local function MakeCard(n)
 	local b = CreateFrame("Button", "TemucraftSelectCard"..n, root.list);
 	b:SetWidth(CARD_WIDTH); b:SetHeight(CARD_HEIGHT - 4);
-	b:SetBackdrop({ bgFile = "Interface\\Glues\\Common\\Glue-Tooltip-Background", edgeFile = "Interface\\Glues\\Common\\Glue-Tooltip-Border",
-		tile = true, tileSize = 16, edgeSize = 12, insets = { left = 3, right = 3, top = 3, bottom = 3 } });
-	b:SetBackdropColor(0.05, 0.05, 0.1, 0.85);
-	b:RegisterForClicks("LeftButtonUp");
-	b.name = b:CreateFontString(nil, "OVERLAY", "GlueFontNormal");
-	b.name:SetPoint("TOPLEFT", b, "TOPLEFT", 12, -10);
+	b.rowHeight = CARD_HEIGHT;
+	b:SetBackdrop({ edgeFile = ART.edge, edgeSize = 14, insets = { left = 3, right = 3, top = 3, bottom = 3 } });
+	b:RegisterForClicks("LeftButtonUp", "RightButtonUp");
+	b.bg = b:CreateTexture(nil, "BACKGROUND");
+	b.bg:SetTexture(ART.card);
+	b.bg:SetPoint("TOPLEFT", b, "TOPLEFT", 3, -3);
+	b.bg:SetPoint("BOTTOMRIGHT", b, "BOTTOMRIGHT", -3, 3);
+	b.selected = b:CreateTexture(nil, "BORDER");
+	b.selected:SetTexture(ART.selected);
+	b.selected:SetBlendMode("ADD");
+	b.selected:SetAllPoints(b.bg);
+	b.selected:Hide();
+	local hl = b:CreateTexture(nil, "HIGHLIGHT");
+	hl:SetTexture(ART.selected);
+	hl:SetBlendMode("ADD");
+	hl:SetAlpha(0.35);
+	hl:SetAllPoints(b.bg);
+	-- "1." small and grey, then the name in gold
+	b.num = b:CreateFontString(nil, "OVERLAY", "GlueFontDisableSmall");
+	b.num:SetPoint("TOPLEFT", b, "TOPLEFT", 12, -12);
+	b.name = b:CreateFontString(nil, "OVERLAY", "GlueFontNormalLarge");
+	b.name:SetPoint("BOTTOMLEFT", b.num, "BOTTOMRIGHT", 3, -1);
 	b.info = b:CreateFontString(nil, "OVERLAY", "GlueFontHighlightSmall");
-	b.info:SetPoint("TOPLEFT", b.name, "BOTTOMLEFT", 0, -3);
+	b.info:SetPoint("TOPLEFT", b, "TOPLEFT", 12, -31);
 	b.zone = b:CreateFontString(nil, "OVERLAY", "GlueFontDisableSmall");
 	b.zone:SetPoint("TOPLEFT", b.info, "BOTTOMLEFT", 0, -3);
 	b.zone:SetWidth(ZONE_WIDTH); b.zone:SetJustifyH("LEFT");   -- one line: SetOneLine cuts it to fit
 	b.crest = b:CreateTexture(nil, "ARTWORK");
-	b.crest:SetWidth(40); b.crest:SetHeight(40);
-	b.crest:SetPoint("RIGHT", b, "RIGHT", -10, 0);
-	-- its place in the list ("3"), shown in the top right corner; the tooltip says "3 of 6"
-	b.order = b:CreateFontString(nil, "OVERLAY", "GlueFontDisableSmall");
-	b.order:SetPoint("TOPRIGHT", b, "TOPRIGHT", -46, -6);
-	b.selected = b:CreateTexture(nil, "BACKGROUND");
-	b.selected:SetTexture("Interface\\Glues\\CharacterSelect\\Glue-CharacterSelect-Highlight");
-	b.selected:SetBlendMode("ADD");
-	b.selected:SetPoint("TOPLEFT", b, "TOPLEFT", 3, -3);
-	b.selected:SetPoint("BOTTOMRIGHT", b, "BOTTOMRIGHT", -3, 3);
-	b.selected:Hide();
-	local hl = b:CreateTexture(nil, "HIGHLIGHT");
-	hl:SetTexture("Interface\\Glues\\CharacterSelect\\Glue-CharacterSelect-Highlight");
-	hl:SetBlendMode("ADD");
-	hl:SetAlpha(0.5);
-	hl:SetAllPoints(b.selected);
+	b.crest:SetWidth(44); b.crest:SetHeight(44);
+	b.crest:SetPoint("RIGHT", b, "RIGHT", -8, -2);
 	-- c.id is the client's own index of the character, whatever the card's place on screen
 	-- Dragging without OnDragStart (the glue screens don't always send it): a press that moves more than a few pixels
 	-- starts a drag, the release ends it (the card keeps the mouse until the button is let go)
 	b:SetScript("OnMouseDown", function(self, button)
 		dragEnded = false;
-		if ( button == "LeftButton" and GetCursorPosition ) then
+		if ( (button == nil or button == "LeftButton") and GetCursorPosition ) then
 			local _, y = GetCursorPosition();
 			self.pressY = y;
 		end
@@ -597,7 +1527,7 @@ local function MakeCard(n)
 	b:SetScript("OnMouseUp", function(self)
 		self.pressY = nil;
 		if ( dragging ) then
-			StopDrag(self);
+			StopDrag();
 		end
 	end);
 	b:SetScript("OnUpdate", function(self)
@@ -609,15 +1539,15 @@ local function MakeCard(n)
 			end
 		end
 	end);
-	b:SetScript("OnEnter", function(self)
-		if ( self.place and not dragging ) then
-			Tooltip(self, self.place.." of "..#list..(#list > 1 and "\n|cffaaaaaaDrag to change the order|r" or ""));
-		end
-	end);
-	b:SetScript("OnLeave", HideTooltip);
-	b:SetScript("OnClick", function(self)
+	b:SetScript("OnEnter", function(self) ShowCardTip(self); end);
+	b:SetScript("OnLeave", HideCardTip);
+	b:SetScript("OnClick", function(self, button)
 		if ( dragEnded ) then
 			dragEnded = false;
+			return;
+		end
+		if ( button == "RightButton" ) then
+			CardMenu(self);
 			return;
 		end
 		if ( self.id and self.id ~= CharacterSelect.selectedIndex ) then
@@ -640,25 +1570,20 @@ local function MakeCard(n)
 		b:SetScript("OnDragStart", function(self) self.pressY = nil; if ( not dragging ) then StartDrag(self); end end);
 		b:SetScript("OnDragStop", StopDrag);
 	end
-	-- the order arrows (selected card only)
+	-- the order arrows: never shown (retail has them, Ryan wanted drag); MoveSelected stays for them
 	for _, dir in ipairs({ { "up", -1, "Up", 8 }, { "down", 1, "Down", -8 } }) do
 		local a = CreateFrame("Button", "TemucraftSelectCard"..n..dir[3], b);
 		a:SetWidth(20); a:SetHeight(20);
-		a:SetPoint("RIGHT", b, "RIGHT", -44, dir[4]);
+		a:SetPoint("RIGHT", b, "RIGHT", -50, dir[4]);
 		a:SetNormalTexture("Interface\\Buttons\\UI-ScrollBar-Scroll"..dir[3].."Button-Up");
-		a:SetPushedTexture("Interface\\Buttons\\UI-ScrollBar-Scroll"..dir[3].."Button-Down");
-		a:SetDisabledTexture("Interface\\Buttons\\UI-ScrollBar-Scroll"..dir[3].."Button-Disabled");
-		a:SetHighlightTexture("Interface\\Buttons\\UI-ScrollBar-Scroll"..dir[3].."Button-Highlight", "ADD");
 		a:SetScript("OnClick", function() MoveSelected(dir[2]); end);
-		a:SetScript("OnEnter", function(self) Tooltip(self, (dir[2] < 0) and "Move up" or "Move down"); end);
-		a:SetScript("OnLeave", HideTooltip);
 		a:Hide();
 		b[dir[1]] = a;
 	end
-	-- paid customization / race / faction change
+	-- paid customization / race / faction change, on the card's left edge
 	b.paid = CreateFrame("Button", nil, b);
 	b.paid:SetWidth(28); b.paid:SetHeight(28);
-	b.paid:SetPoint("RIGHT", b, "LEFT", 2, 0);
+	b.paid:SetPoint("RIGHT", b, "LEFT", 4, 12);
 	b.paid:SetNormalTexture("Interface\\Buttons\\UI-PaidCharacterCustomization-Button");
 	b.paid:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD");
 	b.paid:SetScript("OnClick", function(self)
@@ -673,17 +1598,111 @@ local function MakeCard(n)
 			or (PAID_CHARACTER_CUSTOMIZE_TOOLTIP or "Character Customization"));
 	end);
 	b.paid:SetScript("OnLeave", HideTooltip);
+	-- unread mail: a round envelope badge on the left edge (data from the launcher's summary)
+	b.mail = CreateFrame("Button", "TemucraftSelectCard"..n.."Mail", b);
+	b.mail:SetWidth(26); b.mail:SetHeight(26);
+	b.mail:SetPoint("RIGHT", b, "LEFT", 4, -12);
+	local mbg = b.mail:CreateTexture(nil, "BACKGROUND");
+	mbg:SetTexture(0, 0, 0, 0.8);
+	mbg:SetPoint("TOPLEFT", b.mail, "TOPLEFT", 4, -4);
+	mbg:SetPoint("BOTTOMRIGHT", b.mail, "BOTTOMRIGHT", -4, 4);
+	local micon = b.mail:CreateTexture(nil, "ARTWORK");
+	micon:SetTexture(ART.mail);
+	micon:SetWidth(16); micon:SetHeight(16);
+	micon:SetPoint("TOPLEFT", b.mail, "TOPLEFT", 5, -5);
+	local ring = b.mail:CreateTexture(nil, "OVERLAY");
+	ring:SetTexture(ART.ring);
+	ring:SetWidth(44); ring:SetHeight(44);
+	ring:SetPoint("TOPLEFT", b.mail, "TOPLEFT", 0, 0);
+	b.mail:SetScript("OnEnter", function(self) Tooltip(self, self:GetParent().mailText); end);
+	b.mail:SetScript("OnLeave", HideTooltip);
+	b.mail:Hide();
 	b:EnableMouseWheel(true);
 	b:SetScript("OnMouseWheel", function(_, delta) offset = offset - delta; Clamp(); Refresh(true); end);
+	cards[n] = b;
 	return b;
+end
+
+local function FillCard(b, c, sel)
+	b.id, b.service, b.char = c.id, c.paid, c;
+	b.num:SetText((#list > 1 and c.place) and (c.place..".") or "");
+	b.name:SetText(c.name);
+	local color = c.classFile and Logic.CLASS_COLORS[c.classFile];
+	local class = color and ("|cff"..color..(c.class or "").."|r") or (c.class or "");
+	local fmt = c.ghost and CHARACTER_SELECT_INFO_GHOST or CHARACTER_SELECT_INFO;
+	if ( fmt ) then
+		b.info:SetText(format(fmt, c.level, class));
+	else
+		b.info:SetText("Level "..c.level.." "..class);
+	end
+	b.zone:SetWidth(ZONE_WIDTH);
+	SetOneLine(b.zone, c.zone or "", ZONE_WIDTH);
+	local isSel = (c.id == sel);
+	local st = Logic.CardStyle(isSel);
+	b.isSelected = isSel;
+	b.bg:SetVertexColor(st.bg[1], st.bg[2], st.bg[3]);
+	b.bg:SetAlpha(st.bg[4]);
+	b:SetBackdropBorderColor(st.border[1], st.border[2], st.border[3], st.border[4]);
+	if ( st.glow ) then b.selected:Show(); else b.selected:Hide(); end
+	if ( c.faction == "Alliance" or c.faction == "Horde" ) then
+		b.crest:SetTexture("Interface\\TargetingFrame\\UI-PVP-"..c.faction);
+		b.crest:SetTexCoord(0, 0.625, 0, 0.625);
+		b.crest:SetDesaturated(st.crestDesaturated and 1 or nil);
+		b.crest:SetAlpha(st.crestAlpha);
+		b.crest:Show();
+	else
+		b.crest:Hide();
+	end
+	if ( c.paid ) then b.paid:Show(); else b.paid:Hide(); end
+	b.mailText = Logic.MailText(Logic.Summary(TEMUCRAFT_CHAR_SUMMARY, CurrentRealm(), c.name));
+	if ( b.mailText ) then b.mail:Show(); else b.mail:Hide(); end
+	b.up:Hide(); b.down:Hide();
+	b:SetAlpha((dragging and c.id == dragging) and 0.45 or 1);
+end
+
+local function FillHeader(h, r)
+	local g = groups[r.group];
+	h.group = r.group;
+	h.text:SetText(Logic.GroupName(g));
+	h.count:SetText("("..r.count..")");
+	h.toggle:SetTexture(g.collapsed and ART.plus or ART.minus);
+end
+
+local function Layout()
+	local sel = CharacterSelect.selectedIndex or 0;
+	local nCard, nHead, y = 0, 0, 0;
+	for k = #rowFrames, 1, -1 do rowFrames[k] = nil; end
+	for i = offset + 1, #rows do
+		local r = rows[i];
+		local h = RowHeight(r);
+		if ( y + h > AREA ) then break; end
+		local f;
+		if ( r.kind == "card" ) then
+			nCard = nCard + 1;
+			f = cards[nCard] or MakeCard(nCard);
+			FillCard(f, r.c, sel);
+		else
+			nHead = nHead + 1;
+			f = headers[nHead] or MakeHeader(nHead);
+			FillHeader(f, r);
+		end
+		f:ClearAllPoints();
+		f:SetPoint("TOP", root.list, "TOP", 0, -ROWS_TOP - y - (r.kind == "header" and 2 or 0));
+		f:Show();
+		table.insert(rowFrames, f);
+		y = y + h;
+	end
+	for n = nCard + 1, #cards do cards[n]:Hide(); cards[n].id, cards[n].char = nil, nil; end
+	for n = nHead + 1, #headers do headers[n]:Hide(); end
 end
 
 function Refresh(keepOffset)
 	if ( not root or not root:IsShown() ) then
 		return;
 	end
+	if ( not groups ) then Rearrange(); end
 	local query = root.search:GetText() or "";
-	shown = Logic.Filter(list, query);
+	rows, shown = Logic.Rows(groups, query);
 	if ( query ~= lastQuery ) then
 		offset = 0;
 		lastQuery = query;
@@ -692,57 +1711,22 @@ function Refresh(keepOffset)
 		ShowSelected();
 	end
 	Clamp();
-	local sel = CharacterSelect.selectedIndex or 0;
-	for n = 1, VISIBLE do
-		local b = cards[n];
-		local c = shown[offset + n];
-		if ( c ) then
-			b.id, b.service = c.id, c.paid;
-			-- "1. Tazdingo": the card's place in the list in front of the name (drag a card to change it)
-			local place = Logic.IndexOf(list, c.id);
-			b.name:SetText((#list > 1 and place) and ("|cff9d9d9d"..place..".|r "..c.name) or c.name);
-			local color = c.classFile and Logic.CLASS_COLORS[c.classFile];
-			local class = color and ("|cff"..color..(c.class or "").."|r") or (c.class or "");
-			local fmt = c.ghost and CHARACTER_SELECT_INFO_GHOST or CHARACTER_SELECT_INFO;
-			if ( fmt ) then
-				b.info:SetText(format(fmt, c.level, class));
-			else
-				b.info:SetText("Level "..c.level.." "..class);
-			end
-			local width = (c.id == sel) and ZONE_WIDTH_SELECTED or ZONE_WIDTH;
-			b.zone:SetWidth(width);
-			SetOneLine(b.zone, c.zone or "", width);
-			if ( c.faction == "Alliance" or c.faction == "Horde" ) then
-				b.crest:SetTexture("Interface\\TargetingFrame\\UI-PVP-"..c.faction);
-				b.crest:SetTexCoord(0, 0.625, 0, 0.625);
-				b.crest:Show();
-			else
-				b.crest:Hide();
-			end
-			if ( c.paid ) then b.paid:Show(); else b.paid:Hide(); end
-			b.place = Logic.IndexOf(list, c.id);
-			b.order:SetText("");
-			if ( c.id == sel ) then b.selected:Show(); else b.selected:Hide(); end
-			b.up:Hide(); b.down:Hide();   -- the order changes by dragging (the arrows stay for the keyboard-free fallback code)
-			b:SetAlpha((dragging and c.id == dragging) and 0.45 or 1);
-			b:Show();
-		else
-			b:Hide();
-		end
-	end
-	if ( #shown == 0 and #list > 0 ) then
+	Layout();
+	if ( #shown == 0 and #list > 0 and string.find(query, "%S") ) then
 		root.empty:SetText("No character matches");
 	elseif ( #list == 0 ) then
 		root.empty:SetText(IsConnectedToServer() and "No characters yet" or "");
 	else
 		root.empty:SetText("");
 	end
-	root.count:SetText((#shown ~= #list) and (#shown.." / "..#list) or "");
+	root.count:SetText((string.find(query, "%S") and #shown ~= #list) and (#shown.." / "..#list) or "");
 	local connected = IsConnectedToServer();
-	if ( connected and CharacterSelect.createIndex and CharacterSelect.createIndex > 0 ) then root.create:Enable(); else root.create:Disable(); end
-	if ( (CharacterSelect.selectedIndex or 0) > 0 and #list > 0 ) then root.delete:Enable(); else root.delete:Disable(); end
+	local canCreate = connected and CharacterSelect.createIndex and CharacterSelect.createIndex > 0;
+	if ( canCreate ) then root.create:Enable(); else root.create:Disable(); end
+	SetSquareEnabled(root.plus, canCreate);
+	SetSquareEnabled(root.delete, (CharacterSelect.selectedIndex or 0) > 0 and #list > 0);
 	if ( root.realm ) then
-		local server = GetServerName and GetServerName() or "";
+		local server = CurrentRealm();
 		root.realm:SetText(server);
 		-- The PTR client (30 races) on a realm that isn't the PTR: the game logged into another realm because the PTR's
 		-- was offline. Playing there would mean Live with the PTR's files, so Enter World is off with a warning.
@@ -767,6 +1751,8 @@ local function ToggleEye()
 		eye.icon:SetDesaturated(nil);
 		return;
 	end
+	ClosePopups();
+	HideCardTip();
 	hiddenByEye = {};
 	local parent = CharacterSelectUI or CharacterSelect;
 	for _, f in ipairs({ parent:GetChildren() }) do
@@ -805,17 +1791,21 @@ local MENU = {
 };
 
 local function BuildMenu()
-	menu = Panel(root);
-	menu:SetWidth(170); menu:SetHeight(#MENU * 30 + 22);
-	menu:SetPoint("TOPLEFT", root.menuButton, "BOTTOMLEFT", 0, -2);
+	menu = Panel(root, 0.97);
+	menu:SetWidth(196); menu:SetHeight(#MENU * 34 + 52);
+	menu:SetPoint("TOPLEFT", root.menuButton, "BOTTOMLEFT", -6, -6);
 	menu:SetFrameStrata("DIALOG");
 	menu:EnableMouse(true);
+	local title = menu:CreateFontString(nil, "OVERLAY", "GlueFontNormal");
+	title:SetPoint("TOP", menu, "TOP", 0, -16);
+	title:SetText("Menu");
 	for i, item in ipairs(MENU) do
-		local b = SmallButton("TemucraftSelectMenu"..i, menu, item.text, 140, function()
+		local b = SmallButton("TemucraftSelectMenu"..i, menu, item.text, 160, function()
 			menu:Hide();
 			item.func();
 		end);
-		b:SetPoint("TOP", menu, "TOP", 0, -12 - (i - 1) * 30);
+		b:SetHeight(30);
+		b:SetPoint("TOP", menu, "TOP", 0, -38 - (i - 1) * 34);
 	end
 	menu:Hide();
 end
@@ -823,6 +1813,12 @@ end
 ---------------------------------------------------------------------------------------------------------------------
 -- Building the screen
 ---------------------------------------------------------------------------------------------------------------------
+local function OpenCreate()
+	if ( CharacterSelect.createIndex and CharacterSelect.createIndex > 0 ) then
+		CharacterSelect_SelectCharacter(CharacterSelect.createIndex);
+	end
+end
+
 local function Build()
 	local parent = CharacterSelectUI or CharacterSelect;
 	root = CreateFrame("Frame", "TemucraftCharSelectFrame", parent);
@@ -832,14 +1828,14 @@ local function Build()
 	holder:Hide();
 
 	-- top bar
-	root.top = Panel(root);
-	root.top:SetHeight(44);
+	root.top = Panel(root, 0.9);
+	root.top:SetHeight(48);
 	root.top:SetPoint("TOPLEFT", root, "TOPLEFT", 10, -6);
 	root.top:SetPoint("TOPRIGHT", root, "TOPRIGHT", -10, -6);
 	root.menuButton = SmallButton("TemucraftSelectMenuButton", root.top, "Menu", 110, function()
 		if ( menu:IsShown() ) then menu:Hide(); else menu:Show(); end
 	end);
-	root.menuButton:SetPoint("LEFT", root.top, "LEFT", 14, -1);
+	root.menuButton:SetPoint("LEFT", root.top, "LEFT", 14, 0);
 	root.realms = SmallButton("TemucraftSelectRealms", root.top, "Realms", 110, function()
 		if ( menu ) then menu:Hide(); end
 		CharacterSelect_ChangeRealm();
@@ -857,48 +1853,45 @@ local function Build()
 	root.realmWarning:Hide();
 	BuildMenu();
 
-	-- the cards
+	-- the list panel
 	root.list = Panel(root);
 	root.list:SetWidth(CARD_WIDTH + 30);
-	root.list:SetHeight(VISIBLE * CARD_HEIGHT + 120);
-	root.list:SetPoint("TOPRIGHT", root, "TOPRIGHT", -12, -58);
+	root.list:SetHeight(ROWS_TOP + AREA + 62);
+	root.list:SetPoint("TOPRIGHT", root, "TOPRIGHT", -12, -60);
 	root.list:EnableMouseWheel(true);
 	root.list:SetScript("OnMouseWheel", function(_, delta) offset = offset - delta; Clamp(); Refresh(true); end);
-	root.search = CreateFrame("EditBox", "TemucraftSelectSearch", root.list);
-	root.search:SetWidth(CARD_WIDTH - 34); root.search:SetHeight(26);
-	root.search:SetPoint("TOPLEFT", root.list, "TOPLEFT", 15, -14);
-	root.search:SetFontObject(GlueFontHighlightSmall);
-	root.search:SetAutoFocus(false);
-	root.search:SetTextInsets(8, 8, 0, 0);
-	root.search:SetBackdrop({ bgFile = "Interface\\Glues\\Common\\Glue-Tooltip-Background", edgeFile = "Interface\\Glues\\Common\\Glue-Tooltip-Border",
-		tile = true, tileSize = 16, edgeSize = 12, insets = { left = 3, right = 3, top = 3, bottom = 3 } });
-	root.search:SetBackdropColor(0, 0, 0, 0.9);
-	root.search:SetScript("OnEscapePressed", function(self) self:SetText(""); self:ClearFocus(); end);
-	root.search:SetScript("OnEnterPressed", function(self) self:ClearFocus(); end);
-	root.search:SetScript("OnTextChanged", function() Refresh(); end);
-	root.searchHint = root.search:CreateFontString(nil, "OVERLAY", "GlueFontDisableSmall");
-	root.searchHint:SetPoint("LEFT", root.search, "LEFT", 9, 0);
-	root.searchHint:SetText(SEARCH or "Search");
-	-- what the box understands: on an (i) button beside it, not in the box
+	-- search row: [magnifier Search ......] (i) [+]
+	root.plus = SquareButton("TemucraftSelectPlus", root.list, 30, nil, "+", OpenCreate);
+	root.plus:SetPoint("TOPRIGHT", root.list, "TOPRIGHT", -14, -16);
+	root.plus:SetScript("OnEnter", function(self) Tooltip(self, "Create Character"); end);
 	local info = CreateFrame("Button", "TemucraftSelectSearchInfo", root.list);
 	info:SetWidth(22); info:SetHeight(22);
-	info:SetPoint("LEFT", root.search, "RIGHT", 4, 0);
-	info.text = info:CreateFontString(nil, "OVERLAY", "GlueFontNormal");
+	info:SetPoint("RIGHT", root.plus, "LEFT", -3, 0);
+	info.text = info:CreateFontString(nil, "OVERLAY", "GlueFontNormalSmall");
 	info.text:SetPoint("CENTER", info, "CENTER", 0, 0);
 	info.text:SetText("(i)");
 	info:SetScript("OnEnter", function(self)
 		Tooltip(self, "Search by name, level (70, 60-70, 70+), class, race, faction or zone,\nor by role: tank, heal, dps. Every word must match.");
 	end);
 	info:SetScript("OnLeave", HideTooltip);
+	root.search = InputBox("TemucraftSelectSearch", root.list, CARD_WIDTH - 62, 26);
+	root.search:SetPoint("TOPLEFT", root.list, "TOPLEFT", 17, -18);
+	root.search:SetTextInsets(22, 8, 0, 0);
+	local glass = root.search:CreateTexture(nil, "OVERLAY");
+	glass:SetTexture(ART.search);
+	glass:SetWidth(14); glass:SetHeight(14);
+	glass:SetPoint("LEFT", root.search, "LEFT", 6, -1);
+	root.search:SetScript("OnEscapePressed", function(self) self:SetText(""); self:ClearFocus(); end);
+	root.search:SetScript("OnEnterPressed", function(self) self:ClearFocus(); end);
+	root.search:SetScript("OnTextChanged", function() Refresh(); end);
+	root.searchHint = root.search:CreateFontString(nil, "OVERLAY", "GlueFontDisableSmall");
+	root.searchHint:SetPoint("LEFT", root.search, "LEFT", 23, 0);
+	root.searchHint:SetText(SEARCH or "Search");
 	root.search:SetScript("OnEditFocusGained", function() root.searchHint:Hide(); end);
 	root.search:SetScript("OnEditFocusLost", function(self) if ( (self:GetText() or "") == "" ) then root.searchHint:Show(); end end);
 	root.count = root.list:CreateFontString(nil, "OVERLAY", "GlueFontDisableSmall");
-	root.count:SetPoint("TOPRIGHT", root.search, "BOTTOMRIGHT", -4, -2);
-	for n = 1, VISIBLE do
-		local b = MakeCard(n);
-		b:SetPoint("TOP", root.list, "TOP", 0, -52 - (n - 1) * CARD_HEIGHT);
-		cards[n] = b;
-	end
+	root.count:SetPoint("TOPRIGHT", root.search, "BOTTOMRIGHT", -4, -1);
+	for n = 1, VISIBLE do MakeCard(n); cards[n]:Hide(); end
 	root.dropLine = root.list:CreateTexture(nil, "OVERLAY");
 	root.dropLine:SetTexture(1, 0.82, 0, 0.9);
 	root.dropLine:SetWidth(CARD_WIDTH - 8); root.dropLine:SetHeight(2);
@@ -907,17 +1900,23 @@ local function Build()
 	dragFrame:SetScript("OnUpdate", DragUpdate);
 	dragFrame:Hide();
 	root.empty = root.list:CreateFontString(nil, "OVERLAY", "GlueFontDisableSmall");
-	root.empty:SetPoint("TOP", root.list, "TOP", 0, -70);
-	root.create = SmallButton("TemucraftSelectCreate", root.list, CREATE_NEW_CHARACTER or "Create New Character", 180, function()
-		if ( CharacterSelect.createIndex and CharacterSelect.createIndex > 0 ) then
-			CharacterSelect_SelectCharacter(CharacterSelect.createIndex);
-		end
+	root.empty:SetPoint("TOP", root.list, "TOP", 0, -ROWS_TOP - 40);
+	-- bottom row: [Create Character] [trash] [restore]
+	root.create = SmallButton("TemucraftSelectCreate", root.list, "Create Character", CARD_WIDTH - 70, OpenCreate, "GlueButtonTemplate");
+	root.create:SetHeight(34);
+	root.create:SetPoint("BOTTOMLEFT", root.list, "BOTTOMLEFT", 15, 16);
+	root.create:SetScript("OnEnter", function(self) Tooltip(self, "Create Character\n|cff9d9d9d"..CurrentRealm().."|r"); end);
+	root.create:SetScript("OnLeave", HideTooltip);
+	root.restore = SquareButton("TemucraftSelectRestore", root.list, 32, ART.restore, nil, function()
+		PlaySound("igMainMenuOptionCheckBoxOn");
 	end);
-	root.create:SetPoint("BOTTOMLEFT", root.list, "BOTTOMLEFT", 14, 16);
-	root.delete = SmallButton("TemucraftSelectDelete", root.list, DELETE or "Delete", 90, function()
+	root.restore:SetPoint("BOTTOMRIGHT", root.list, "BOTTOMRIGHT", -15, 17);
+	root.restore:SetScript("OnEnter", function(self) Tooltip(self, RESTORE_TEXT); end);
+	root.delete = SquareButton("TemucraftSelectDelete", root.list, 32, ART.trash, nil, function()
 		CharacterSelect_Delete();
 	end);
-	root.delete:SetPoint("LEFT", root.create, "RIGHT", 4, 0);
+	root.delete:SetPoint("RIGHT", root.restore, "LEFT", -4, 0);
+	root.delete:SetScript("OnEnter", function(self) Tooltip(self, DELETE_CHARACTER or "Delete Character"); end);
 
 	-- the eye stays when everything else hides
 	eye = CreateFrame("Button", "TemucraftSelectEye", CharacterSelect);
@@ -959,6 +1958,10 @@ local function OnShow()
 	end
 	HideStock();
 	if ( hiddenByEye ) then ToggleEye(); end
+	ClosePopups();
+	HideCardTip();
+	if ( deleteDialog ) then deleteDialog:Hide(); end
+	if ( groupDialog ) then groupDialog:Hide(); end
 	root:Show();
 	eye:Show();
 	ReadCharacters();
@@ -979,7 +1982,10 @@ for _, name in ipairs({ "UpdateCharacterList", "UpdateCharacterSelection" }) do
 		_G[name] = function(...)
 			local r = old(...);
 			if ( root and root:IsShown() ) then
-				if ( name == "UpdateCharacterList" ) then ReadCharacters(); end
+				if ( name == "UpdateCharacterList" ) then
+					ReadCharacters();
+					if ( deleteDialog and deleteDialog:IsShown() and not CharById(deleteDialog.id) ) then deleteDialog:Hide(); end
+				end
 				Refresh();
 			end
 			return r;
@@ -987,10 +1993,31 @@ for _, name in ipairs({ "UpdateCharacterList", "UpdateCharacterSelection" }) do
 	end
 end
 
--- The arrow keys go through the cards in their order on screen (the client's own go by its index)
+-- Delete opens our dialog (the stock CharacterDeleteDialog stays for the classic screen)
+local oldDelete = CharacterSelect_Delete;
+CharacterSelect_Delete = function(...)
+	if ( Active() and root and root:IsShown() ) then
+		OpenDelete();
+		return;
+	end
+	if ( oldDelete ) then return oldDelete(...); end
+end
+
+-- The arrow keys go through the cards in their order on screen (the client's own go by its index); with a dialog
+-- or a popup open, Escape closes it and nothing else happens
 local oldKeyDown = CharacterSelect_OnKeyDown;
 if ( oldKeyDown ) then
 	CharacterSelect_OnKeyDown = function(self, key, ...)
+		if ( Active() and root and root:IsShown() ) then
+			local modal = ModalShown();
+			if ( modal ) then
+				if ( key == "ESCAPE" ) then modal:Hide(); end
+				return;
+			end
+			if ( popupBlocker and popupBlocker:IsShown() ) then
+				if ( key == "ESCAPE" ) then ClosePopups(); return; end
+			end
+		end
 		local step = (key == "UP" or key == "LEFT") and -1 or ((key == "DOWN" or key == "RIGHT") and 1) or nil;
 		if ( step and Active() and root and root:IsShown() and #shown > 1 ) then
 			local i = Logic.IndexOf(shown, CharacterSelect.selectedIndex or 0);

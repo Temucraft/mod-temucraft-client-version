@@ -329,11 +329,12 @@ local function SetIconState(b, selected, enabled)
 	b.enabled = enabled;
 end
 
+-- the retail panel (as on character select): dark, gold metal border (3.3.5's DialogFrame art)
 local function Panel(parent)
 	local f = CreateFrame("Frame", nil, parent);
-	f:SetBackdrop({ bgFile = "Interface\\Glues\\Common\\Glue-Tooltip-Background", edgeFile = "Interface\\Glues\\Common\\Glue-Tooltip-Border",
-		tile = true, tileSize = 16, edgeSize = 16, insets = { left = 10, right = 5, top = 4, bottom = 9 } });
-	f:SetBackdropColor(0, 0, 0, 0.75);
+	f:SetBackdrop({ bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background-Dark", edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Gold-Border",
+		tile = true, tileSize = 32, edgeSize = 24, insets = { left = 6, right = 6, top = 6, bottom = 6 } });
+	f:SetBackdropColor(1, 1, 1, 0.9);
 	return f;
 end
 
@@ -712,7 +713,9 @@ local function Build()
 		row.text = row:CreateFontString(nil, "OVERLAY", "GlueFontNormal");
 		row.text:SetPoint("CENTER", row, "CENTER", 0, 0);
 		local bg = row:CreateTexture(nil, "BACKGROUND");
-		bg:SetTexture(0, 0, 0, 0.5);
+		bg:SetTexture("Interface\\AchievementFrame\\UI-Achievement-Category-Background");   -- a dark bar, as the group headers on select
+		bg:SetTexCoord(0, 0.6640625, 0, 1);
+		bg:SetVertexColor(0.6, 0.6, 0.65);
 		bg:SetPoint("TOPLEFT", row, "TOPLEFT", 30, -3);
 		bg:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", -30, 3);
 		for _, dir in ipairs({ "Left", "Right" }) do
