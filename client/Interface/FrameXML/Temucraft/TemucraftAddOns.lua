@@ -227,11 +227,8 @@ function TemucraftAddOnList_Toggle()
 	if ( frame:IsShown() ) then frame:Hide(); else frame:Show(); end
 end
 SLASH_TEMUCRAFTADDONS1 = "/addons";
--- with DragonUI's Addon Manager on, its list (its button joins the Esc menu the first time the menu opens)
+-- with DragonUI's Addon Manager on, its list (TemucraftGameMenu_AddOns, the Esc menu's AddOns row)
 SlashCmdList["TEMUCRAFTADDONS"] = function()
-	if ( TemucraftDragonUI_Owns and TemucraftDragonUI_Owns("addons") and GameMenuButtonDragonUIAddons ) then
-		GameMenuButtonDragonUIAddons:Click();
-		return;
-	end
+	if ( TemucraftGameMenu_AddOns ) then TemucraftGameMenu_AddOns(); return; end
 	TemucraftAddOnList_Toggle();
 end;

@@ -102,7 +102,7 @@ check("menu rows", table.concat(names, ",") == "options,shop,addons+12,whatsnew,
 check("one Options button: no sub rows in the new menu", #G.Rows(true, false) == #rows);
 names = {};
 for _, r in ipairs(G.Rows(false, false, { editmode = true, dragonui = true })) do table.insert(names, r[1]); end
-check("menu rows with DragonUI", table.concat(names, ",") == "options,shop,addons,whatsnew,editmode,dragonui,support,GameMenuButtonMacros,GameMenuButtonLogout,GameMenuButtonQuit,GameMenuButtonContinue");
+check("menu rows with DragonUI", table.concat(names, ",") == "options,shop,addons,whatsnew,editmode,support,GameMenuButtonMacros,GameMenuButtonLogout,GameMenuButtonQuit,GameMenuButtonContinue");
 check("classic options: Options +/- opens the four", #G.Rows(true, false, { classicoptions = true }) == #rows + 4
 	and #G.Rows(true, true, { classicoptions = true }) == #rows + 5 and #G.Rows(false, false, { classicoptions = true }) == #rows);
 

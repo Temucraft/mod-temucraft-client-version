@@ -85,8 +85,10 @@ check("menu rows (retail order)", table.concat(names, ",") == "options,shop,addo
 check("classic options adds 4", #G.Rows(true, false, { classicoptions = true }) == #rows + 4 and #G.Rows(true, true, { classicoptions = true }) == #rows + 5);
 names = {};
 for _, r in ipairs(G.Rows(false, false, { editmode = true, dragonui = true })) do table.insert(names, r[1]); end
-check("menu rows with DragonUI", table.concat(names, ",") == "options,shop,addons,whatsnew,editmode,dragonui,support,GameMenuButtonMacros,GameMenuButtonLogout,GameMenuButtonQuit,GameMenuButtonContinue");
-check("no DragonUI settings button: no row", #G.Rows(false, false, { editmode = true }) == #rows + 1);
+check("menu rows with DragonUI: Edit Mode, no DragonUI button", table.concat(names, ",") == "options,shop,addons,whatsnew,editmode,support,GameMenuButtonMacros,GameMenuButtonLogout,GameMenuButtonQuit,GameMenuButtonContinue");
+names = {};
+for _, r in ipairs(G.Rows(false, false, { others = { "ACPButton", "ZedButton" } })) do table.insert(names, r[1]..(r[2] and ("+"..r[2]) or "")); end
+check("other addons' buttons after Macros, before Log Out", table.concat(names, ",") == "options,shop,addons+12,whatsnew,support,GameMenuButtonMacros,ACPButton,ZedButton,GameMenuButtonLogout+12,GameMenuButtonQuit,GameMenuButtonContinue+12");
 
 -- flyouts
 local list = {

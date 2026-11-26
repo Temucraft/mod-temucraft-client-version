@@ -4,8 +4,9 @@
 --           Defaults, white sub-headers and rows (gold label, control on the right: checkbox, < value > selector,
 --           < slider > with its value). Settings apply as they change; Graphics keeps an Apply button for what needs
 --           a display restart (resolution, refresh, multisampling, vsync, window mode ...).
---   AddOns: every addon's Interface Options page (alphabetical, "+" for sub-pages), our Temucraft page and a
---           DragonUI link; the addon's own panel is shown on the right (the stock panel, moved in and back).
+--   AddOns: every addon's Interface Options page (alphabetical, "+" for sub-pages), our Temucraft page and
+--           DragonUI's settings (its categories as sub-pages); the addon's own panel is shown on the right (the stock
+--           panel, moved in and back).
 -- The Game pages are rebuilt, but every row drives the stock control under it (InterfaceOptions*, VideoOptions*,
 -- AudioOptions* panels): the same CVars, uvars, setFuncs, dependent controls and restarts, so nothing the stock
 -- frames do is lost and the classic windows stay in step. Key Bindings is rebuilt on the binding API
@@ -1448,49 +1449,99 @@ local addonExpanded = {};
 
 local function TemucraftPanel() return _G.TemucraftInterfaceOptionsPanel; end
 
-local dragonLink = { name = "DragonUI", link = true };
-local function DragonUIOpen()
-	if ( DragonUIGameMenuButton and DragonUIGameMenuButton:GetScript("OnClick") ) then
-		f:Hide(); DragonUIGameMenuButton:GetScript("OnClick")(DragonUIGameMenuButton, "LeftButton"); return;
-	end
-	for key, func in pairs(SlashCmdList) do
-		if ( _G["SLASH_"..key.."1"] == "/dui" ) then f:Hide(); func(""); return; end
-	end
+-- DragonUI's settings are a page here, not a window of their own (the DragonUI-Temucraft fork's Panel:Embed, patch
+-- 0005; DragonUI_Host in TemucraftDragonUI.lua sends /dui and its Interface Options entry here): AddOns > DragonUI,
+-- its categories under it ("+"). DragonUI_Options loads on demand the first time the AddOns list is built out of
+-- combat. Edit Mode and Quick Keybind (DragonUI's footer buttons) sit where Defaults does.
+local dragonLink = { name = "DragonUI", link = true, dragon = true };
+local dragonTabs;
+local function DragonPanel()
+	local dui = _G.DragonUI;
+	local p = type(dui) == "table" and dui.OptionsPanel;
+	if ( type(p) == "table" and type(p.Embed) == "function" ) then return p; end
+	return nil;
 end
+local function DragonOptionsLoaded()
+	if ( DragonPanel() ) then return true; end
+	if ( InCombatLockdown() or not (TemucraftDragonUI_IsLoaded and TemucraftDragonUI_IsLoaded()) ) then return false; end
+	local reason = select(6, GetAddOnInfo("DragonUI_Options"));
+	if ( reason == "MISSING" or reason == "DISABLED" ) then return false; end
+	if ( not IsAddOnLoaded("DragonUI_Options") ) then LoadAddOn("DragonUI_Options"); end
+	return DragonPanel() ~= nil;
+end
+local function DragonCategories()
+	if ( dragonTabs ) then return dragonTabs; end
+	if ( not DragonOptionsLoaded() ) then return nil; end
+	local panel = DragonPanel();
+	local ok, list = pcall(panel.GetTabList, panel);
+	if ( not ok or type(list) ~= "table" or #list == 0 ) then return nil; end
+	dragonTabs = {};
+	for _, tabInfo in ipairs(list) do
+		table.insert(dragonTabs, { name = tabInfo.text, parent = "DragonUI", link = true, dragon = true, dragonTab = tabInfo.key });
+	end
+	return dragonTabs;
+end
+local function NotInCombat()
+	if ( InCombatLockdown() ) then UIErrorsFrame:AddMessage(ERR_NOT_IN_COMBAT or "Not in combat.", 1, 0.1, 0.1); return false; end
+	return true;
+end
+
+local dragonHost = CreateFrame("Frame", nil, host);
+dragonHost:SetAllPoints(); dragonHost:Hide();
+-- shown when the settings can't be: DragonUI_Options off or missing, or in combat
 local dragonPage = CreateFrame("Frame", nil, host);
 dragonPage:SetAllPoints(); dragonPage:Hide();
-do
-	local t = dragonPage:CreateFontString(nil, "ARTWORK", "GameFontHighlight");
-	t:SetPoint("TOPLEFT", 16, -12); t:SetPoint("RIGHT", -16, 0); t:SetJustifyH("LEFT");
-	t:SetText("DragonUI is the base of the interface: its bars, unit frames, minimap and the windows it dresses are set in its own settings window. Edit Mode moves the bars and frames.");
-	local open = CreateFrame("Button", nil, dragonPage, "UIPanelButtonTemplate");
-	open:SetWidth(180); open:SetHeight(24); open:SetPoint("TOPLEFT", t, "BOTTOMLEFT", 0, -16);
-	open:SetText("DragonUI Settings");
-	open:SetScript("OnClick", DragonUIOpen);
-	local edit = CreateFrame("Button", nil, dragonPage, "UIPanelButtonTemplate");
-	edit:SetWidth(180); edit:SetHeight(24); edit:SetPoint("LEFT", open, "RIGHT", 8, 0);
-	edit:SetText("Edit Mode");
-	edit:SetScript("OnClick", function()
-		local dui = _G.DragonUI;
-		if ( InCombatLockdown() ) then UIErrorsFrame:AddMessage(ERR_NOT_IN_COMBAT or "Not in combat.", 1, 0.1, 0.1); return; end
-		if ( dui and dui.EditorMode and dui.EditorMode.Toggle ) then f:Hide(); dui.EditorMode:Toggle(); end
-	end);
-	dragonPage:SetScript("OnShow", function()
-		local dui = _G.DragonUI;
-		if ( dui and dui.EditorMode and dui.EditorMode.Toggle ) then edit:Show(); else edit:Hide(); end
-	end);
+local dragonText = dragonPage:CreateFontString(nil, "ARTWORK", "GameFontHighlight");
+dragonText:SetPoint("TOPLEFT", 16, -12); dragonText:SetPoint("RIGHT", -16, 0); dragonText:SetJustifyH("LEFT");
+local function DragonUnavailable()
+	if ( InCombatLockdown() ) then
+		dragonText:SetText("DragonUI's settings can't be changed in combat.");
+	else
+		dragonText:SetText("DragonUI's settings (the DragonUI_Options addon) are off or missing: turn them on in AddOns and /reload.");
+	end
+	dragonPage:Show();
+end
+
+local dragonEdit = CreateFrame("Button", "TemucraftOptionsDragonEdit", right, "UIPanelButtonTemplate");
+dragonEdit:SetWidth(110); dragonEdit:SetHeight(22);
+dragonEdit:SetPoint("TOPRIGHT", -12, -12);
+dragonEdit:SetText("Edit Mode");
+dragonEdit:Hide();
+dragonEdit:SetScript("OnClick", function()
+	local dui = _G.DragonUI;
+	if ( not NotInCombat() ) then return; end
+	if ( dui and dui.EditorMode and dui.EditorMode.Toggle ) then f:Hide(); dui.EditorMode:Toggle(); end
+end);
+local dragonKeys = CreateFrame("Button", "TemucraftOptionsDragonKeys", right, "UIPanelButtonTemplate");
+dragonKeys:SetWidth(120); dragonKeys:SetHeight(22);
+dragonKeys:SetPoint("RIGHT", dragonEdit, "LEFT", -6, 0);
+dragonKeys:SetText("Quick Keybind");
+dragonKeys:Hide();
+local function KeyBound() return LibStub and LibStub("LibKeyBound-1.0", true); end
+dragonKeys:SetScript("OnClick", function()
+	if ( not NotInCombat() ) then return; end
+	local lkb = KeyBound();
+	if ( lkb ) then f:Hide(); lkb:Toggle(); end
+end);
+local function DragonButtons(on)
+	local dui = _G.DragonUI;
+	if ( on and dui and dui.EditorMode and dui.EditorMode.Toggle ) then dragonEdit:Show(); else dragonEdit:Hide(); end
+	if ( on and dui and dui.KeyBindingModule and KeyBound() ) then dragonKeys:Show(); else dragonKeys:Hide(); end
 end
 
 local function AddonCategories()
 	local cats = {};
-	local haveDragon = false;
+	local dragonOn = TemucraftDragonUI_IsLoaded and TemucraftDragonUI_IsLoaded();
 	for _, c in ipairs(INTERFACEOPTIONS_ADDONCATEGORIES or {}) do
-		table.insert(cats, c);
-		if ( c.name == "DragonUI" ) then haveDragon = true; end
+		-- DragonUI's Interface Options entry is only a button to its window: our DragonUI page takes its place
+		if ( not (dragonOn and (c.name == "DragonUI" or c.parent == "DragonUI")) ) then table.insert(cats, c); end
 	end
 	local ours = TemucraftPanel();
 	if ( ours ) then table.insert(cats, ours); end
-	if ( not haveDragon and TemucraftDragonUI_IsLoaded and TemucraftDragonUI_IsLoaded() ) then table.insert(cats, dragonLink); end
+	if ( dragonOn ) then
+		table.insert(cats, dragonLink);
+		for _, c in ipairs(DragonCategories() or {}) do table.insert(cats, c); end
+	end
 	return cats;
 end
 
@@ -1498,7 +1549,12 @@ local function ReleasePanel()
 	if ( not shownPanel ) then return; end
 	local p = shownPanel;
 	shownPanel = nil;
-	if ( p == dragonLink ) then dragonPage:Hide(); return; end
+	if ( p.dragon ) then
+		local panel = DragonPanel();
+		if ( panel ) then pcall(panel.Unembed, panel); end
+		dragonHost:Hide(); dragonPage:Hide();
+		return;
+	end
 	p:Hide();
 	local container = InterfaceOptionsFramePanelContainer;
 	if ( container ) then
@@ -1513,7 +1569,14 @@ end
 local function ShowAddonPanel(p)
 	ReleasePanel();
 	shownPanel = p;
-	if ( p == dragonLink ) then dragonPage:Show(); return; end
+	if ( p.dragon ) then
+		local panel = not InCombatLockdown() and DragonOptionsLoaded() and DragonPanel();
+		dragonHost:Show();
+		local ok, shown = false, false;
+		if ( panel ) then ok, shown = pcall(panel.Embed, panel, dragonHost, p.dragonTab); end
+		if ( not (ok and shown) ) then dragonHost:Hide(); DragonUnavailable(); end
+		return;
+	end
 	securecall(pcall, p.refresh, p);
 	p:SetParent(host);
 	p:ClearAllPoints();
@@ -1639,6 +1702,7 @@ function Refresh()
 	HideAll();
 	apply:Hide();
 	defaults:Show();
+	DragonButtons(false);
 	if ( query ) then
 		ReleasePanel();
 		host:Hide(); scroll:Show();
@@ -1652,9 +1716,10 @@ function Refresh()
 		child:SetHeight(math.max(y + 10, 10));
 	elseif ( IsAddonCat(current) ) then
 		scroll:Hide(); host:Show();
-		pageTitle:SetText(current.name);
+		pageTitle:SetText(current.dragon and "DragonUI" or current.name);
 		if ( shownPanel ~= current ) then ShowAddonPanel(current); end
-		if ( current == dragonLink ) then defaults:Hide(); end
+		if ( current.link ) then defaults:Hide(); end
+		if ( current.dragon ) then DragonButtons(true); end
 	elseif ( current ) then
 		ReleasePanel();
 		host:Hide(); scroll:Show();
@@ -1791,6 +1856,12 @@ local function Find(what)
 	if ( type(what) == "string" ) then
 		local page = L.Page(what);
 		if ( page ) then return page; end
+		-- "dragonui:<category>": one of DragonUI's categories (TemucraftOptions_OpenDragonUI)
+		local dragonTab = string.match(what, "^dragonui:(.+)$");
+		if ( dragonTab ) then
+			for _, c in ipairs(AddonCategories()) do if ( c.dragonTab == dragonTab ) then return c; end end
+			return dragonLink;
+		end
 		for _, c in ipairs(AddonCategories()) do if ( c.name == what ) then return c; end end
 		for _, p in ipairs(L.PAGES) do if ( p.title == what ) then return p; end end
 		return nil;
@@ -1822,6 +1893,13 @@ end);
 function TemucraftOptions_Open(what, lastFrame)
 	opener.what, opener.lastFrame = what, lastFrame;
 	opener:Show();
+end
+
+-- DragonUI's settings here (DragonUI_Host.OpenOptions, TemucraftDragonUI.lua); tab: one of its category keys or nil
+function TemucraftOptions_OpenDragonUI(tab)
+	if ( not (TemucraftDragonUI_IsLoaded and TemucraftDragonUI_IsLoaded()) ) then return false; end
+	TemucraftOptions_Open(tab and ("dragonui:"..tab) or "DragonUI");
+	return true;
 end
 
 function TemucraftOptions_Toggle()

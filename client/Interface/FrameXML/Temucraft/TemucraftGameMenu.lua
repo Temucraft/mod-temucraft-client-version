@@ -1,6 +1,10 @@
 -- Temucraft game menu (Esc), retail look ("Game Menu"): Options (the one Options window, TemucraftOptions.lua), Shop,
--- then AddOns, What's New, Edit Mode (DragonUI's editor, only while it is there), DragonUI's settings, Support,
--- Macros, then Log Out, Exit Game and Return to Game. "Classic options menu" (Interface > Temucraft) turns Options
+-- then AddOns, What's New, Edit Mode (DragonUI's editor, only while it is there), Support, Macros, the buttons other
+-- addons put on the menu, then Log Out, Exit Game and Return to Game. DragonUI has no buttons of its own here (its
+-- fork reads DragonUI_Host, TemucraftDragonUI.lua): its settings are a page of the Options window (AddOns > DragonUI),
+-- AddOns opens its Addon Manager while that module is on. Every row is one size, font and look, and each is anchored
+-- to the menu's own top (not to the row above): no button depends on another, so an addon that anchors its button
+-- to a stock one can't make a circular anchor. "Classic options menu" (Interface > Temucraft) turns Options
 -- back into Options +/- with the four stock windows (System, Sound, Interface, Key Bindings) under it. It is the stock
 -- GameMenuFrame with its stock buttons (Log Out, Exit Game, Macros ... keep their own code) laid out again and ours
 -- added; "Classic game menu" (Interface Options > Temucraft) puts back the stock layout.
@@ -24,7 +28,8 @@ function L.ChangelogText(entries, version, max)
 end
 
 -- the menu's rows: { name, gapBefore } in order. extra: editmode = DragonUI's Edit Mode (moving the bars and frames),
--- dragonui = its settings button, classicoptions = the classic Options +/- (sub rows only while it is open)
+-- classicoptions = the classic Options +/- (sub rows only while it is open), others = names of buttons other addons
+-- added (after Macros)
 function L.Rows(optionsOpen, mac, extra)
 	extra = extra or {};
 	local rows = { { "options" } };
@@ -35,11 +40,12 @@ function L.Rows(optionsOpen, mac, extra)
 		if ( mac ) then table.insert(rows, { "GameMenuButtonMacOptions", nil, true }); end
 	end
 	table.insert(rows, { "shop" });
-	-- Edit Mode and DragonUI's settings only while DragonUI has them: no dead ends in the menu
+	-- Edit Mode only while DragonUI has it: no dead ends in the menu
 	local gap = 12;
-	for _, s in ipairs({ "addons", "whatsnew", "editmode", "dragonui", "support", "GameMenuButtonMacros" }) do
-		if ( (s ~= "editmode" and s ~= "dragonui") or extra[s] ) then table.insert(rows, { s, gap }); gap = nil; end
+	for _, s in ipairs({ "addons", "whatsnew", "editmode", "support", "GameMenuButtonMacros" }) do
+		if ( s ~= "editmode" or extra[s] ) then table.insert(rows, { s, gap }); gap = nil; end
 	end
+	for _, s in ipairs(extra.others or {}) do table.insert(rows, { s }); end
 	table.insert(rows, { "GameMenuButtonLogout", 12 });
 	table.insert(rows, { "GameMenuButtonQuit" });
 	table.insert(rows, { "GameMenuButtonContinue", 12 });
@@ -126,7 +132,15 @@ Ours("options", "Options", function()
 end);
 Ours("shop", "Shop", function() HideUIPanel(GameMenuFrame); TemucraftShop_Toggle(); end);
 Ours("whatsnew", "What's New", function() HideUIPanel(GameMenuFrame); news:Show(); end);
-Ours("addons", ADDONS or "AddOns", function() HideUIPanel(GameMenuFrame); TemucraftAddOnList_Toggle(); end);
+-- DragonUI's Addon Manager while that module is on (its fork's addon.ToggleAddonList), else ours
+function TemucraftGameMenu_AddOns()
+	local dui = _G.DragonUI;
+	if ( TemucraftDragonUI_Owns and TemucraftDragonUI_Owns("addons") and type(dui) == "table" and type(dui.ToggleAddonList) == "function" ) then
+		if ( dui.ToggleAddonList() ) then return; end
+	end
+	TemucraftAddOnList_Toggle();
+end
+Ours("addons", ADDONS or "AddOns", function() HideUIPanel(GameMenuFrame); TemucraftGameMenu_AddOns(); end);
 -- DragonUI's editor mode (DragonUI.EditorMode, /dui edit); the row is there only while DragonUI runs
 Ours("editmode", "Edit Mode", function()
 	HideUIPanel(GameMenuFrame);
@@ -157,21 +171,22 @@ local function Classic()
 	for _, name in ipairs({ "GameMenuButtonOptions", "GameMenuButtonSoundOptions", "GameMenuButtonUIOptions", "GameMenuButtonKeybindings", "GameMenuButtonMacros" }) do
 		if ( _G[name] ) then _G[name]:Show(); end
 	end
-	-- DragonUI's AddOns button sits under Macros with Log Out below it, and both its buttons made the menu taller
-	local addons = GameMenuButtonDragonUIAddons;
-	if ( addons and addons:IsShown() ) then
+	-- our AddOns under Macros (the stock menu has none), unless another addon (ACP) put its own there
+	local other = _G.GameMenuButtonAddOns or _G.GameMenuButtonAddons;
+	if ( not (other and other:IsShown()) and GameMenuButtonMacros ) then
+		local addons = ours.addons;
+		addons:ClearAllPoints();
+		addons:SetPoint("TOP", GameMenuButtonMacros, "BOTTOM", 0, -1);
+		addons:SetWidth(GameMenuButtonMacros:GetWidth()); addons:SetHeight(GameMenuButtonMacros:GetHeight());
+		addons:Show();
 		GameMenuButtonLogout:ClearAllPoints();
 		GameMenuButtonLogout:SetPoint("TOP", addons, "BOTTOM", 0, -1);
 		GameMenuFrame:SetHeight(GameMenuFrame:GetHeight() + addons:GetHeight() + 1);
 	end
-	if ( DragonUIGameMenuButton and DragonUIGameMenuButton:IsShown() ) then
-		GameMenuFrame:SetHeight(GameMenuFrame:GetHeight() + DragonUIGameMenuButton:GetHeight() + 1);
-	end
 end
 
--- DragonUI adds two buttons to the menu (modules/gamemenu.lua: DragonUIGameMenuButton, its settings;
--- modules/addonmanager.lua: GameMenuButtonDragonUIAddons, its AddOns list) and keeps putting them back where it wants
--- them for a moment after the menu opens: they become rows here, and when it moves one we lay the menu out again.
+-- Buttons other addons put on the menu become rows (after Macros) in our look; an addon that moves one again (some do
+-- for a moment after the menu opens) gets the menu laid out once more on the next frame.
 local laying, relayout = false, CreateFrame("Frame");
 relayout:Hide();
 relayout:SetScript("OnUpdate", function(self) self:Hide(); if ( GameMenuFrame:IsShown() ) then Layout(); end end);
@@ -181,17 +196,50 @@ local function Watch(b)
 	watched[b] = true;
 	hooksecurefunc(b, "SetPoint", function() if ( not laying ) then relayout:Show(); end end);
 end
-local function DragonRows()
-	if ( not (TemucraftDragonUI_IsLoaded and TemucraftDragonUI_IsLoaded()) ) then return {}, {}; end
-	local dui = _G.DragonUI;
-	local extra, buttons = { editmode = (type(dui) == "table" and dui.EditorMode and dui.EditorMode.Toggle) and true or nil }, {};
-	-- DragonUI hides its settings button when DragonUI_Options is missing or off
-	local reason = GetAddOnInfo and select(6, GetAddOnInfo("DragonUI_Options"));
-	if ( DragonUIGameMenuButton and reason ~= "MISSING" and reason ~= "DISABLED" ) then extra.dragonui = true; buttons.dragonui = DragonUIGameMenuButton; Watch(DragonUIGameMenuButton); end
-	if ( TemucraftDragonUI_Owns("addons") and GameMenuButtonDragonUIAddons ) then
-		buttons.addons = GameMenuButtonDragonUIAddons; Watch(GameMenuButtonDragonUIAddons);
+local KNOWN = {};
+for _, name in ipairs(STOCK) do KNOWN[name] = true; end
+local function OtherButtons()
+	local names, seen = {}, {};
+	for _, b in pairs(ours) do seen[b] = true; end
+	for _, child in ipairs({ GameMenuFrame:GetChildren() }) do
+		local name = child:GetName();
+		if ( name and not KNOWN[name] and not seen[child] and child:GetObjectType() == "Button" and child:IsShown()
+			and (child:GetWidth() or 0) >= 100 ) then
+			table.insert(names, name);
+		end
 	end
-	return extra, buttons;
+	table.sort(names);
+	return names;
+end
+
+-- one look for every row: the stock GameMenuButtonTemplate's art and fonts (copied from Return to Game), our size
+local look;
+local function Look()
+	if ( look ) then return look; end
+	look = {};
+	local ref = GameMenuButtonContinue;
+	for _, kind in ipairs({ "Normal", "Pushed", "Disabled", "Highlight" }) do
+		local t = ref and ref["Get"..kind.."Texture"] and ref["Get"..kind.."Texture"](ref);
+		if ( t and t:GetTexture() ) then look[kind] = { t:GetTexture(), { t:GetTexCoord() } }; end
+	end
+	return look;
+end
+local function Style(b, other, width, height)
+	b:SetWidth(width); b:SetHeight(height);
+	b:SetNormalFontObject(GameFontHighlight);
+	b:SetHighlightFontObject(GameFontHighlight);
+	b:SetDisabledFontObject(GameFontDisable);
+	if ( not other or b.temucraftStyled ) then return; end
+	b.temucraftStyled = true;
+	-- an addon's own skin (DragonUI's red three-slice, ElvUI ...) goes
+	for _, key in ipairs({ "_fuLeft", "_fuRight", "_fuCenter" }) do if ( b[key] ) then b[key]:SetAlpha(0); end end
+	if ( b._dragonHeads ) then b._dragonHeads:Hide(); end
+	local l = Look();
+	for kind, art in pairs(l) do
+		b["Set"..kind.."Texture"](b, art[1], kind == "Highlight" and "ADD" or nil);
+		local t = b["Get"..kind.."Texture"](b);
+		if ( t ) then t:SetTexCoord(unpack(art[2])); t:ClearAllPoints(); t:SetAllPoints(b); end
+	end
 end
 
 -- the header says "Game Menu" (retail) in the new layout, the stock text in the classic one
@@ -209,22 +257,29 @@ function Layout()
 	HeaderText(true);
 	GameMenuFrame:SetBackdrop(NEW_BACKDROP);
 	local inRows = {};
-	local last, height = nil, 44;
-	local extra, dragon = DragonRows();
+	local first, y, height = true, 36, 44;
+	local dui = _G.DragonUI;
+	local extra = { editmode = (TemucraftDragonUI_IsLoaded and TemucraftDragonUI_IsLoaded() and type(dui) == "table"
+		and dui.EditorMode and dui.EditorMode.Toggle) and true or nil };
 	extra.classicoptions = ClassicOptions();
+	extra.others = OtherButtons();
+	local isOther = {};
+	for _, name in ipairs(extra.others) do isOther[name] = true; Watch(_G[name]); end
 	if ( not extra.classicoptions ) then optionsOpen = false; end
 	for _, row in ipairs(L.Rows(optionsOpen, IsMacClient(), extra)) do
 		local key, gap, sub = row[1], row[2] or 2, row[3];
-		local b = dragon[key] or ours[key] or _G[key];
+		local b = ours[key] or _G[key];
 		if ( b ) then
 			inRows[b] = true;
+			if ( first ) then gap = 0; first = false; end
+			y = y + gap;
 			b:ClearAllPoints();
-			if ( last ) then b:SetPoint("TOP", last, "BOTTOM", 0, -gap); else b:SetPoint("TOP", GameMenuFrame, "TOP", 0, -36); gap = 0; end
-			b:SetWidth(sub and SUB_WIDTH or BUTTON_WIDTH); b:SetHeight(sub and BUTTON_HEIGHT - 4 or BUTTON_HEIGHT);
+			b:SetPoint("TOP", GameMenuFrame, "TOP", 0, -y);
+			Style(b, isOther[key], sub and SUB_WIDTH or BUTTON_WIDTH, sub and BUTTON_HEIGHT - 4 or BUTTON_HEIGHT);
 			if ( SUB_TEXT[key] ) then b:SetText(SUB_TEXT[key]); end
 			b:Show();
+			y = y + b:GetHeight();
 			height = height + b:GetHeight() + gap;
-			last = b;
 		end
 	end
 	if ( extra.classicoptions ) then ours.options:SetText(optionsOpen and "Options  -" or "Options  +");
@@ -239,7 +294,7 @@ function Layout()
 	laying = false;
 end
 
--- next frame too: DragonUI makes its buttons in its own OnShow, after this one
+-- next frame too: addons add their buttons in their own OnShow, after this one
 GameMenuFrame:HookScript("OnShow", function() Layout(); relayout:Show(); end);
 TemucraftUI_OnChange("classicmenu", function() Layout(); end);
 TemucraftUI_OnChange("classicoptions", function() if ( GameMenuFrame:IsShown() ) then Layout(); end end);

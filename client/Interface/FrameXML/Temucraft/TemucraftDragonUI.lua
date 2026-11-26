@@ -68,6 +68,21 @@ end
 
 if ( not CreateFrame ) then return; end   -- tests load only the logic
 
+-- DragonUI is hosted by us (DragonUI_Host, read by the DragonUI-Temucraft fork, patch 0005): it puts no buttons of
+-- its own on the Esc menu (ours: AddOns opens its Addon Manager, Edit Mode its editor), and its settings are a page of
+-- our Options window (AddOns > DragonUI, its categories under it); /dui and its Interface Options entry open that page.
+-- With "Classic options menu" on, DragonUI's own settings window opens instead.
+DragonUI_Host = {
+	gameMenu = true,
+	OpenOptions = function(tab)
+		if ( not TemucraftOptions_OpenDragonUI or (TemucraftOptions_IsClassic and TemucraftOptions_IsClassic()) ) then return false; end
+		return TemucraftOptions_OpenDragonUI(tab);
+	end,
+	CloseOptions = function()
+		if ( TemucraftOptionsFrame and TemucraftOptionsFrame:IsShown() ) then TemucraftOptionsFrame:Hide(); end
+	end,
+};
+
 local owned, loaded, known = {}, false, false;
 local listeners = {};
 
