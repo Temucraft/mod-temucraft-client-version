@@ -3,7 +3,8 @@
 -- spellbook's "ui.classicbook", and "ui.<option>"). A "Temucraft" page in Interface Options has the checkboxes; /tui
 -- opens it.
 --   TemucraftUI_IsClassic(which)            "char", "micro", "menu", "options", "guild", "gbank", "rep", "currency", "gossip",
---                                           "tradeskill" (the Professions window), "achievements" (and "book",
+--                                           "tradeskill" (the Professions window), "achievements", "lfg" (the Group Finder),
+--                                           "pvp" (the PvP window) (and "book",
 --                                           "talents" of TemucraftPlayerSpells.lua): the saved choice, or DragonUI has
 --                                           that piece (TemucraftDragonUI.lua)
 --   TemucraftUI_IsSavedClassic(which)       the player's own choice only
@@ -85,6 +86,8 @@ local CHECKS = {
 	{ "Classic gossip window (small NPC option icons)", function() return TemucraftUI_IsSavedClassic("gossip"); end, function(on) TemucraftUI_SetClassic("gossip", on); end, "gossip" },
 	{ "Classic professions window", function() return TemucraftUI_IsSavedClassic("tradeskill"); end, function(on) TemucraftUI_SetClassic("tradeskill", on); end, "tradeskill" },
 	{ "Classic achievements window", function() return TemucraftUI_IsSavedClassic("achievements"); end, function(on) TemucraftUI_SetClassic("achievements", on); end, "achievements" },
+	{ "Classic group finder (I)", function() return TemucraftUI_IsSavedClassic("lfg"); end, function(on) TemucraftUI_SetClassic("lfg", on); end, "lfg" },
+	{ "Classic PvP window (H)", function() return TemucraftUI_IsSavedClassic("pvp"); end, function(on) TemucraftUI_SetClassic("pvp", on); end, "pvp" },
 	{ "Show recent guild chat in the chat window at login",
 		function() return TemucraftUI_GetOption("guildloginchat", true); end, function(on) TemucraftUI_SetOption("guildloginchat", on); end },
 	{ "Show SpellID / ItemID and icon names in tooltips",

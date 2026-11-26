@@ -203,7 +203,7 @@ the "Classic spellbook" checkbox) and `/ttf classic` (the "Classic talents" chec
 Interface Options > Temucraft (or `/tui`) has a "Classic" box for each piece and the tooltip ID option
 ([`TemucraftInterface.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftInterface.lua); per account in the store, keys `ui.classicchar`,
 `ui.classicmicro`, `ui.classicmenu`, `ui.classicoptions`, `ui.classicguild`, `ui.classicgbank`, `ui.classicrep`, `ui.classiccurrency`,
-`ui.classicgossip`, `ui.classictradeskill`, `ui.tooltipids`, `ui.guildloginchat`). The windows themselves have no Classic checkbox any more (it
+`ui.classicgossip`, `ui.classictradeskill`, `ui.classiclfg`, `ui.classicpvp`, `ui.tooltipids`, `ui.guildloginchat`). The windows themselves have no Classic checkbox any more (it
 sat on their bottom tabs), except the spellbook and talents.
 
 - **Gossip** ([`TemucraftGossip.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftGossip.lua)): the stock GossipFrame with a 36 px
@@ -424,6 +424,63 @@ frame (`ShowUIPanel(AchievementFrame)`: it is swapped for ours a frame later) al
   module (its quest tracker shows tracked achievements and opens this window), so nothing to step aside for.
 - `/achievements` (`/tach`), `/achievements stats`.
 
+## Group Finder and PvP window
+
+[`TemucraftGroupFinder.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftGroupFinder.lua)
+and [`TemucraftGroupFinderPvP.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftGroupFinderPvP.lua)
+take the place of the stock LFDParentFrame, LFRParentFrame and PVPParentFrame with one retail-style window (like the
+later PVEFrame; 820 x 560, the shared look of `TemucraftStyle.lua`, Esc closes it): two tabs on top, **Dungeons & Raids**
+and **Player vs. Player**, and down the left of each the big category buttons (stock LFG / PvP art). The stock frames
+still load and do the work behind it: LFDParentFrame's events show the role check, the "dungeon ready" popup and the
+vote kick, LFGEventFrame keeps the lists (`LFDDungeonList`, `LFGEnabledList`, `LFGLockList` ...), the minimap eye and
+its status tooltip, and the minimap battlefield button, its menu and the "ready to enter" popup stay stock. What opens
+the windows changes: `ToggleLFDParentFrame` (I, the Group Finder micro button, the minimap eye), `ToggleLFRParentFrame`
+and `TogglePVPFrame` (H, the PvP micro button / the micro menu's right click) open this window; a `ShowUIPanel` of a
+stock one (the Dungeon Finder from a gossip, the battlemaster's "queue from anywhere") is swapped for ours a frame
+later. The micro buttons look pushed while it is open.
+
+- **Dungeon Finder**: Tank / Healer / Damage (only what your class can do; Leader in a group), always the stock
+  `SetLFGRoles` (the stock check boxes follow, so the role check popup shows the same); the type (`LFDQueueFrame.type`:
+  Specific Dungeons, or a random dungeon / holiday boss of your level, the stock dropdown's rules); for a random one
+  its art, text, rewards (`GetLFGDungeonRewards`, item tooltips, money and experience) and your or your group's
+  cooldown / deserter time; for Specific Dungeons the stock list (headers that collapse, check boxes, partly ticked
+  headers, locks with the stock reasons, heroic marks, level colours) with a search box, and a book button on a
+  dungeon the Adventure Guide has (`TemucraftAdventureGuide_Open`, only while that file is loaded). At the bottom the
+  queue status (time in queue, average wait, tank / healer / damage found: `GetLFGQueueStats`), Find Group / Join as
+  Party / Leave Queue (`LFDQueueFrame_Join`, `LeaveLFG`; greyed with a reason without a role or a ticked dungeon), the
+  backfill offer (`PartyLFGStartBackfill`) and Teleport in / out of a Dungeon Finder group (`LFGTeleport`). Listed in
+  the Raid Browser: the stock "unlist first" with Unlist Me.
+- **Raid Finder** (the 3.3.5 Raid Browser): **List Yourself** (roles, the raid list with headers, locks and one pick
+  in a group as stock, a comment; List My Name / List My Group / Unlist: `JoinLFG`, `SetLFGComment`) and **Raid
+  Browser** (pick a raid: `SearchLFGJoin`; the players and groups listed for it with level, class colour, roles or
+  group size and bosses killed, the stock tooltip; filters All / Groups / Players and Tank / Healer / Damage, a search
+  of names, classes and comments; Whisper, Invite, Refresh, every 20 s on its own). The search ends 40 s after the
+  page closes, as the stock browser's.
+- **Battlegrounds**: Random Battleground and the Call to Arms first, then every battleground you can enter
+  (`GetBattlegroundInfo`); the selected one's art, description or win / loss rewards (honor, arena points), Join
+  Battle and Join as Group / Party (`RequestBattlegroundInstanceInfo`, `JoinBattlefield`), your queues (time, estimate,
+  Leave Queue, Enter Battle; arenas too) and the Wintergrasp timer. 3.3.5 can't queue Wintergrasp from a window (only at
+  a Wintergrasp battlemaster or in the zone), so the timer says when you can.
+- **Arena**: your 2v2, 3v3 and 5v5 teams (`GetArenaTeam`): banner in the team's colours, rating, games and wins this
+  week or this season, your games and personal rating, rank; a click shows the roster (`ArenaTeamRoster`, captain
+  mark, offline members dimmed; right click the stock team menu). Off season: the stock message.
+- **Honor & Conquest**: honor points and arena points (the 3.3.5 currencies), honorable kills and honor today /
+  yesterday / lifetime, and this week's arena points: an estimate per team with AzerothCore's formula at the default
+  rates (`ArenaTeam::GetPoints`: 344 up to 1500 rating, then 1511.26 / (1 + 1639.28 e^(-0.00412 r)), x 0.76 for 2v2 and
+  x 0.88 for 3v3, the personal rating when it is 150+ lower; 10 team games and 30% of them yours; the best team counts).
+  Retail's Conquest cap doesn't exist in 3.3.5. A button turns the PvP flag on or off.
+- **Not here**: Premade Groups. 3.3.5 has no group listing (`C_LFGList` came with 5.x) and no module of ours adds one
+  (with its default settings mod-playerbots' random bots join the Dungeon Finder and battleground queues, so those pop on a quiet realm); also
+  no Mythic+, rated battlegrounds or skirmish queue from the window (skirmishes are at the arena battlemaster).
+  Temucraft's own instances (mod-temucraft-instances: Firelands, Mogu'shan Vaults ...) are not in LFGDungeons.dbc, so
+  the Dungeon Finder can't queue for them; the custom entries that are (1000 Onyxia's Lair (Vanilla), 1001 Naxxramas
+  (Vanilla), under Wrath of the Lich King Raid (25)) show in the Raid Browser's list like any other.
+- **Classic**: "Classic group finder (I)" and "Classic PvP window (H)" (Interface > Temucraft, `/tui`, keys
+  `ui.classiclfg`, `ui.classicpvp`) keep the stock windows. DragonUI has no Group Finder or PvP module (it only styles
+  the micro buttons and the minimap eye), so nothing to step aside for.
+- `/groupfinder`, `/lfd`, `/lfg` (Dungeon Finder), `/lfr`, `/raidbrowser`; `/pvp` opens the PvP tab (the stock `/pvp`
+  toggled the PvP flag: that is `/pvp flag` now, `/pvp on`, `/pvp off`).
+
 ## DragonUI
 
 [DragonUI](https://github.com/NeticSoul/DragonUI) (our fork: Temucraft/DragonUI-Temucraft, PTR first) is the base of
@@ -564,6 +621,8 @@ hidden holder and ours sit on top. The "Classic" choice here is `TEMUCRAFT_LOGIN
 | `/addons` | addon list |
 | `/professions`, `/tprof` | Professions window (the Overview when no profession is open) |
 | Y, `/achievements [stats]`, `/tach` | Achievements window (Statistics tab) |
+| I, `/groupfinder`, `/lfd`, `/lfg`; `/lfr`, `/raidbrowser` | Group Finder (Dungeon Finder; Raid Finder) |
+| H, `/pvp` (`/pvp flag\|on\|off`: the PvP flag) | Group Finder, Player vs. Player tab |
 | `/ttutorial [reset\|skip\|on\|off]` | the new-player tutorial |
 | `/issue`, `/bug`; F6 (`/issuekey <key>\|none`) | Issue Reporter; the key is a click binding, F6 by default when free |
 | `/wardrobe`, `/vanity`, `/tokenpreview <link>`, `/heritage`, `/disguise`, `/tankrole` | module windows |
@@ -574,7 +633,7 @@ hidden holder and ours sit on top. The "Classic" choice here is `TEMUCRAFT_LOGIN
 Stub tests (no client; run from the module folder with Lua 5.1) for the grouping, search, paging, collection and
 loadout logic, the player UI, the login screens and the protocols: `lua5.1 client/tests/spellbook_test.lua`,
 `collections_test.lua`, `interface_test.lua`, `taxi_test.lua`, `issues_test.lua`, `guild_test.lua`,
-`reputation_test.lua`, `glue_test.lua`, `loadouts_test.lua` (the server loadouts protocol), `dragonui_test.lua` (the DragonUI step-aside switch), `professions_test.lua` (the Professions window's list, filters, favourites, stats and recipe helpers), `achievements_test.lua` (the Achievements window's category tree, progress, filter and search, tracking cap, series and criteria helpers), `adventureguide_test.lua` (the Adventure Guide data's shape and the hand-checked sample instances, tabs, expansion filter, search, level suggestions, loot, the TAG asks and the journal merge), `tutorial_test.lua` (the new-player tutorial's start rules and step machine, fed fake events) and `options_test.lua` (the Options pages, search, sliders, key names, binding groups, the AddOns list, server answers and the Esc menu rows; all in `client/tests/`). Also check every file with `luac5.1 -p`.
+`reputation_test.lua`, `glue_test.lua`, `loadouts_test.lua` (the server loadouts protocol), `dragonui_test.lua` (the DragonUI step-aside switch), `professions_test.lua` (the Professions window's list, filters, favourites, stats and recipe helpers), `achievements_test.lua` (the Achievements window's category tree, progress, filter and search, tracking cap, series and criteria helpers), `groupfinder_test.lua` (the Group Finder and PvP window: key binding and Classic routing, toggles, roles, the Find Group and List buttons, random dungeon choice, list search, queue status, the Raid Browser filter, the Adventure Guide link, battleground order, queues, arena points and /pvp), `adventureguide_test.lua` (the Adventure Guide data's shape and the hand-checked sample instances, tabs, expansion filter, search, level suggestions, loot, the TAG asks and the journal merge), `tutorial_test.lua` (the new-player tutorial's start rules and step machine, fed fake events) and `options_test.lua` (the Options pages, search, sliders, key names, binding groups, the AddOns list, server answers and the Esc menu rows; all in `client/tests/`). Also check every file with `luac5.1 -p`.
 
 ## Also in this module
 

@@ -63,6 +63,9 @@ FRAME_FILES = ["Temucraft\\TemucraftCore.lua",
                "Temucraft\\TemucraftProfessions.lua",
                # the Achievements window (after TemucraftInterface.lua, its "Classic achievements window")
                "Temucraft\\TemucraftAchievements.lua",
+               # the Group Finder and PvP window (after TemucraftInterface.lua, its Classic boxes, TemucraftMicroMenu.lua and
+               # TemucraftAdventureGuide.lua, its link; the PvP file adds its pages to the Group Finder's window)
+               "Temucraft\\TemucraftGroupFinder.lua", "Temucraft\\TemucraftGroupFinderPvP.lua",
                # after TemucraftCore.lua (the version), TemucraftStore.lua and TemucraftTooltips.lua (its lines come first)
                "Temucraft\\TemucraftIssues.lua",
                # the new-player tutorial (after TemucraftStore.lua; the Options window's Tutorials row calls it)
