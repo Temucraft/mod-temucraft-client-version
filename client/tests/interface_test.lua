@@ -127,7 +127,19 @@ check("DragonUI (char + currency): reputation stays ours", C.Route("ReputationFr
 	and C.Route("TokenFrame", function(w) return w == "char" or w == "currency"; end, all) == "stock");
 check("no pet: stock (it ignores it)", C.Route("PetPaperDollFrame", none, function(k) return k ~= "pet"; end) == "stock");
 check("unknown frame: stock", C.Route("HonorFrame", none, all) == "stock");
-check("every tab has a classic option", #C.TABS == 6 and C.CLASSIC.prof == "char" and C.CLASSIC.rep == "rep");
+check("every tab has a classic option", #C.TABS == 7 and C.CLASSIC.prof == "char" and C.CLASSIC.rep == "rep" and C.CLASSIC.honor == "char");
+check("tabs in order, Honor before Professions", C.TABS[6][1] == "honor" and C.TABS[7][1] == "prof");
+local prows = C.ProfessionRows({ [185] = { id = 185 }, [171] = { id = 171 }, [182] = { id = 182 }, [356] = { id = 356 } });
+check("professions: main first, secondary apart", #prows.main == 2 and prows.main[1].id == 171 and prows.main[2].id == 182
+	and #prows.secondary == 2 and prows.secondary[1].id == 185 and prows.secondary[2].id == 356);
+check("profession stats line", C.ProfStatsText(182, { 5, 3, 10, 0, 0 }) == "Finesse 5%   Perception 3%   Deftness 10%"
+	and C.ProfStatsText(171, { 0, 0, 0, 12, 7 }) == "Multicraft 12%   Resourcefulness 7%" and C.ProfStatsText(171, nil) == "");
+check("skill bar text", C.SkillBarText(175, 225, 5) == "175 / 225 (+5)" and C.SkillBarText(1, 75, 0) == "1 / 75");
+local gear = C.ParseGear("171:0:5956:0;171:2:1234:-5;");
+check("profession gear", gear[171][0].entry == 5956 and gear[171][2].prop == -5 and gear[171][1] == nil);
+check("profession stats parse", C.ParseProfStats("182:5:3:10:0:0;")[182][3] == 10);
+local hs = C.HonorSections({ todayKills = 3, lifetimeKills = 900, rank = "Sergeant" });
+check("honor sections", #hs == 3 and hs[1].rows[1][2] == "3" and hs[3].rows[2][2] == "Sergeant" and hs[2].rows[1][2] == "0");
 check("full size on a big screen", C.FitScale(1920, 1080, 730, 500) == 1);
 check("scaled down on a small screen", math.abs(C.FitScale(640, 480, 730, 500) - (480 - 60) / 500) < 0.0001);
 check("place text", C.PositionText(16.4, 700.6) == "16,701" and select(2, C.ParsePosition("16,701")) == 701 and C.ParsePosition("-5,20") == -5);

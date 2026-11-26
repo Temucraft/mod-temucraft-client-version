@@ -214,8 +214,8 @@ sat on their bottom tabs), except the spellbook and talents.
 - **Character window** ([`TemucraftCharacter.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftCharacter.lua), C, U, `/tchar`, `/tchar classic|new`):
   ONE window (730 x 500, the same size, place and style on every tab; scaled down on small screens; drag the top to
   move it, the place is kept per character in TemucraftStore `ui.charwin`; Esc closes it) with the tabs Character /
-  Pet (only while you have a pet) / Reputation / Skills / Currency / Professions (only with the TemucraftProfGear
-  addon of mod-temucraft-professions). A tab swaps the page inside; the window and the tab strip stay put.
+  Pet (only while you have a pet) / Reputation / Skills / Currency / Honor / Professions. A tab swaps the page
+  inside; the window and the tab strip stay put.
   The look is the shared one (`TemucraftStyle.lua`): gold border and header (the page's title; on Character and Pet
   the name and "Level 80 ..."), parchment insets for lists, details and stats, the achievement categories' dark bar
   behind section headers and their gold highlight on rows (`TemucraftCharacter_Panel` / `_Inset` / `_HeaderBar` /
@@ -233,15 +233,31 @@ sat on their bottom tabs), except the spellbook and talents.
     "current (+bonus) / max" text, `TemucraftSpellBookLogic`): an icon, the name and a slim rank bar per skill; on the
     right the description, the rank bar, "How to raise it" and Unlearn for professions. Refreshes on
     `SKILL_LINES_CHANGED`. Reusable: `TemucraftSkills_Build(parent [, name])` (list + details in any frame) and
-    `TemucraftSkills_Read()` (the sections).
-  - Professions: TemucraftProfGear's Profession Equipment and Reagent Bag panels side by side in the window's style,
-    the help text in its own line under them (`TemucraftProfGear_Host(parent)`; `/profgear` and alt-right-click open
-    this tab).
-  Classic: "Classic character panel" sends Character, Pet, Skills and Professions to the stock character frame
-  (Professions to the addon's tab there), "Classic reputation window" / "Classic currency window" just those tabs;
-  the other tabs stay in this window. With DragonUI's Character Panel module on, its window is used for Character,
-  Pet, Skills and Currency, and Reputation stays ours. Other files add pages with `TemucraftCharacter_AddPage(key,
-  frame, { title })` and open them with `TemucraftCharacter_Open(key [, toggle])`.
+    `TemucraftSkills_Read()` (the sections). Lines without a rank (class skills, armor, languages) are plain rows.
+  - Honor: honor and arena points, honorable kills and honor today / yesterday / in all, the highest rank, your arena
+    teams, and a button to the PvP window.
+  - Professions: the Profession Equipment panel of TemucraftProfGear and the Professions window's Overview in one
+    page: every profession you know with its icon, name, skill bar ("175 / 225 (+5)", the bonus from the skill
+    line), its stats from the server (Finesse / Perception / Deftness for gathering, Multicraft / Resourcefulness for
+    crafting) and its three equipment slots (tool, accessory, accessory: right-click takes one off, alt-right-click in
+    the bags wears one), the main professions first and Cooking / First Aid / Fishing in smaller rows under "Secondary
+    Skills". Click a profession to open it (a secure button laid over the row, out of combat: casts its spell, the
+    Professions window opens; Herbalism, Skinning and Fishing open its page there, `TemucraftProfessions_ShowSkill`).
+    The data comes from mod-temucraft-professions (prefix TPG: GET, then PR / ST / SS), so it works without the
+    addon; the **Reagent Bag** sub-tab hosts TemucraftProfGear's bag (`TemucraftProfGear_HostBag(parent)`) and shows
+    only with that addon (an older TemucraftProfGear has no `HostBag`: the sub-tab stays hidden until it is updated).
+  **One host with DragonUI**: with DragonUI's Character Panel module on, DragonUI's character window is the window
+  for every tab: its own Character, Pet, Reputation, Skills, Currency and Honor panes, and our Reputation page
+  (unless "Classic reputation window" is on) and Professions page as panes inside it, made like DragonUI's Honor pane
+  (`CharacterFrame_ShowSubFrame`, ids 3 and 7, registered in DragonUI's `CharacterPanel.OWNED_TABS` / `SUBFRAMES` so
+  its frame, sidebar and list-tab size follow). Professions is a seventh tab, `CharacterFrameTab7`, on DragonUI's
+  strip (DragonUI-Temucraft patch 0008 counts it in the strip's width), and TemucraftProfGear's own tab is hidden. In
+  that window the Reputation list fills the pane and the faction details fly out at the window's right edge while a
+  faction is picked (`TemucraftReputation_SetLayout(compact, anchor)`).
+  Classic: "Classic character panel" (no DragonUI) sends Character, Pet, Skills, Honor and Professions to the stock
+  windows (Professions to TemucraftProfGear's tab on the stock character frame, Honor to the PvP window), "Classic
+  reputation window" / "Classic currency window" just those tabs; the other tabs stay in this window. Other files add
+  pages with `TemucraftCharacter_AddPage(key, frame, { title })` and open them with `TemucraftCharacter_Open(key [, toggle])`.
 - **Micro menu** ([`TemucraftMicroMenu.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftMicroMenu.lua)): a row at the bottom right (smaller
   if need be, or above the main bar when there's no room beside it): Character, Spellbook & Talents (right click:
   talents), Achievements, Quest Log, Guild (right click: friends), Group Finder (right click: PvP), Collections, Adventure

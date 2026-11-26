@@ -1414,3 +1414,12 @@ SlashCmdList["TEMUCRAFTPROFESSIONS"] = function()
 	ShowUIPanel(frame);
 end;
 function TemucraftProfessions_Toggle() SlashCmdList["TEMUCRAFTPROFESSIONS"](); end
+
+-- the character window's Professions page: this window on one profession, the page of one without recipes (its
+-- skill and stats: Herbalism, Skinning, Fishing; also any profession while in combat, when casting can't open it)
+function TemucraftProfessions_ShowSkill(id)
+	if ( not TemucraftProfessions_IsActive() or not L.PROFESSIONS[id] or not KnownOne(id) ) then return false; end
+	page = "gather"; gatherSkill = id;
+	if ( frame:IsShown() ) then Update(); else ShowUIPanel(frame); end
+	return true;
+end

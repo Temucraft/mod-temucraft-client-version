@@ -399,6 +399,8 @@ L.StandingText = StandingText;
 ----------------------------------------------------------------------------------------------------------------------
 local LIST_WIDTH = 430;
 local NUM_ROWS, ROW_HEIGHT = 17, 24;
+local visibleRows = NUM_ROWS;   -- fewer when the page is hosted in a smaller window (TemucraftReputation_SetLayout)
+local compact = false;
 
 -- a page of the character window (its frame, header, close button, tabs and place); the title is its header
 local frame = CreateFrame("Frame", "TemucraftReputationFrame", TemucraftCharacterFrame or UIParent);
@@ -643,7 +645,9 @@ Update = function()
 	if ( not frame:IsVisible() ) then return; end
 	groupsCache = L.Group(L.ReadRows());
 	lines = L.Flatten(groupsCache, filter, collapsed);
-	FauxScrollFrame_Update(scroll, #lines, NUM_ROWS, ROW_HEIGHT);
+	local h = listBox:GetHeight();
+	if ( h and h > 40 ) then visibleRows = math.max(1, math.min(NUM_ROWS, math.floor((h - 12) / ROW_HEIGHT))); end
+	FauxScrollFrame_Update(scroll, #lines, visibleRows, ROW_HEIGHT);
 	local offset = FauxScrollFrame_GetOffset(scroll);
 	local selectedRow;
 	for _, g in ipairs(groupsCache) do
@@ -653,7 +657,7 @@ Update = function()
 		end
 	end
 	for i, b in ipairs(rows) do
-		local line = lines[offset + i];
+		local line = i <= visibleRows and lines[offset + i] or nil;
 		b.line = line;
 		b.barText, b.valueText = nil, nil;
 		if ( not line ) then
@@ -704,6 +708,10 @@ Update = function()
 		end
 	end
 	UpdateDetail(selectedRow);
+	-- hosted: the details are a flyout beside the window, out while a faction is picked
+	if ( compact ) then
+		if ( selectedRow ) then detail:Show(); else detail:Hide(); end
+	end
 end
 L.Update = Update;
 scroll:SetScript("OnVerticalScroll", function(self, offset) FauxScrollFrame_OnVerticalScroll(self, offset, ROW_HEIGHT, Update); end);
@@ -714,6 +722,39 @@ listBox:SetScript("OnMouseWheel", function(_, delta)
 end);
 
 frame:SetScript("OnShow", function() Update(); end);
+frame:SetScript("OnSizeChanged", function() if ( frame:IsVisible() ) then Update(); end end);
+
+-- the details' close button (hosted: closes the flyout)
+local detailClose = CreateFrame("Button", nil, detail, "UIPanelCloseButton");
+detailClose:SetPoint("TOPRIGHT", 2, 2);
+detailClose:SetScript("OnClick", function() selectedName = nil; Update(); end);
+detailClose:Hide();
+
+-- where the page sits: full (TemucraftCharacter.lua's own window: list left, details right) or compact (hosted in
+-- DragonUI's character window: the list fills the page, the details fly out at flyoutAnchor's right edge)
+function TemucraftReputation_SetLayout(isCompact, flyoutAnchor)
+	compact = isCompact and true or false;
+	listBox:ClearAllPoints();
+	detail:ClearAllPoints();
+	if ( compact ) then
+		listBox:SetPoint("TOPLEFT", frame, "TOPLEFT", 4, -32);
+		listBox:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -4, 4);
+		detail:SetPoint("TOPLEFT", flyoutAnchor or frame, "TOPRIGHT", 0, -56);
+		detail:SetPoint("BOTTOMLEFT", flyoutAnchor or frame, "BOTTOMRIGHT", 0, 4);
+		detail:SetWidth(270);
+		detail:SetFrameStrata(frame:GetFrameStrata());
+		detail:SetFrameLevel(frame:GetFrameLevel() + 20);
+		detailClose:Show();
+	else
+		listBox:SetPoint("TOPLEFT", 16, -64);
+		listBox:SetWidth(LIST_WIDTH); listBox:SetHeight(NUM_ROWS * ROW_HEIGHT + 12);
+		detail:SetPoint("TOPLEFT", listBox, "TOPRIGHT", 8, 0);
+		detail:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -16, 24);
+		detailClose:Hide();
+		detail:Show();
+	end
+	if ( frame:IsVisible() ) then Update(); end
+end
 
 -- the character window's Reputation tab, U and the stock Reputation tab (ToggleCharacter("ReputationFrame") goes to
 -- this page, or to the stock frame with the Classic option on)
