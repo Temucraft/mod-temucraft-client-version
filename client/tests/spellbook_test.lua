@@ -26,15 +26,30 @@ check("shapeshift subtitle", books.class[2].entries[1].subtitle == "Shapeshift")
 check("passive subtitle", books.class[2].entries[2].subtitle == "Passive");
 local order = {};
 for _, s in ipairs(books.general) do table.insert(order, s.title); end
-check("general order", table.concat(order, ",") == "General,Racial,Professions,Guild Perks,Temucraft");
-check("racial passive", books.general[2].entries[2].subtitle == "Racial Passive");
-check("guild perk", books.general[4].entries[1].subtitle == "Guild Perk");
+check("general order (racials have their own tab)", table.concat(order, ",") == "General,Professions,Guild Perks,Temucraft");
+check("racial passive", books.racial[1].title == "Racial" and books.racial[1].entries[2].subtitle == "Racial Passive");
+check("guild perk", books.general[3].entries[1].subtitle == "Guild Perk");
+
+-- racials: categories in order, old-style last, a passive's effect as its subtitle
+local racials = L.Group({
+	{ name = "Hardiness", sub = "Racial - Resistance (Stun)", tab = 1, tabName = "General", passive = true, flags = 0, effect = "Stun duration reduced by 15%." },
+	{ name = "Blood Fury", sub = "Racial - Combat (Blood Fury)", tab = 1, tabName = "General", passive = false, flags = 0 },
+	{ name = "Command", sub = "Racial Passive", tab = 1, tabName = "General", passive = true, flags = 0 },
+	{ name = "Axe Specialization", sub = "Racial - Weapon Skill (Axes)", tab = 1, tabName = "General", passive = true, flags = 0 },
+	{ name = "Odd", sub = "Racial - Lore (Old)", tab = 1, tabName = "General", passive = false, flags = 0 },
+}, {}, "Rogue").racial;
+local titles = {};
+for _, s in ipairs(racials) do table.insert(titles, s.title); end
+check("racial categories", table.concat(titles, ",") == "Combat,Resistance,Weapon Skill,Lore,Racial");
+check("racial active subtitle is its sub-group", racials[1].entries[1].subtitle == "Blood Fury");
+check("racial passive effect", racials[2].entries[1].subtitle == "Stun duration reduced by 15%.");
+check("racial category parse", L.RacialCategory("Racial - Weapon Skill (Axes)") == "Weapon Skill" and L.RacialCategory("Racial Passive") == nil);
 
 local filtered = L.Filter(books.class, "bear", nil);
 check("search by name", #filtered == 1 and filtered[1].entries[1].name == "Bear Form");
 filtered = L.Filter(books.class, "heal over time", function(e) return e.name == "Rejuvenation" and "heals the target over time" or ""; end);
 check("search by description, every word", #filtered == 1 and filtered[1].title == "Restoration");
-check("search by subtitle", #L.Filter(books.general, "racial passive") == 1);
+check("search by subtitle", #L.Filter(books.racial, "racial passive") == 1);
 check("empty query keeps all", #L.Filter(books.class, "") == 3);
 
 local many = { { title = "A", entries = {} }, { title = "B", entries = {} } };

@@ -1,9 +1,13 @@
--- Temucraft spellbook (the Spellbook tab of TemucraftPlayerSpells.lua): a retail-style book with three tabs, the class,
--- General and Skills, a search box, entries in a 3-column grid (icon, name, grey subtitle) under section headings, and
+-- Temucraft spellbook (the Spellbook tab of TemucraftPlayerSpells.lua): a retail-style book with four tabs, the class,
+-- Racials (only when you have any), General and Skills, a search box, entries in a 3-column grid (icon, name, grey subtitle) under section headings, and
 -- page arrows; the expand button at the top right shows two pages side by side.
 --   Class:   a section named after the class (class spell tabs that aren't talent trees, when the server has any),
 --            then one section per talent tree, in talent order.
---   General: General, Racial, Professions, Guild Perks, then any other spell tab (Temucraft spells).
+--   Racials: the spells whose rank text starts with "Racial" ("Racial", "Racial Passive", the PTR's
+--            "Racial - <Category> (<Sub-group>)") or that the server flags as racial, by category (Combat, Stats,
+--            Resistance, Weapon Skill, Profession, Utility, any other, then the old-style "Racial" ones); a passive shows
+--            its effect (the first sentence of its description) under its name. Follows race changes (Heritage).
+--   General: General, Professions, Guild Perks, then any other spell tab (Temucraft spells).
 --   Skills:  the character's skill lines (GetSkillLineInfo: weapons, defense, armour, languages, class skills,
 --            professions read-only), each with an icon and a "current / max" bar; refreshed on SKILL_LINES_CHANGED.
 -- Ranks ("Show all ranks" box by the search, saved account-wide with TemucraftStore, key ui.bookranks = "all"):
@@ -23,7 +27,23 @@
 TemucraftSpellBookLogic = {};
 local L = TemucraftSpellBookLogic;
 L.F_RACIAL, L.F_PROFESSION, L.F_GUILD, L.F_PASSIVE, L.F_TELEPORT, L.F_TALENT = 1, 2, 4, 8, 16, 32;
-L.GENERAL_ORDER = { "General", "Racial", "Professions", "Guild Perks" };
+L.GENERAL_ORDER = { "General", "Professions", "Guild Perks" };
+L.RACIAL_ORDER = { "Combat", "Stats", "Resistance", "Weapon Skill", "Profession", "Utility" };
+L.RACIAL = "Racial";
+
+-- a racial: "Racial", "Racial Passive", "Racial - Combat (Blood Fury)", or flagged by the server
+function L.IsRacial(e)
+	return L.Has(e.flags, L.F_RACIAL) or string.find(e.sub or "", "^Racial") ~= nil;
+end
+
+-- "Racial - Weapon Skill (Axes)" -> "Weapon Skill", "Axes"; old-style ones -> nil
+function L.RacialCategory(sub)
+	sub = sub or "";
+	local category, group = string.match(sub, "^Racial%s*%-%s*([^%(]-)%s*%((.-)%)");
+	if ( not category ) then category = string.match(sub, "^Racial%s*%-%s*(.-)%s*$"); end
+	if ( category == "" ) then category = nil; end
+	return category, group;
+end
 
 function L.Has(f, bit) return f ~= nil and (f % (bit * 2)) >= bit; end
 
@@ -38,7 +58,7 @@ function L.IsRank(sub)
 end
 
 -- e = { name, sub, tab, tabName, passive, flags }; trees = { [lower tree name] = tree name }
--- returns the book ("class" or "general"), the section and the subtitle
+-- returns the book ("class", "racial" or "general"), the section and the subtitle
 function L.Classify(e, trees, className)
 	local sub = e.sub or "";
 	local subtitle = L.IsRank(sub) and "" or sub;
@@ -54,8 +74,10 @@ function L.Classify(e, trees, className)
 	if ( L.Has(e.flags, L.F_GUILD) or string.find(sub, "Guild Perk") ) then
 		return "general", "Guild Perks", subtitle ~= "" and subtitle or "Guild Perk";
 	end
-	if ( L.Has(e.flags, L.F_RACIAL) or string.find(sub, "Racial") ) then
-		return "general", "Racial", subtitle ~= "" and subtitle or (e.passive and "Racial Passive" or "Racial");
+	if ( L.IsRacial(e) ) then
+		local category, group = L.RacialCategory(sub);
+		local text = e.passive and e.effect or group or (e.passive and "Racial Passive" or "Racial");
+		return "racial", category or L.RACIAL, text;
 	end
 	if ( subtitle == "" and e.passive ) then subtitle = "Passive"; end
 	if ( L.Has(e.flags, L.F_PROFESSION) ) then return "general", "Professions", subtitle; end
@@ -193,12 +215,12 @@ function L.SkillRankText(e)
 	return string.format("%d / %d", e.rank, e.max);
 end
 
--- { class = { {title, entries}, ... }, general = { ... } }
+-- { class = { {title, entries}, ... }, racial = { ... }, general = { ... } }
 function L.Group(list, treeOrder, className)
 	local trees = {};
 	for _, t in ipairs(treeOrder) do trees[lower(t)] = t; end
-	local books = { class = {}, general = {} };
-	local index = { class = {}, general = {} };
+	local books = { class = {}, racial = {}, general = {} };
+	local index = { class = {}, racial = {}, general = {} };
 	for _, e in ipairs(L.HighestRanks(list)) do
 		local book, section, subtitle = L.Classify(e, trees, className);
 		e.subtitle, e.section = subtitle, section;
@@ -215,12 +237,14 @@ function L.Group(list, treeOrder, className)
 	if ( className ) then take("class", className); end
 	for _, t in ipairs(treeOrder) do take("class", t); end
 	for _, t in ipairs(L.GENERAL_ORDER) do take("general", t); end
-	for _, book in ipairs({ "class", "general" }) do
+	for _, t in ipairs(L.RACIAL_ORDER) do take("racial", t); end
+	for _, book in ipairs({ "class", "racial", "general" }) do
 		local rest = {};
-		for title in pairs(index[book]) do table.insert(rest, title); end
+		for title in pairs(index[book]) do if ( not (book == "racial" and title == L.RACIAL) ) then table.insert(rest, title); end end
 		table.sort(rest);
 		for _, title in ipairs(rest) do take(book, title); end
 	end
+	take("racial", L.RACIAL);
 	return books;
 end
 
@@ -295,7 +319,7 @@ local RANKS_KEY = "ui.bookranks";
 
 local panel = CreateFrame("Frame", "TemucraftSpellBook", UIParent);
 local book, page, wide, query = "class", 1, false, "";
-local books, pages = { class = {}, general = {}, skills = {} }, {};
+local books, pages = { class = {}, racial = {}, general = {}, skills = {} }, {};
 local described = {};      -- spell id -> lower-case tooltip text (search)
 local pending = false;     -- a refresh waits for the end of combat
 local folded = {};         -- "Show all ranks": the groups folded this session ("tab:name" -> true)
@@ -329,7 +353,7 @@ local function BookTab(i, key)
 	tab:SetText(" ");
 	tab:SetHighlightTexture("Interface\\QuestFrame\\UI-QuestTitleHighlight", "ADD");
 	tab.key = key;
-	if ( i == 1 ) then tab:SetPoint("TOPLEFT", 20, -26); else tab:SetPoint("LEFT", bookTabs[i - 1], "RIGHT", 4, 0); end
+	tab.index = i;
 	tab:SetScript("OnClick", function(self)
 		PlaySound("igMainMenuOptionCheckBoxOn");
 		book, page = self.key, 1;
@@ -338,7 +362,7 @@ local function BookTab(i, key)
 	bookTabs[i] = tab;
 	return tab;
 end
-BookTab(1, "class"); BookTab(2, "general"); BookTab(3, "skills");
+BookTab(1, "class"); BookTab(2, "racial"); BookTab(3, "general"); BookTab(4, "skills");
 
 -- Pet, Collections (and the Train button, below) sit in the middle of the bottom bar: the top row is the book tabs,
 -- the ranks box and the search
@@ -459,6 +483,53 @@ local function Describe(e)
 	return described[e.id];
 end
 
+-- a racial passive's effect: the first sentence of its description (the tooltip's last line), kept per spell id
+local effects = {};
+local function Effect(slot, id)
+	if ( effects[id] ~= nil ) then return effects[id] or nil; end
+	scan:SetOwner(WorldFrame, "ANCHOR_NONE");
+	scan:SetSpell(slot, BOOKTYPE_SPELL);
+	local text;
+	for i = scan:NumLines(), 2, -1 do
+		local left = _G["TemucraftSpellBookScanTooltipTextLeft"..i];
+		local value = left and left:GetText();
+		if ( value and value ~= "" and value ~= " " ) then text = value; break; end
+	end
+	scan:Hide();
+	if ( text ) then
+		text = string.gsub(string.gsub(string.gsub(text, "|c%x%x%x%x%x%x%x%x", ""), "|r", ""), "[\r\n]+", " ");
+		text = string.match(text, "^(.-[%.!])%s") or text;
+	end
+	effects[id] = text or false;
+	return text;
+end
+
+-- spell tooltips beside the book at the button's height, on the side nearer the button (never over the page's other
+-- spells); the other side when the screen ends there, under the button when neither side has room
+function TemucraftSpellBook_PlaceTooltip(button)
+	local tip = GameTooltip;
+	local frame = TemucraftPlayerSpellsFrame or panel;
+	local left, right = frame:GetLeft(), frame:GetRight();
+	local bLeft, bRight, top = button:GetLeft(), button:GetRight(), button:GetTop();
+	if ( not (left and right and bLeft and top) ) then tip:SetPoint("TOPLEFT", button, "BOTTOMRIGHT"); return; end
+	local fs, bs, ts = frame:GetEffectiveScale(), button:GetEffectiveScale(), tip:GetEffectiveScale();
+	local bookLeft, bookRight = left * fs, right * fs;
+	local middle, buttonTop = (bLeft + bRight) / 2 * bs, top * bs;
+	local width = tip:GetWidth() * ts;
+	local screen = UIParent:GetRight() * UIParent:GetEffectiveScale();
+	local fitsLeft, fitsRight = bookLeft - width - 4 >= 0, bookRight + width + 4 <= screen;
+	local onLeft = middle - bookLeft < bookRight - middle;
+	if ( onLeft and not fitsLeft ) then onLeft = false; elseif ( not onLeft and not fitsRight ) then onLeft = fitsLeft; end
+	tip:ClearAllPoints();
+	if ( not (fitsLeft or fitsRight) ) then
+		tip:SetPoint("TOPLEFT", button, "BOTTOMLEFT", 0, -2);
+	elseif ( onLeft ) then
+		tip:SetPoint("TOPRIGHT", UIParent, "BOTTOMLEFT", (bookLeft - 4) / ts, buttonTop / ts);
+	else
+		tip:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", (bookRight + 4) / ts, buttonTop / ts);
+	end
+end
+
 local function LinkSpell(self)
 	if ( not self.slot ) then return; end
 	if ( MacroFrame and MacroFrame:IsShown() ) then
@@ -506,7 +577,7 @@ local function MakeButton(side, i)
 	b:SetAttribute("shift-type2", "tclink");
 	b.tclink = LinkSpell;
 	b:SetScript("OnDragStart", function(self)
-		if ( self.slot and not self.flyout ) then PickupSpell(self.slot, BOOKTYPE_SPELL); end
+		if ( self.slot and not self.flyout and not self.passive ) then PickupSpell(self.slot, BOOKTYPE_SPELL); end
 	end);
 	b:SetScript("OnEnter", function(self)
 		if ( self.flyout ) then
@@ -518,8 +589,9 @@ local function MakeButton(side, i)
 			return;
 		end
 		if ( not self.slot ) then return; end
-		GameTooltip:SetOwner(self, "ANCHOR_RIGHT");
+		GameTooltip:SetOwner(self, "ANCHOR_NONE");
 		GameTooltip:SetSpell(self.slot, BOOKTYPE_SPELL);
+		TemucraftSpellBook_PlaceTooltip(self);
 	end);
 	b:SetScript("OnLeave", function() GameTooltip:Hide(); end);
 	if ( TemucraftFlyouts_WrapButton ) then TemucraftFlyouts_WrapButton(b); end
@@ -671,9 +743,11 @@ local function Read()
 			if ( name ) then
 				local link = GetSpellLink(slot, BOOKTYPE_SPELL);
 				local id = link and tonumber(string.match(link, "spell:(%d+)"));
-				table.insert(list, { name = name, sub = sub, slot = slot, id = id, tab = tab, tabName = tabName,
+				local e = { name = name, sub = sub, slot = slot, id = id, tab = tab, tabName = tabName,
 					passive = IsPassiveSpell(slot, BOOKTYPE_SPELL) and true or false, flags = id and flagsOf(id) or 0,
-					icon = GetSpellTexture(slot, BOOKTYPE_SPELL) });
+					icon = GetSpellTexture(slot, BOOKTYPE_SPELL) };
+				if ( e.passive and id and L.IsRacial(e) ) then e.effect = Effect(slot, id); end
+				table.insert(list, e);
 			end
 		end
 	end
@@ -839,8 +913,23 @@ local function Render()
 end
 local function UpdateTabs()
 	bookTabs[1]:SetText((UnitClass("player")));
-	bookTabs[2]:SetText(GENERAL or "General");
-	bookTabs[3]:SetText(SKILLS or "Skills");
+	bookTabs[2]:SetText("Racials");
+	bookTabs[3]:SetText(GENERAL or "General");
+	bookTabs[4]:SetText(SKILLS or "Skills");
+	-- Racials only when there are any (read again here: a race change through Heritage changes them)
+	local hasRacials = #(Read().racial or {}) > 0;
+	if ( book == "racial" and not hasRacials ) then book = "class"; end
+	local last;
+	for _, tab in ipairs(bookTabs) do
+		tab:ClearAllPoints();
+		if ( tab.key ~= "racial" or hasRacials ) then
+			if ( last ) then tab:SetPoint("LEFT", last, "RIGHT", 4, 0); else tab:SetPoint("TOPLEFT", panel, "TOPLEFT", 20, -26); end
+			tab:Show();
+			last = tab;
+		else
+			tab:Hide();
+		end
+	end
 	ranksCheck:SetChecked(ShowAllRanks());
 	if ( book == "skills" ) then ranksCheck:Hide(); else ranksCheck:Show(); end
 	searchHint:SetText(book == "skills" and "Search skills" or "Search abilities, keywords");

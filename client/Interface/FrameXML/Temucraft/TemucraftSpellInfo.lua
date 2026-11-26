@@ -11,8 +11,12 @@
 --   7% chance to crit for 200% damage
 --   Changed by Temucraft: Cooldown 8 -> 6 sec      (stock 3.3.5 -> this server)
 -- The answer is several messages (I, V, C, T..., E; see the .cpp). A server without the E message (older module)
--- gets the old lines after a short wait. Answers are kept for 5 seconds, and dropped when your buffs, talents or
--- gear change.
+-- gets the old lines after a short wait. The lines go on through TemucraftTooltips.lua (order 20), once per tooltip
+-- build: tooltips that are refreshed every 0.2 s (DragonUI's spellbook, the action bars) must look the same each time,
+-- so an answer is shown until a newer one is in: after 5 seconds, or when your buffs, talents or gear change, the
+-- server is asked again while the old answer stays on; a changed answer redraws the tooltip once.
+-- "Your bonuses: +N% damage" only on spells that deal damage or heal (the server's damage bonus is by school, so it
+-- would otherwise show on Parachute, mounts...).
 
 local PREFIX = "TSI";
 local KEEP = 5;
@@ -162,9 +166,20 @@ local function AddEffects(tooltip, header, list, r, g, b, power)
 	end
 end
 
+-- the spell deals damage or heals (crit chance is only sent for those; or it has damage / heal values)
+local function DealsAmount(info)
+	if ( info.crit and info.crit > 0 ) then return true; end
+	for _, list in ipairs({ info.values or {}, info.changed or {} }) do
+		for _, v in ipairs(list) do
+			if ( v.key == "d" or v.key == "o" or v.key == "h" or v.key == "g" ) then return true; end
+		end
+	end
+	return false;
+end
+
 local function AddLines(tooltip, info)
 	local parts = {};
-	if ( info.damage ~= 0 ) then parts[#parts + 1] = Signed(info.damage, "% damage"); end
+	if ( info.damage ~= 0 and DealsAmount(info) ) then parts[#parts + 1] = Signed(info.damage, "% damage"); end
 	if ( info.cooldown ~= 0 ) then parts[#parts + 1] = Signed(info.cooldown, "% cooldown"); end
 	if ( info.cost ~= 0 ) then parts[#parts + 1] = Signed(info.cost, "% cost"); end
 	if ( info.cast ~= 0 ) then parts[#parts + 1] = Signed(math.floor(info.cast / 100 + 0.5) / 10, " sec cast"); end
@@ -204,41 +219,58 @@ local function AddLines(tooltip, info)
 		end
 		tooltip:AddLine("Changed by Temucraft: " .. table.concat(parts, ", "), 1, 0.5, 0.25, true);
 	end
-	if ( tooltip:NumLines() > before ) then tooltip:Show(); end
+	return tooltip:NumLines() > before;
 end
 
-local function Show(tooltip, id)
+-- the answer (even an old one) goes on; an old or missing one is asked for again
+local function Add(tooltip, id)
 	shown = id;
-	if ( not id ) then return; end
 	local info = cache[id];
-	if ( info and GetTime() - info.time < KEEP ) then
-		AddLines(tooltip, info);
-	else
-		Ask(id);
-	end
+	if ( not info or GetTime() - info.time >= KEEP ) then Ask(id); end
+	if ( info ) then AddLines(tooltip, info); end
 end
 
-local function IdFromLink(link)
-	return link and tonumber(link:match("spell:(%d+)"));
-end
-
-hooksecurefunc(GameTooltip, "SetSpell", function(tooltip, slot, book)
-	Show(tooltip, IdFromLink(GetSpellLink(slot, book)));
-end);
-hooksecurefunc(GameTooltip, "SetAction", function(tooltip, slot)
-	local kind, id, _, spellID = GetActionInfo(slot);
-	if ( kind == "spell" ) then Show(tooltip, spellID); else shown = nil; end
-end);
+-- spells of your spell book and action bars, through TemucraftTooltips.lua
+TemucraftTooltipLines = TemucraftTooltipLines or {};
+table.insert(TemucraftTooltipLines, { order = 20, kinds = { spell = true }, add = function(tooltip, s)
+	if ( tooltip ~= GameTooltip or not ((s.slot and s.book ~= "pet" and s.book ~= BOOKTYPE_PET) or s.action) ) then return; end
+	Add(tooltip, s.id);
+end });
 GameTooltip:HookScript("OnHide", function() shown = nil; end);
 
--- the whole answer is in: keep it, and add the lines if its tooltip is still on screen
+-- what an answer says, to tell a changed one from the same one again
+local function Signature(info)
+	local parts = { info.damage, info.cooldown, info.cost, info.cast, info.crit, info.critDamage, info.talents, info.others };
+	for _, list in ipairs({ info.values or {}, info.changed or {} }) do
+		for _, v in ipairs(list) do parts[#parts + 1] = v.key .. v.base .. v.now; end
+	end
+	for _, e in ipairs(info.effects or {}) do
+		parts[#parts + 1] = e.kind .. e.name .. e.rank;
+		for _, m in ipairs(e.mods) do parts[#parts + 1] = m.op .. m.kind .. m.amount; end
+	end
+	for i = 1, #parts do parts[i] = tostring(parts[i]); end
+	return table.concat(parts, "~");
+end
+
+-- the whole answer is in: keep it; when the tooltip on screen shows that spell and the answer is new or changed, it is
+-- built again (its owner's own refresh, so every line stays in its place), or the lines are added once
 local function Finish(id)
 	local info = pending[id];
 	if ( not info ) then return; end
 	pending[id] = nil;
 	info.time = GetTime();
+	info.signature = Signature(info);
+	local old = cache[id];
 	cache[id] = info;
-	if ( shown == id and GameTooltip:IsShown() ) then AddLines(GameTooltip, info); end
+	if ( old and old.signature == info.signature ) then return; end
+	local s = TemucraftTooltips_Subject and TemucraftTooltips_Subject(GameTooltip);
+	if ( shown ~= id or not GameTooltip:IsShown() or (s and s.id ~= id) ) then return; end
+	local owner = GameTooltip:GetOwner();
+	if ( owner and type(owner.UpdateTooltip) == "function" ) then
+		owner:UpdateTooltip();
+	elseif ( not old and AddLines(GameTooltip, info) ) then
+		GameTooltip:Show();
+	end
 end
 
 local frame = CreateFrame("Frame");
@@ -255,7 +287,10 @@ frame:SetScript("OnUpdate", function()
 end);
 frame:SetScript("OnEvent", function(self, event, prefix, text, channel, sender)
 	if ( event ~= "CHAT_MSG_ADDON" ) then
-		if ( event ~= "UNIT_AURA" or prefix == "player" ) then wipe(cache); end
+		-- kept on screen until the new answer is in (asked for at the next look)
+		if ( event ~= "UNIT_AURA" or prefix == "player" ) then
+			for _, info in pairs(cache) do info.time = -KEEP; end
+		end
 		return;
 	end
 	if ( prefix ~= PREFIX or sender ~= UnitName("player") or type(text) ~= "string" ) then return; end

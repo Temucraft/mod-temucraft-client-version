@@ -30,12 +30,12 @@ local function Label(id, passive)
 	return table.concat(parts, " - ");
 end
 
-hooksecurefunc(GameTooltip, "SetSpell", function(tooltip, slot, book)
-	local id = SpellIdOf(slot, book);
-	if ( not id ) then return; end
-	tooltip:AddLine(Label(id, IsPassiveSpell(slot, book)), 0.55, 0.75, 1);
-	tooltip:Show();
-end);
+-- the line goes on spellbook tooltips, through TemucraftTooltips.lua (all our tooltip lines, once per build, in order)
+TemucraftTooltipLines = TemucraftTooltipLines or {};
+table.insert(TemucraftTooltipLines, { order = 10, kinds = { spell = true }, add = function(tooltip, s)
+	if ( not s.slot ) then return; end
+	tooltip:AddLine(Label(s.id, s.passive), 0.55, 0.75, 1);
+end });
 
 -- the panel over the spell pages (parented to UIParent: its buttons are secure, and a secure child would make the
 -- spellbook itself impossible to open or close in combat)

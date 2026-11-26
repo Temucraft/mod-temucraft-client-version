@@ -441,17 +441,14 @@ local function Open(id)
 end
 
 -- tooltip: a short note on tokens; alt-click opens the window
-local function AddHint(tooltip)
-	local _, link = tooltip:GetItem();
-	local id = link and tonumber(link:match("item:(%d+)"));
-	if ( not id or not T[id] ) then return; end
+-- (through TemucraftTooltips.lua: all our tooltip lines once per build, in order)
+TemucraftTooltipLines = TemucraftTooltipLines or {};
+table.insert(TemucraftTooltipLines, { order = 30, kinds = { item = true }, add = function(tooltip, s)
+	if ( (tooltip ~= GameTooltip and tooltip ~= ItemRefTooltip) or not T[s.id] ) then return; end
 	tooltip:AddLine(" ");
-	tooltip:AddLine("Exchanges for "..#Mine(T[id]).." items for your class.", 1, 0.82, 0);
+	tooltip:AddLine("Exchanges for "..#Mine(T[s.id]).." items for your class.", 1, 0.82, 0);
 	tooltip:AddLine("<Alt-click to preview>", 0, 1, 0);
-	tooltip:Show();
-end
-GameTooltip:HookScript("OnTooltipSetItem", AddHint);
-ItemRefTooltip:HookScript("OnTooltipSetItem", AddHint);
+end });
 
 local OrigModifiedClick = HandleModifiedItemClick;
 function HandleModifiedItemClick(link)
