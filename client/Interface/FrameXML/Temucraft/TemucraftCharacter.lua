@@ -1194,8 +1194,17 @@ local function SubTab(i, text, key)
 end
 SubTab(1, "Professions", "list"):SetPoint("TOPLEFT", profBody, "TOPLEFT", 0, 0);
 SubTab(2, "Reagent Bag", "bag"):SetPoint("LEFT", subTabs[1], "RIGHT", 4, 0);
-profList:SetPoint("TOPLEFT", profBody, "TOPLEFT", 0, -26);
-profList:SetPoint("BOTTOMRIGHT", profBody, "BOTTOMRIGHT", 0, 0);
+-- the sub-tab row only when there is a second page to switch to (the Reagent Bag needs TemucraftProfGear): one lone
+-- "Professions" button at the top-left looked like a stray. Without it the list starts at the top.
+function L.ProfSubTabs(canBag) return { show = canBag and true or false, top = canBag and -26 or 0 }; end
+local function PlaceProfList(canBag)
+	local layout = L.ProfSubTabs(canBag);
+	for _, b in ipairs(subTabs) do if ( layout.show ) then b:Show(); else b:Hide(); end end
+	profList:ClearAllPoints();
+	profList:SetPoint("TOPLEFT", profBody, "TOPLEFT", 0, layout.top);
+	profList:SetPoint("BOTTOMRIGHT", profBody, "BOTTOMRIGHT", 0, 0);
+end
+PlaceProfList(false);
 bagPage:SetPoint("TOPLEFT", profBody, "TOPLEFT", 0, -26);
 bagPage:SetPoint("BOTTOMRIGHT", profBody, "BOTTOMRIGHT", 0, 0);
 bagPage:Hide();
@@ -1205,14 +1214,17 @@ bagMissing:SetText("The reagent bag needs the TemucraftProfGear addon (launcher,
 
 local profScroll = CreateFrame("ScrollFrame", "TemucraftCharacterProfScroll", profList, "UIPanelScrollFrameTemplate");
 profScroll:SetPoint("TOPLEFT", 6, -6);
-profScroll:SetPoint("BOTTOMRIGHT", -28, 26);
+profScroll:SetPoint("BOTTOMRIGHT", -28, 46);   -- above the three-line hint
 local profContent = CreateFrame("Frame", nil, profScroll);
 profContent:SetWidth(300); profContent:SetHeight(10);
 profScroll:SetScrollChild(profContent);
 local profHint = profList:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall");
 profHint:SetPoint("BOTTOMLEFT", 10, 8); profHint:SetPoint("BOTTOMRIGHT", -10, 8);
-profHint:SetJustifyH("LEFT");
-profHint:SetText("Click a profession to open it. Alt-right-click equipment in your bags to wear it; right-click a slot to take it off.");
+profHint:SetHeight(36);
+profHint:SetJustifyH("LEFT"); profHint:SetJustifyV("BOTTOM");
+-- short lines of their own: one long line was cut off in DragonUI's narrower window
+L.PROF_HINT = "Click a profession to open it.\nAlt-right-click gear in your bags to wear it.\nRight-click a slot to take it off.";
+profHint:SetText(L.PROF_HINT);
 local profEmpty = profList:CreateFontString(nil, "OVERLAY", "GameFontDisable");
 profEmpty:SetPoint("CENTER");
 profEmpty:SetText("You have no professions yet. A trainer in any city teaches them.");
@@ -1393,7 +1405,7 @@ function DrawProfessions()
 		b:SetBackdropBorderColor(on and 1 or 0.5, on and 0.82 or 0.45, on and 0 or 0.35, 1);
 		if ( on ) then b.text:SetTextColor(1, 1, 1); else b.text:SetTextColor(1, 0.82, 0); end
 	end
-	if ( canBag ) then subTabs[2]:Show(); else subTabs[2]:Hide(); end
+	PlaceProfList(canBag);
 	if ( subPage == "bag" ) then
 		profList:Hide(); bagPage:Show();
 		bagMissing:Hide();
