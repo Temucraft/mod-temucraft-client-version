@@ -395,13 +395,20 @@ function Logic.Wrap(text, width)
 	return table.concat(out, "\n");
 end
 
--- The race tooltip: the race's name (gold), its faction, then its racial abilities (icon, name, one line each, from
--- TEMUCRAFT_RACIALS, made by gen_racials.py from the PTR's Spell.dbc) and "Hold Alt to see the lore" in grey; with Alt
--- held the lore (the client's RACE_INFO_ text) and "Release Alt to see racials".
--- Lines: { text =, color = "gold"|"white"|"red"|"grey"|"faction"|"name", icon =, small = true, indent = true }
-Logic.LORE_HINT, Logic.RACIALS_HINT = "Hold Alt to see the lore", "Release Alt to see racials";
-function Logic.RaceTooltipLines(name, faction, racials, lore, alt, err, width)
-	width = width or 52;
+-- The race tooltip, two views (TEMUCRAFT_RACIALS, made by gen_racials.py from the PTR's Spell.dbc; sorted by category):
+--   short (default): the race's name (gold), its faction, then per racial its icon, name and category (a small grey
+--     tag, "Combat (Offense)") and one plain line, and "Hold Shift to see more detail information" in grey;
+--   detailed (Shift held): per racial the name, "Racial - Combat (Offense)", "Passive" / "Active - 2 min cooldown ...",
+--     the whole description (the scaling spelled out), then the lore (the client's RACE_INFO_ text) and "Release
+--     Shift for the short view".
+-- Shift, not Alt: the glue screens have IsShiftKeyDown but no IsAltKeyDown, and the name box (it has the keyboard
+-- focus on this screen) takes every key, so Alt can't be read; Left Alt still works when the name box has no focus.
+-- Lines: { text =, color = "gold"|"white"|"red"|"grey"|"faction"|"name", icon =, tag =, small = true, indent = true,
+--   gap = true (a block starts: the tooltip only breaks into a new column there), hint = true }
+Logic.DETAIL_HINT, Logic.SHORT_HINT = "Hold Shift to see more detail information", "Release Shift for the short view";
+Logic.LORE_HINT, Logic.RACIALS_HINT = Logic.DETAIL_HINT, Logic.SHORT_HINT;   -- the old names
+function Logic.RaceTooltipLines(name, faction, racials, lore, detail, err, width)
+	width = width or (detail and 50 or 52);
 	local out = {};
 	local function wrap(text, color, extra)
 		for line in string.gmatch(Logic.Wrap(Logic.StripColors(text or ""), width).."\n", "(.-)\n") do
@@ -419,18 +426,40 @@ function Logic.RaceTooltipLines(name, faction, racials, lore, alt, err, width)
 		table.insert(out, { text = label, color = "faction", faction = faction });
 	end
 	if ( err and err ~= "" ) then wrap(err, "red"); end
-	if ( alt or not racials or #racials == 0 ) then
-		if ( lore and lore ~= "" ) then wrap(lore, "white"); end
-		if ( racials and #racials > 0 ) then table.insert(out, { text = Logic.RACIALS_HINT, color = "grey", small = true, gap = true }); end
-	else
-		for _, r in ipairs(racials) do
+	local hasRacials = racials and #racials > 0;
+	for _, r in ipairs(racials or {}) do
+		if ( detail ) then
 			table.insert(out, { text = r.name or "", color = "name", icon = r.icon, gap = true });
+			if ( r.cat and r.cat ~= "" ) then table.insert(out, { text = "Racial - "..r.cat, color = "grey", small = true, indent = true }); end
+			if ( r.meta and r.meta ~= "" ) then table.insert(out, { text = r.meta, color = "grey", small = true, indent = true }); end
+			wrap(r.detail or r.text, "white", { small = true, indent = true });
+		else
+			table.insert(out, { text = r.name or "", color = "name", icon = r.icon, tag = r.cat, gap = true });
 			wrap(r.text, "white", { small = true, indent = true });
 		end
-		if ( lore and lore ~= "" ) then table.insert(out, { text = Logic.LORE_HINT, color = "grey", small = true, gap = true }); end
+	end
+	if ( detail or not hasRacials ) then
+		if ( lore and lore ~= "" ) then
+			local first = #out + 1;
+			wrap(lore, "white");
+			if ( out[first] ) then out[first].gap = true; end
+		end
+	end
+	if ( hasRacials ) then
+		table.insert(out, { text = detail and Logic.SHORT_HINT or Logic.DETAIL_HINT, color = "grey", small = true, gap = true, hint = true });
 	end
 	return out;
 end
+-- Shift (or Left Alt, when the client lets us see it) shows the detailed view
+local leftAltHeld = false;
+function Logic.DetailHeld()
+	if ( IsShiftKeyDown and IsShiftKeyDown() ) then return true; end
+	if ( leftAltHeld ) then return true; end
+	if ( IsLeftAltKeyDown ) then return IsLeftAltKeyDown() and true or false; end
+	return (IsAltKeyDown and IsAltKeyDown()) and true or false;
+end
+function Logic.SetLeftAlt(down) leftAltHeld = down and true or false; end
+function Logic.AltHeld() return leftAltHeld or (IsAltKeyDown and IsAltKeyDown()) and true or false; end
 function Logic.Racials(file)
 	return TEMUCRAFT_RACIALS and TEMUCRAFT_RACIALS[string.upper(file or "")] or nil;
 end
@@ -453,6 +482,23 @@ function Logic.Portrait(file, gender, classic, classicCoords, hasNew)
 		return "Interface\\Glues\\CharacterCreate\\RyansRacesRound", classicCoords, true;
 	end
 	return string.format(Logic.PORTRAIT_PATH, file, gender), { 0, 1, 0, 1 }, false;
+end
+
+-- The portraits look toward the middle of the screen, as on retail: the Alliance column faces right, the Horde column
+-- left. TEMUCRAFT_RACE_PORTRAIT_FACING (gen_race_portraits.py) says which way each of our pictures looks; the old atlas
+-- icons count as facing right. A picture that looks the wrong way for its column is mirrored (its u coords swapped).
+function Logic.PortraitFacing(file, gender, isAtlas)
+	if ( isAtlas ) then return "right"; end
+	local f = TEMUCRAFT_RACE_PORTRAIT_FACING and TEMUCRAFT_RACE_PORTRAIT_FACING[string.upper(file or "").."_"..(gender or "")];
+	return f or "right";
+end
+function Logic.PortraitMirrored(side, facing)
+	return (facing or "right") ~= ((side == "Horde") and "left" or "right");
+end
+-- { l, r, t, b } with the u coords swapped when mirrored
+function Logic.MirrorCoords(c, mirrored)
+	if ( mirrored ) then return { c[2], c[1], c[3], c[4] }; end
+	return { c[1], c[2], c[3], c[4] };
 end
 
 -- Faction and class colours for the "Race - Class" line (the glue screens have no RAID_CLASS_COLORS)
@@ -508,6 +554,18 @@ TemucraftCharCreate_Active = Active;
 local tip;
 local TIP_COLORS = { gold = { 1, 0.82, 0 }, white = { 1, 1, 1 }, red = { 1, 0.25, 0.25 }, grey = { 0.6, 0.6, 0.6 },
 	name = { 1, 0.9, 0.55 }, Alliance = { 0.29, 0.61, 1 }, Horde = { 0.91, 0.21, 0.16 } };
+-- the tooltip's room: the screen's height (the glue UI is 768 high) less a margin; a taller tooltip breaks into columns
+local function TipMaxHeight()
+	local h = (CharacterCreate and CharacterCreate.GetHeight and CharacterCreate:GetHeight()) or 0;
+	if ( not h or h < 300 ) then h = 768; end
+	return h - 24;
+end
+TemucraftCharCreate_TipMaxHeight = TipMaxHeight;
+local function LineStep(i, line)
+	if ( i == 1 ) then return 18; end
+	if ( line.icon ) then return 16; end
+	return line.small and 13 or 14;
+end
 local function Tooltip(owner, title, side, body, err, prebuilt)
 	if ( not owner or not (title or prebuilt) ) then return; end
 	if ( not tip ) then
@@ -517,10 +575,19 @@ local function Tooltip(owner, title, side, body, err, prebuilt)
 			tile = true, tileSize = 16, edgeSize = 16, insets = { left = 4, right = 4, top = 4, bottom = 4 } });
 		tip:SetBackdropColor(0.03, 0.03, 0.05, 0.96);
 		tip:SetBackdropBorderColor(0.8, 0.65, 0.3, 1);
-		tip.lines, tip.icons = {}, {};
+		if ( tip.SetClampedToScreen ) then tip:SetClampedToScreen(true); end
+		tip.lines, tip.icons, tip.tags = {}, {}, {};
 	end
 	local lines = prebuilt or Logic.TooltipLines(title, body, err);
-	local width, y, icons = 60, -10, 0;
+	-- each block's height (a block = a line with gap and the lines up to the next one), for the column breaks
+	local steps, blocks = {}, {};
+	for i, line in ipairs(lines) do steps[i] = LineStep(i, line); end
+	local start;
+	for i = #lines, 1, -1 do
+		blocks[i] = (blocks[i + 1] and not (lines[i + 1] and lines[i + 1].gap) and blocks[i + 1] or 0) + steps[i] + ((lines[i].gap and i > 1) and 4 or 0);
+	end
+	local maxH = TipMaxHeight();
+	local colX, colW, colTop, y, lowest, icons, tags = 11, 49, nil, -10, -10, 0, 0;
 	for i, line in ipairs(lines) do
 		local fs = tip.lines[i];
 		if ( not fs ) then
@@ -528,8 +595,17 @@ local function Tooltip(owner, title, side, body, err, prebuilt)
 			fs:SetJustifyH("LEFT");
 			tip.lines[i] = fs;
 		end
-		if ( line.gap and i > 1 ) then y = y - 4; end
-		local x = 11 + ((line.icon or line.indent) and 22 or 0);
+		if ( line.gap and i > 1 ) then
+			if ( not colTop ) then colTop = y; end
+			-- a new column when this block (and room for the hint under it) doesn't fit under the last one; never for
+			-- the first block of a column, and the hint itself stays at the bottom of the last column
+			if ( y < colTop and not line.hint and -(y - blocks[i]) + 8 + 17 > maxH ) then
+				colX, colW, y = colX + colW + 18, 49, colTop;
+			end
+			y = y - 4;
+		end
+		local indent = (line.icon or line.indent) and 22 or 0;
+		local x = colX + indent;
 		fs:SetFontObject((i == 1 and line.color == "gold") and GlueFontNormal
 			or ((line.color == "name" or line.color == "faction") and GlueFontNormalSmall) or GlueFontHighlightSmall);
 		fs:ClearAllPoints();
@@ -538,6 +614,22 @@ local function Tooltip(owner, title, side, body, err, prebuilt)
 		local c = TIP_COLORS[line.color == "faction" and (line.faction or "") or line.color] or TIP_COLORS.white;
 		fs:SetTextColor(c[1], c[2], c[3]);
 		fs:Show();
+		local lineW = (fs:GetStringWidth() or 0) + indent;
+		if ( line.tag and line.tag ~= "" ) then
+			tags = tags + 1;
+			local t = tip.tags[tags];
+			if ( not t ) then
+				t = tip:CreateFontString(nil, "OVERLAY", "GlueFontDisableSmall");
+				t:SetJustifyH("LEFT");
+				tip.tags[tags] = t;
+			end
+			t:ClearAllPoints();
+			t:SetPoint("LEFT", fs, "RIGHT", 6, 0);
+			t:SetText(line.tag);
+			t:SetTextColor(TIP_COLORS.grey[1], TIP_COLORS.grey[2], TIP_COLORS.grey[3]);
+			t:Show();
+			lineW = lineW + 6 + (t:GetStringWidth() or 0);
+		end
 		if ( line.icon ) then
 			icons = icons + 1;
 			local t = tip.icons[icons];
@@ -549,27 +641,35 @@ local function Tooltip(owner, title, side, body, err, prebuilt)
 			t:SetTexture(line.icon);
 			t:SetTexCoord(0.07, 0.93, 0.07, 0.93);
 			t:ClearAllPoints();
-			t:SetPoint("TOPLEFT", tip, "TOPLEFT", 11, y + 2);
+			t:SetPoint("TOPLEFT", tip, "TOPLEFT", colX, y + 2);
 			t:Show();
 		end
-		width = math.max(width, (fs:GetStringWidth() or 0) + x + 13);
-		y = y - ((i == 1) and 18 or (line.icon and 16 or 14));
+		colW = math.max(colW, lineW);
+		y = y - steps[i];
+		lowest = math.min(lowest, y);
 	end
 	for i = #lines + 1, #tip.lines do tip.lines[i]:Hide(); end
 	for i = icons + 1, #tip.icons do tip.icons[i]:Hide(); end
+	for i = tags + 1, #tip.tags do tip.tags[i]:Hide(); end
+	local width, height = colX + colW + 13, -lowest + 8;
 	tip:SetWidth(width);
-	tip:SetHeight(-y + 8);
+	tip:SetHeight(height);
+	tip.columns = (colX > 11) and 2 or 1;
 	tip:ClearAllPoints();
+	-- beside the owner, moved up when it would run off the bottom of the screen (SetClampedToScreen does it too,
+	-- where the glue has it)
+	local top = owner.GetTop and owner:GetTop();
+	local lift = (top and top + 4 - height < 8) and (height - top - 4 + 8) or 0;
 	if ( side == "top" ) then
 		tip:SetPoint("BOTTOM", owner, "TOP", 0, 10);
 	elseif ( side == "bottom" ) then
 		tip:SetPoint("TOP", owner, "BOTTOM", 0, -8);
 	elseif ( side == "left" ) then
-		tip:SetPoint("TOPRIGHT", owner, "TOPLEFT", -10, 4);
+		tip:SetPoint("TOPRIGHT", owner, "TOPLEFT", -10, 4 + lift);
 	elseif ( side == "rightmiddle" ) then
 		tip:SetPoint("LEFT", owner, "RIGHT", 10, 0);
 	else
-		tip:SetPoint("TOPLEFT", owner, "TOPRIGHT", 10, 4);
+		tip:SetPoint("TOPLEFT", owner, "TOPRIGHT", 10, 4 + lift);
 	end
 	tip:Show();
 	tip.owner = owner;
@@ -694,17 +794,17 @@ local function MakeIconButton(name, parent, size, shape)
 	if ( b.glow ) then b.glow:Hide(); end
 	b:SetScript("OnEnter", function(self)
 		if ( self.tooltipLines ) then
-			self.tipAlt = IsAltKeyDown and IsAltKeyDown() and true or false;
+			self.tipAlt = Logic.DetailHeld();
 			Tooltip(self, nil, self.tooltipSide, nil, nil, self.tooltipLines(self.tipAlt));
 		else
 			Tooltip(self, self.tooltip, self.tooltipSide, self.tooltipBody, self.tooltipError);
 		end
 	end);
 	b:SetScript("OnLeave", function(self) self.tipAlt = nil; HideTooltip(); end);
-	-- the race tooltip swaps racials / lore while Alt is held
+	-- the race tooltip swaps the short / detailed view while Shift (or Left Alt) is held
 	b:SetScript("OnUpdate", function(self)
 		if ( self.tipAlt ~= nil and self.tooltipLines and tip and tip:IsShown() and tip.owner == self ) then
-			local alt = IsAltKeyDown and IsAltKeyDown() and true or false;
+			local alt = Logic.DetailHeld();
 			if ( alt ~= self.tipAlt ) then
 				self.tipAlt = alt;
 				Tooltip(self, nil, self.tooltipSide, nil, nil, self.tooltipLines(alt));
@@ -814,19 +914,24 @@ local function RefreshRaces()
 		local hasNew = TEMUCRAFT_RACE_PORTRAIT_FILES and (TEMUCRAFT_RACE_PORTRAIT_FILES[string.upper(race.file)] and true or false);
 		local texture, coords, isAtlas = Logic.Portrait(race.file, gender, classic, atlas, hasNew);
 		b.icon:SetTexture(texture);
+		local tc;
 		if ( isAtlas ) then
 			-- the atlas portrait's circle fills 58 of the 64 px of its cell: crop to it so it fills the button and the ring
 			local iu, iv = (coords[2] - coords[1]) * 3 / 64, (coords[4] - coords[3]) * 3 / 64;
-			b.icon:SetTexCoord(coords[1] + iu, coords[2] - iu, coords[3] + iv, coords[4] - iv);
+			tc = { coords[1] + iu, coords[2] - iu, coords[3] + iv, coords[4] - iv };
 		else
-			b.icon:SetTexCoord(0, 1, 0, 1);   -- ours are round and fill their 128 px
+			tc = { 0, 1, 0, 1 };   -- ours are round and fill their 128 px
 		end
+		-- facing the middle: Alliance column right, Horde column left (the crop is even, so the circle stays centred)
+		tc = Logic.MirrorCoords(tc, Logic.PortraitMirrored(p.side, Logic.PortraitFacing(race.file, gender, isAtlas)));
+		b.icon:SetTexCoord(tc[1], tc[2], tc[3], tc[4]);
+		b.mirrored, b.gender = (tc[1] > tc[2]), gender;
 		b.raceIndex = race.index;
 		local info = GetFlavorText and GetFlavorText("RACE_INFO_"..string.upper(race.file), GetSelectedSex());
 		local err = (not enabled) and stockTip ~= race.name and stockTip or nil;
 		local racials, name, faction = Logic.Racials(race.file), race.name, race.faction;
 		b.tooltip = race.name;
-		b.tooltipLines = function(alt) return Logic.RaceTooltipLines(name, faction, racials, info, alt, err); end;
+		b.tooltipLines = function(detail) return Logic.RaceTooltipLines(name, faction, racials, info, detail, err); end;
 		b.tooltipSide = (p.side == "Alliance") and "right" or "left";
 		b:ClearAllPoints();
 		local x = SIDE_MARGIN + (p.column - 1) * ICON_STEP + ICON_SIZE / 2;
@@ -1443,7 +1548,8 @@ if ( oldCreateKeyDown ) then
 				turning = (key == "LEFT") and -1 or 1;
 				return;
 			end
-			if ( key == "Z" and IsAltKeyDown and IsAltKeyDown() ) then
+			if ( key == "LALT" or key == "RALT" ) then Logic.SetLeftAlt(true); end
+			if ( key == "Z" and Logic.AltHeld() ) then
 				ToggleHidden();
 				return;
 			end
@@ -1457,6 +1563,7 @@ if ( oldCreateKeyDown ) then
 end
 local function CreateKeyUp(self, key)
 	if ( key == "LEFT" or key == "RIGHT" ) then turning = nil; end
+	if ( key == "LALT" or key == "RALT" ) then Logic.SetLeftAlt(false); end
 end
 if ( CharacterCreate.HookScript and CharacterCreate:GetScript("OnKeyUp") ) then
 	CharacterCreate:HookScript("OnKeyUp", CreateKeyUp);

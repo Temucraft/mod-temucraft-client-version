@@ -49,7 +49,39 @@ check("$?s condition: the else part", r("Restores Mana$?s805000[, 15 Focus,][] a
 check("colour codes and new lines out", r("|cffffffffWhite|r\nNext"), "White Next")
 check("first sentence with a number", g.first_sentence("Pandaren masters strike. Stuns for 4 sec. More."), "Stuns for 4 sec.")
 check("decimals don't split", g.first_sentence("Damage reduced by 1.8% of your Stamina."), "Damage reduced by 1.8% of your Stamina.")
-check("long text cut", len(g.first_sentence("word " * 60 + "1.")) <= 150, True)
+check("long text never cut", "..." in g.first_sentence("word " * 60 + "1."), False)
+check("scaling written short",
+      g.short_scaling("Deals Arcane damage (10 x your level plus 75% of your attack power or 112% of your spell power) to all."),
+      "Deals Arcane damage (10 x your level + 75% of attack power or 112% of spell power) to all.")
+check("short line: formula taken out",
+      g.short_text(1, "Deals Fire damage (5 x your level plus 20% of your attack power) to enemies. More.", False),
+      "Deals Fire damage to enemies.")
+check("short line: SHORT wins", g.short_text(95855, "anything", False), g.SHORT[95855])
+check("short line: the racial heal says so",
+      g.short_text(100179, "Draw on stored arcane power. Heals 7% of your maximum health every 2 sec for 10 sec.", True),
+      "Racial heal: restores 7% of your maximum health every 2 sec for 10 sec.")
+check("category from the rank text", g.category(1, "Racial - Weapon Skill (Melee)", False), ("Weapon Skill", "Melee"))
+check("category of a stock racial", g.category(59752, "Racial", False), ("Combat", "Defense"))
+check("category of the racial heal", g.category(100172, "Racial", True), ("Combat", "Healing"))
+check("every SHORT line fits", [k for k, v in g.SHORT.items() if len(v) > g.SHORT_LIMIT or "..." in v], [])
+check("every CATEGORY is a known one", [k for k, v in g.CATEGORY.items() if v[0] not in g.CATEGORY_ORDER], [])
+
+
+class MetaSpells(FakeSpells):
+    def field(self, sid, f): return {g.F_RECOVERY: 120000}.get(f, 0)
+    def range_yd(self, sid): return 30.0
+    def cast_ms(self, sid): return 1500
+
+
+check("meta: passive", g.meta_text(1, True, MetaSpells()), "Passive")
+check("meta: active", g.meta_text(1, False, MetaSpells()), "Active - 2 min cooldown - 30 yd range - 1.5 sec cast")
+
+# the generated file: every racial has a category, a short line that fits and a detail text
+data = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "Interface", "GlueXML", "TemucraftRacialsData.lua"),
+            encoding="utf-8").read()
+rows = [l for l in data.splitlines() if l.strip().startswith("{ id =")]
+check("generated rows have cat / text / detail / meta", all(' cat = "' in l and ' detail = "' in l and ' meta = "' in l for l in rows) and len(rows) > 150, True)
+check("generated short lines never end in ...", [l for l in rows if '...", detail' in l], [])
 if failed:
     print("%d failed" % failed)
     sys.exit(1)

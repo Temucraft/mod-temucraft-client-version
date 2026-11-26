@@ -242,6 +242,8 @@ check("delete instructions", S.DeleteInstructions("enUS", "DELETE", "Type \"DELE
 local on, off, hov = S.CardStyle(true), S.CardStyle(false), S.CardStyle(false, true);
 check("card style: selected = gold border and glow on the same dark card", on.glow and on.border[1] == 1 and on.border[2] > 0.7 and on.bg[1] == off.bg[1] and on.bg[1] < 0.2 and on.bg[4] == off.bg[4]);
 check("card style: same name colour in every state", on.name[1] == off.name[1] and on.name[2] == off.name[2] and on.name[3] == off.name[3]);
+check("card style: one frame, 2 px gold when selected, 1 px grey otherwise; number a dimmer gold", on.borderSize == 2 and off.borderSize == 1 and on.glowAlpha > 0 and on.glowAlpha <= 0.3
+	and on.num[1] < on.name[1] and on.num[2] < on.name[2]);
 check("card style: crest in colour everywhere, dimmed only when not selected", not on.crestDesaturated and not off.crestDesaturated and on.crestAlpha == 1 and off.crestAlpha < 1 and off.crestAlpha >= 0.5 and hov.crestAlpha == 1 and not off.glow);
 check("money", S.Money(162575561) == "16,257 g 55 s 61 c" and S.Money(61) == "61 c" and S.Money(5501) == "55 s 1 c" and S.Money(1234567890000) == "123,456,789 g 0 s 0 c");
 check("money icons", string.find(S.Money(10000, true), "UI-GoldIcon", 1, true) ~= nil);
@@ -303,6 +305,7 @@ function W:GetBottom() return self.bottom; end
 function W:GetEffectiveScale() return 1; end
 function W:SetAlpha(a) self.alpha = a; end
 function W:GetStringWidth() return string.len(self.text or "") * 6; end   -- 6 px a byte
+function W:SetTexCoord(...) self.texCoord = { ... }; end
 function W:SetDesaturated(d) self.desaturated = d and true or false; end
 function W:SetTextColor(r, g, b) self.color = { r, g, b }; end
 function W:ClearAllPoints() self.points = {}; end
@@ -495,32 +498,49 @@ TemucraftCreateNameCheck.scripts.OnEnter(TemucraftCreateNameCheck);
 local checkTip = tipOk(TemucraftCreateNameCheck, "Thrallo");
 TemucraftCreateNameCheck.scripts.OnLeave(TemucraftCreateNameCheck);
 check("tooltips: race, class, gender, dice, name check each fresh", raceTip and classTip and maleTip and diceTip and checkTip and not TemucraftCharCreate_Tooltip().shown);
--- every race: title gold, the faction, its racials (icon, name, a white line each) and the grey Alt hint; with Alt held
--- the lore in white (its own colour codes don't leak) and "Release Alt to see racials"
+-- every race: title gold, the faction, its racials (icon, name + category tag, a short white line each) and the grey
+-- Shift hint; with Shift held the detailed view ("Racial - ..." lines, the descriptions), the lore in white (its own
+-- colour codes don't leak) and "Release Shift ..."; both fit on a 768 high screen (columns when needed)
 local oldFlavor = GetFlavorText;
 GetFlavorText = function(key) return "|cffffd100 Lore of "..key.." that is long enough to need a second line in the tooltip box.|r"; end
 TemucraftCharCreate_Refresh();
-local racesOk, loreOk = true, true;
+local racesOk, loreOk, fitOk, tagsOk, faceOk = true, true, true, true, true;
 local function shownLines(t) local out = {}; for i = 1, #t.lines do if ( t.lines[i].shown ) then table.insert(out, t.lines[i]); end end return out; end
+local function find(l, text) for i = 1, #l do if ( string.find(l[i].text, text, 1, true) ) then return i; end end end
+local maxH = TemucraftCharCreate_TipMaxHeight();
 for n = 1, 30 do
 	local b = _G["TemucraftCreateRace"..n];
-	IsAltKeyDown = function() return false; end
+	IsShiftKeyDown = function() return nil; end
 	b.scripts.OnEnter(b);
-	local l = shownLines(TemucraftCharCreate_Tooltip());
-	local icons = 0;
-	for _, ic in ipairs(TemucraftCharCreate_Tooltip().icons or {}) do if ( ic.shown ) then icons = icons + 1; end end
-	if ( l[1].color[3] ~= 0 or l[#l].text ~= C.LORE_HINT or icons < 2 ) then racesOk = false; print("  race", n, l[1].text, l[#l].text, icons); end
-	for i = 2, #l do if ( string.find(l[i].text, "|c", 1, true) ) then racesOk = false; end end
-	IsAltKeyDown = function() return true; end
+	local t = TemucraftCharCreate_Tooltip();
+	local l = shownLines(t);
+	local icons, tags = 0, 0;
+	for _, ic in ipairs(t.icons or {}) do if ( ic.shown ) then icons = icons + 1; end end
+	for _, tg in ipairs(t.tags or {}) do if ( tg.shown ) then tags = tags + 1; end end
+	if ( l[1].color[3] ~= 0 or l[#l].text ~= C.DETAIL_HINT or icons < 2 or find(l, "Lore of") ) then racesOk = false; print("  race", n, l[1].text, l[#l].text, icons); end
+	if ( tags ~= icons ) then tagsOk = false; print("  tags", n, tags, icons); end
+	for i = 2, #l do if ( string.find(l[i].text, "|c", 1, true) or string.find(l[i].text, "...", 1, true) ) then racesOk = false; print("  text", n, l[i].text); end end
+	if ( t.height > maxH ) then fitOk = false; print("  short too tall", n, t.height); end
+	IsShiftKeyDown = function() return 1; end
 	b.scripts.OnUpdate(b);
-	l = shownLines(TemucraftCharCreate_Tooltip());
-	if ( l[#l].text ~= C.RACIALS_HINT or not string.find(l[3].text, "Lore of RACE_INFO_", 1, true) or l[3].color[3] ~= 1 ) then loreOk = false; print("  lore", n, l[3] and l[3].text); end
+	t = TemucraftCharCreate_Tooltip();
+	l = shownLines(t);
+	local lore = find(l, "Lore of RACE_INFO_");
+	if ( l[#l].text ~= C.SHORT_HINT or not lore or l[lore].color[3] ~= 1 or not find(l, "Racial - ") ) then loreOk = false; print("  detail", n, l[#l].text, lore); end
+	if ( t.height > maxH + 14 ) then fitOk = false; print("  detail too tall", n, t.height, t.columns); end
 	b.scripts.OnLeave(b);
+	-- portraits look toward the middle: Alliance column right, Horde column left
+	local facing = C.PortraitFacing(files[n], b.gender or "MALE");
+	local final = b.mirrored and ((facing == "left") and "right" or "left") or facing;
+	if ( final ~= (horde[files[n]] and "left" or "right") ) then faceOk = false; print("  facing", n, files[n], facing, b.mirrored); end
 end
-IsAltKeyDown = function() return false; end
+IsShiftKeyDown = function() return nil; end
 GetFlavorText = oldFlavor;
-check("race tooltips: gold name, faction, racials with icons, Alt hint (all races)", racesOk);
-check("race tooltips: Alt shows the lore, then the racials hint", loreOk);
+check("race tooltips: gold name, faction, racials with icons, Shift hint, no ... (all races)", racesOk);
+check("race tooltips: every racial has its category tag", tagsOk);
+check("race tooltips: Shift shows the detailed view, then the lore and the short-view hint", loreOk);
+check("race tooltips: both views fit a 768 high screen", fitOk);
+check("race portraits: Alliance face right, Horde face left", faceOk);
 TemucraftCreateNext:Click();
 TemucraftCreateNext:Click();
 check("finish creates", state.created == "Thrallo");
@@ -541,6 +561,14 @@ function IsAltKeyDown() return false; end
 local screenBefore = state.screen;
 CharacterCreate_OnKeyDown("ESCAPE");
 check("Escape brings it back (not Back)", not TemucraftCharCreate_IsHidden() and TemucraftCharCreateFrame:IsShown() and state.screen == screenBefore);
+IsAltKeyDown = nil;   -- as in the real glue screens
+CharacterCreate_OnKeyDown("LALT");
+CharacterCreate_OnKeyDown("Z");
+local altZ = TemucraftCharCreate_IsHidden();
+CharacterCreate.scripts.OnKeyUp(CharacterCreate, "LALT");
+CharacterCreate_OnKeyDown("ESCAPE");
+CharacterCreate_OnKeyDown("Z");
+check("Alt-Z without IsAltKeyDown: Alt tracked from its own key", altZ and not TemucraftCharCreate_IsHidden());
 TemucraftCreateEye:Click();
 TemucraftCreateShowUI:Click();
 check("eye hides, a click shows", not TemucraftCharCreate_IsHidden() and TemucraftCharCreateFrame:IsShown());
@@ -648,6 +676,14 @@ local eyeHidden = not TemucraftCharSelectFrame:IsVisible();
 function IsAltKeyDown() return false; end
 CharacterSelect_OnKeyDown(CharacterSelect, "ESCAPE");
 check("Alt-Z hides select, Escape shows it (no exit)", eyeHidden and TemucraftCharSelectFrame:IsVisible() and state.screen == "charselect");
+IsAltKeyDown = nil;
+CharacterSelect_OnKeyDown(CharacterSelect, "LALT");
+CharacterSelect_OnKeyDown(CharacterSelect, "Z");
+local selAltZ = not TemucraftCharSelectFrame:IsVisible();
+CharacterSelect.scripts.OnKeyUp(CharacterSelect, "LALT");
+CharacterSelect_OnKeyDown(CharacterSelect, "ESCAPE");
+CharacterSelect_OnKeyDown(CharacterSelect, "Z");
+check("select Alt-Z without IsAltKeyDown", selAltZ and TemucraftCharSelectFrame:IsVisible() and state.screen == "charselect");
 TemucraftSelectCreate:Click();
 check("create", state.screen == "charcreate");
 
@@ -657,8 +693,9 @@ TemucraftSelectSearch:SetText("");
 TemucraftCharSelect_Refresh();
 local function cardByName(name) for n = 1, 8 do local b = _G["TemucraftSelectCard"..n]; if ( b:IsShown() and b.char and b.char.name == name ) then return b; end end end
 local thrallCard, loreCard = cardByName("Thrall"), cardByName("Lorewalker");
-check("selected card: gold border and glow; others: crest in colour, dimmed", thrallCard.isSelected and thrallCard.selected.shown and thrallCard.crest.desaturated == false
-	and not loreCard.isSelected and not loreCard.selected.shown and loreCard.crest.desaturated == false and loreCard.crest.alpha < 1);
+check("selected card: gold border and glow; others: crest in colour, dimmed", thrallCard.isSelected and thrallCard.glow[1].shown and thrallCard.frame[1].height == 2
+	and thrallCard.crest.desaturated == false and not loreCard.isSelected and not loreCard.glow[1].shown and loreCard.frame[1].height == 1
+	and loreCard.crest.desaturated == false and loreCard.crest.alpha < 1);
 loreCard.scripts.OnEnter(loreCard);
 local hoverCrest = loreCard.crest.alpha;
 loreCard.scripts.OnLeave(loreCard);
@@ -803,11 +840,21 @@ for _, f in ipairs(files) do
 	end
 end
 check("racials: every race has 2 or more, no unresolved $ tokens", racialsOk);
-local lines = C.RaceTooltipLines("Orc", "Horde", { { name = "Hardiness", icon = "Interface\\Icons\\X", text = "Stuns 20% shorter." } }, "Lore.", false);
-check("race tooltip lines: name, faction, racial, hint", lines[1].text == "Orc" and lines[1].color == "gold" and lines[2].color == "faction" and lines[2].faction == "Horde"
-	and lines[3].text == "Hardiness" and lines[3].icon and lines[4].text == "Stuns 20% shorter." and lines[4].indent and lines[5].text == C.LORE_HINT and lines[5].color == "grey");
-lines = C.RaceTooltipLines("Orc", "Horde", { { name = "Hardiness", icon = "x", text = "y" } }, "Lore.", true);
-check("race tooltip lines with Alt: lore, then the racials hint", lines[3].text == "Lore." and lines[3].color == "white" and lines[4].text == C.RACIALS_HINT);
+local hardiness = { name = "Hardiness", icon = "Interface\\Icons\\X", cat = "Combat (Defense)", text = "Stuns 20% shorter.",
+	detail = "Duration of Stun effects reduced by 20%.", meta = "Passive" };
+local lines = C.RaceTooltipLines("Orc", "Horde", { hardiness }, "Lore.", false);
+check("race tooltip lines: name, faction, racial with its category, short line, hint", lines[1].text == "Orc" and lines[1].color == "gold" and lines[2].color == "faction" and lines[2].faction == "Horde"
+	and lines[3].text == "Hardiness" and lines[3].icon and lines[3].tag == "Combat (Defense)" and lines[4].text == "Stuns 20% shorter." and lines[4].indent
+	and lines[5].text == C.DETAIL_HINT and lines[5].color == "grey" and #lines == 5);
+lines = C.RaceTooltipLines("Orc", "Horde", { hardiness }, "Lore.", true);
+check("race tooltip lines detailed: category, meta, description, lore, hint", lines[3].text == "Hardiness" and not lines[3].tag
+	and lines[4].text == "Racial - Combat (Defense)" and lines[5].text == "Passive" and lines[6].text == "Duration of Stun effects reduced by 20%."
+	and lines[7].text == "Lore." and lines[7].color == "white" and lines[7].gap and lines[8].text == C.SHORT_HINT);
+check("portraits: mirrored only when looking away from the middle", not C.PortraitMirrored("Alliance", "right") and C.PortraitMirrored("Horde", "right")
+	and C.PortraitMirrored("Alliance", "left") and not C.PortraitMirrored("Horde", "left") and C.PortraitMirrored("Horde", nil));
+local mc = C.MirrorCoords({ 0.1, 0.2, 0.3, 0.4 }, true);
+check("portraits: mirroring swaps the u coords", mc[1] == 0.2 and mc[2] == 0.1 and mc[3] == 0.3 and mc[4] == 0.4 and C.MirrorCoords({ 0, 1, 0, 1 }, false)[1] == 0);
+check("portraits: atlas icons count as facing right", C.PortraitFacing("ORC", "MALE", true) == "right");
 -- portraits
 check("portraits: ours by default", C.Portrait("HUMAN", "FEMALE", false, { 0, 0.1, 0, 0.1 }, true) == "Interface\\Glues\\CharacterCreate\\TemucraftRace_HUMAN_FEMALE");
 check("portraits: classic = the old atlas where there is one", C.Portrait("HUMAN", "MALE", true, { 0, 0.1, 0, 0.1 }, true) == "Interface\\Glues\\CharacterCreate\\RyansRacesRound"

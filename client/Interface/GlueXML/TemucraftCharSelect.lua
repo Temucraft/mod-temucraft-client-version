@@ -687,12 +687,14 @@ function Logic.CardNumber(c)
 	return n and (n..".") or "";
 end
 
+-- One frame per card, on its edge: 1 px grey, or 2 px gold on the selected card with a soft gold glow inside it (low
+-- alpha, fading inward; no fill, so the card stays as dark as the others). The number in the name's font, a dimmer gold.
 function Logic.CardStyle(selected, hovered)
-	local st = { bg = { 0.10, 0.10, 0.12, 0.94 }, crestDesaturated = false, name = { 1, 0.82, 0 } };
+	local st = { bg = { 0.10, 0.10, 0.12, 0.94 }, crestDesaturated = false, name = { 1, 0.82, 0 }, num = { 0.78, 0.64, 0.16 } };
 	if ( selected ) then
-		st.border, st.glow, st.crestAlpha = { 1, 0.82, 0.18, 1 }, true, 1;
+		st.border, st.borderSize, st.glow, st.glowAlpha, st.crestAlpha = { 1, 0.82, 0.18, 1 }, 2, true, 0.22, 1;
 	else
-		st.border, st.glow, st.crestAlpha = { 0.42, 0.42, 0.46, 0.9 }, false, hovered and 1 or 0.65;
+		st.border, st.borderSize, st.glow, st.glowAlpha, st.crestAlpha = { 0.32, 0.32, 0.36, 0.9 }, 1, false, 0, hovered and 1 or 0.65;
 	end
 	return st;
 end
@@ -1549,55 +1551,52 @@ local function MakeCard(n)
 	local b = CreateFrame("Button", "TemucraftSelectCard"..n, root.list);
 	b:SetWidth(CARD_WIDTH); b:SetHeight(CARD_HEIGHT - 4);
 	b.rowHeight = CARD_HEIGHT;
-	b:SetBackdrop({ edgeFile = ART.edge, edgeSize = 14, insets = { left = 3, right = 3, top = 3, bottom = 3 } });
 	b:RegisterForClicks("LeftButtonUp", "RightButtonUp");
 	b.bg = b:CreateTexture(nil, "BACKGROUND");
 	b.bg:SetTexture(ART.card);
-	b.bg:SetPoint("TOPLEFT", b, "TOPLEFT", 3, -3);
-	b.bg:SetPoint("BOTTOMRIGHT", b, "BOTTOMRIGHT", -3, 3);
-	-- selected: a soft gold glow on the dark card (the gold sweep of the stock list, faint) and a lighter top; the
-	-- border turns bright gold (FillCard). Never a fill: the text stays on the dark background.
-	b.selected = b:CreateTexture(nil, "BORDER");
-	b.selected:SetTexture(ART.selected);
-	b.selected:SetBlendMode("ADD");
-	b.selected:SetAlpha(0.28);
-	b.selected:SetAllPoints(b);
-	b.selected:Hide();
-	-- the selected card's gold frame: 2 px lines on the card's own edge, over its border, so the selection is the whole
-	-- card (the tooltip border alone sat inside it)
+	b.bg:SetAllPoints(b);
+	-- selected: a soft gold glow inside the edge (four strips fading inward, low alpha; never a fill) ...
+	b.glow = {};
+	local GLOW = 10;
+	for i, p in ipairs({ { "TOPLEFT", "TOPRIGHT", "h", "VERTICAL", 0, 1 }, { "BOTTOMLEFT", "BOTTOMRIGHT", "h", "VERTICAL", 1, 0 },
+			{ "TOPLEFT", "BOTTOMLEFT", "w", "HORIZONTAL", 1, 0 }, { "TOPRIGHT", "BOTTOMRIGHT", "w", "HORIZONTAL", 0, 1 } }) do
+		local g = b:CreateTexture(nil, "BORDER");
+		g:SetTexture(1, 0.82, 0.18, 1);
+		g:SetBlendMode("ADD");
+		g:SetPoint(p[1], b, p[1], 0, 0);
+		g:SetPoint(p[2], b, p[2], 0, 0);
+		if ( p[3] == "h" ) then g:SetHeight(GLOW); else g:SetWidth(GLOW); end
+		g.orientation, g.from, g.to = p[4], p[5], p[6];   -- alpha factor at the min / max end
+		g:Hide();
+		b.glow[i] = g;
+	end
+	-- ... and one frame on the card's own edge: 1 px grey, 2 px gold when selected (FillCard)
 	b.frame = {};
 	for i, p in ipairs({ { "TOPLEFT", "TOPRIGHT" }, { "BOTTOMLEFT", "BOTTOMRIGHT" }, { "TOPLEFT", "BOTTOMLEFT", true }, { "TOPRIGHT", "BOTTOMRIGHT", true } }) do
 		local e = b:CreateTexture(nil, "OVERLAY");
-		e:SetTexture(1, 0.82, 0.18, 1);
+		e:SetTexture(1, 1, 1, 1);
 		e:SetPoint(p[1], b, p[1], 0, 0);
 		e:SetPoint(p[2], b, p[2], 0, 0);
-		if ( p[3] ) then e:SetWidth(2); else e:SetHeight(2); end
-		e:Hide();
+		e.vertical = p[3];
+		if ( p[3] ) then e:SetWidth(1); else e:SetHeight(1); end
 		b.frame[i] = e;
 	end
-	b.shine = b:CreateTexture(nil, "BORDER");
-	b.shine:SetTexture(1, 1, 1, 1);
-	b.shine:SetBlendMode("ADD");
-	b.shine:SetPoint("TOPLEFT", b.bg, "TOPLEFT", 0, 0);
-	b.shine:SetPoint("BOTTOMRIGHT", b.bg, "RIGHT", 0, 0);
-	if ( b.shine.SetGradientAlpha ) then b.shine:SetGradientAlpha("VERTICAL", 1, 1, 1, 0, 1, 1, 1, 0.07); else b.shine:SetAlpha(0.04); end
-	b.shine:Hide();
-	-- hover: a faint light bar
+	-- hover: a faint light, nothing else
 	local hl = b:CreateTexture(nil, "HIGHLIGHT");
 	hl:SetTexture(ART.listHighlight2);
 	hl:SetBlendMode("ADD");
-	hl:SetAlpha(0.18);
-	hl:SetAllPoints(b.bg);
-	-- "1." small and grey, then the name in gold; both hang on the card (FillCard moves the name past the number), so an
-	-- empty number never pulls the name up onto the card's edge
-	b.num = b:CreateFontString(nil, "OVERLAY", "GlueFontDisableSmall");
-	b.num:SetPoint("TOPLEFT", b, "TOPLEFT", 12, -14);
+	hl:SetAlpha(0.14);
+	hl:SetAllPoints(b);
+	-- "1." in the name's font, a dimmer gold, then the name; 10 px in from the left and 9 from the top, the three lines
+	-- (name, "Level 80 Rogue", zone) spread evenly down the card (FillCard moves the name past the number)
+	b.num = b:CreateFontString(nil, "OVERLAY", "GlueFontNormalLarge");
+	b.num:SetPoint("TOPLEFT", b, "TOPLEFT", 10, -9);
 	b.name = b:CreateFontString(nil, "OVERLAY", "GlueFontNormalLarge");
-	b.name:SetPoint("TOPLEFT", b, "TOPLEFT", 12, -9);
+	b.name:SetPoint("TOPLEFT", b, "TOPLEFT", 10, -9);
 	b.info = b:CreateFontString(nil, "OVERLAY", "GlueFontHighlightSmall");
-	b.info:SetPoint("TOPLEFT", b, "TOPLEFT", 12, -31);
+	b.info:SetPoint("TOPLEFT", b, "TOPLEFT", 10, -30);
 	b.zone = b:CreateFontString(nil, "OVERLAY", "GlueFontDisableSmall");
-	b.zone:SetPoint("TOPLEFT", b.info, "BOTTOMLEFT", 0, -3);
+	b.zone:SetPoint("TOPLEFT", b.info, "BOTTOMLEFT", 0, -4);
 	b.zone:SetWidth(ZONE_WIDTH); b.zone:SetJustifyH("LEFT");   -- one line: SetOneLine cuts it to fit
 	b.crest = b:CreateTexture(nil, "ARTWORK");
 	b.crest:SetWidth(44); b.crest:SetHeight(44);
@@ -1722,9 +1721,9 @@ end
 local function FillCard(b, c, sel)
 	b.id, b.service, b.char = c.id, c.paid, c;
 	b.num:SetText(Logic.CardNumber(c));
-	local numWidth = (b.num:GetText() or "") ~= "" and ((b.num:GetStringWidth() or 0) + 4) or 0;
+	local numWidth = (b.num:GetText() or "") ~= "" and ((b.num:GetStringWidth() or 0) + 5) or 0;
 	b.name:ClearAllPoints();
-	b.name:SetPoint("TOPLEFT", b, "TOPLEFT", 12 + numWidth, -9);
+	b.name:SetPoint("TOPLEFT", b, "TOPLEFT", 10 + numWidth, -9);
 	b.name:SetText(c.name);
 	local color = c.classFile and Logic.CLASS_COLORS[c.classFile];
 	local class = color and ("|cff"..color..(c.class or "").."|r") or (c.class or "");
@@ -1741,10 +1740,25 @@ local function FillCard(b, c, sel)
 	b.isSelected = isSel;
 	b.bg:SetVertexColor(st.bg[1], st.bg[2], st.bg[3]);
 	b.bg:SetAlpha(st.bg[4]);
-	b:SetBackdropBorderColor(st.border[1], st.border[2], st.border[3], st.border[4]);
 	b.name:SetTextColor(st.name[1], st.name[2], st.name[3]);
-	if ( st.glow ) then b.selected:Show(); b.shine:Show(); else b.selected:Hide(); b.shine:Hide(); end
-	for _, e in ipairs(b.frame) do if ( st.glow ) then e:Show(); else e:Hide(); end end
+	b.num:SetTextColor(st.num[1], st.num[2], st.num[3]);
+	for _, e in ipairs(b.frame) do
+		e:SetVertexColor(st.border[1], st.border[2], st.border[3]);
+		e:SetAlpha(st.border[4]);
+		if ( e.vertical ) then e:SetWidth(st.borderSize); else e:SetHeight(st.borderSize); end
+	end
+	for _, g in ipairs(b.glow) do
+		if ( st.glow ) then
+			if ( g.SetGradientAlpha ) then
+				g:SetGradientAlpha(g.orientation, 1, 0.82, 0.18, st.glowAlpha * g.from, 1, 0.82, 0.18, st.glowAlpha * g.to);
+			else
+				g:SetAlpha(st.glowAlpha * 0.4);
+			end
+			g:Show();
+		else
+			g:Hide();
+		end
+	end
 	if ( c.faction == "Alliance" or c.faction == "Horde" ) then
 		b.crest:SetTexture("Interface\\TargetingFrame\\UI-PVP-"..c.faction);
 		b.crest:SetTexCoord(0, 0.625, 0, 0.625);
@@ -2115,9 +2129,21 @@ end
 
 -- The arrow keys go through the cards in their order on screen (the client's own go by its index); with a dialog
 -- or a popup open, Escape closes it and nothing else happens
+-- The glue screens have no IsAltKeyDown: Alt is tracked from the keys themselves (LALT / RALT down and up)
+local altDown = false;
+local function AltHeld() return altDown or ((IsAltKeyDown and IsAltKeyDown()) and true or false); end
+local function SelectKeyUp(self, key)
+	if ( key == "LALT" or key == "RALT" ) then altDown = false; end
+end
+if ( CharacterSelect.HookScript and CharacterSelect:GetScript("OnKeyUp") ) then
+	CharacterSelect:HookScript("OnKeyUp", SelectKeyUp);
+else
+	CharacterSelect:SetScript("OnKeyUp", SelectKeyUp);
+end
 local oldKeyDown = CharacterSelect_OnKeyDown;
 if ( oldKeyDown ) then
 	CharacterSelect_OnKeyDown = function(self, key, ...)
+		if ( key == "LALT" or key == "RALT" ) then altDown = true; end
 		if ( Active() and root and root:IsShown() ) then
 			local modal = ModalShown();
 			if ( modal ) then
@@ -2129,7 +2155,7 @@ if ( oldKeyDown ) then
 			end
 		end
 		-- Alt-Z hides / shows the interface (as in game); with it hidden, Escape brings it back
-		if ( Active() and root and eye and ((key == "Z" and IsAltKeyDown and IsAltKeyDown()) or (key == "ESCAPE" and hiddenByEye)) ) then
+		if ( Active() and root and eye and ((key == "Z" and AltHeld()) or (key == "ESCAPE" and hiddenByEye)) ) then
 			ToggleEye();
 			return;
 		end
