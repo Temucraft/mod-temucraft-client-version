@@ -145,7 +145,8 @@ end
 function Logic.Wrap(text, width)
 	width = width or 52;
 	local out = {};
-	for para in string.gmatch((text or "").."|n", "(.-)|n") do
+	local src = string.gsub(text or "", "|n", "\n");
+	for para in string.gmatch(src.."\n", "(.-)\n") do
 		local line, len = "", 0;
 		for word in string.gmatch(para, "%S+") do
 			local visible = string.len((string.gsub(string.gsub(word, "|c%x%x%x%x%x%x%x%x", ""), "|r", "")));
@@ -159,7 +160,7 @@ function Logic.Wrap(text, width)
 		end
 		table.insert(out, line);
 	end
-	return table.concat(out, "|n");
+	return table.concat(out, "\n");
 end
 
 -- Faction and class colours for the "Race - Class" line (the glue screens have no RAID_CLASS_COLORS)
@@ -211,10 +212,23 @@ TemucraftCharCreate_Active = Active;
 local function Tooltip(owner, text, side)
 	if ( text and GlueTooltip_SetOwner and CharacterCreateTooltip ) then
 		GlueTooltip_SetOwner(owner, CharacterCreateTooltip, -3, -5);
-		GlueTooltip_SetText(Logic.Wrap(text), CharacterCreateTooltip);
+		-- one line at a time: the glue tooltip sizes itself by its longest line, and a text with line breaks in one
+		-- piece came out as a huge empty box
+		local lines = {};
+		for line in string.gmatch(Logic.Wrap(text).."\n", "(.-)\n") do table.insert(lines, line); end
+		if ( GlueTooltip_AddLine and #lines > 1 ) then
+			GlueTooltip_SetText(lines[1], CharacterCreateTooltip);
+			for i = 2, #lines do
+				GlueTooltip_AddLine(lines[i], CharacterCreateTooltip, 1, 1, 1);
+			end
+		else
+			GlueTooltip_SetText(Logic.Wrap(text), CharacterCreateTooltip);
+		end
 		if ( side ) then
 			CharacterCreateTooltip:ClearAllPoints();
-			if ( side == "left" ) then
+			if ( side == "top" ) then
+				CharacterCreateTooltip:SetPoint("BOTTOM", owner, "TOP", 0, 12);
+			elseif ( side == "left" ) then
 				CharacterCreateTooltip:SetPoint("TOPRIGHT", owner, "TOPLEFT", -10, 4);
 			else
 				CharacterCreateTooltip:SetPoint("TOPLEFT", owner, "TOPRIGHT", 10, 4);
@@ -300,9 +314,11 @@ end
 -- A round frame around a race icon (the race art has none)
 local function AddRing(b, size)
 	b.border = b:CreateTexture(nil, "OVERLAY");
-	b.border:SetTexture("Interface\\Glues\\CharacterCreate\\TemucraftRaceRing");
-	b.border:SetWidth(size * 1.28); b.border:SetHeight(size * 1.28);
-	b.border:SetPoint("CENTER", b, "CENTER", 0, 0);
+	-- the stock round minimap-button border: the ring fills about the top left 58% of its 64x64 file
+	b.border:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder");
+	b.border:SetTexCoord(0, 0.58, 0, 0.58);
+	b.border:SetWidth(size * 1.36); b.border:SetHeight(size * 1.36);
+	b.border:SetPoint("CENTER", b, "CENTER", 1, -1);
 end
 
 
@@ -413,6 +429,7 @@ local function RefreshClasses()
 			local b = classButtons[n];
 			if ( not b ) then
 				b = MakeIconButton("TemucraftCreateClass"..n, root.classes, 40);
+			b.tooltipSide = "top";
 				b.icon:SetTexture("Interface\\Glues\\CharacterCreate\\UI-CharacterCreate-Classes");
 				b:SetScript("OnClick", function(self)
 					self:SetChecked(nil);
@@ -439,7 +456,7 @@ local function RefreshClasses()
 			b.classIndex = index;
 			b.tooltip = enabled and name or (name.."|n|cffff2020"..((stock and stock.tooltip) or CLASS_DISABLED or "").."|r");
 			b:ClearAllPoints();
-			b:SetPoint("CENTER", root.classes, "CENTER", (n - (count + 1) / 2) * 50, -8);
+			b:SetPoint("CENTER", root.classes, "CENTER", (n - (count + 1) / 2) * 50, 0);
 			SetIconState(b, index == selected, enabled);
 			b:Show();
 		end
@@ -628,11 +645,11 @@ local function Build()
 	root.title = root:CreateFontString(nil, "OVERLAY", "GlueFontNormalLarge");
 	root.title:SetPoint("BOTTOM", root, "BOTTOM", 0, 112);
 	root.titleFaction = root:CreateTexture(nil, "OVERLAY");
-	root.titleFaction:SetWidth(30); root.titleFaction:SetHeight(30);
+	root.titleFaction:SetWidth(44); root.titleFaction:SetHeight(44);
 	root.titleFaction:SetPoint("RIGHT", root.title, "LEFT", -8, 0);
 	root.titleClass = root:CreateTexture(nil, "OVERLAY");
 	root.titleClass:SetTexture("Interface\\Glues\\CharacterCreate\\UI-CharacterCreate-Classes");
-	root.titleClass:SetWidth(26); root.titleClass:SetHeight(26);
+	root.titleClass:SetWidth(40); root.titleClass:SetHeight(40);
 	root.titleClass:SetPoint("LEFT", root.title, "RIGHT", 8, 0);
 
 	-- step 1: race columns and the class row
@@ -655,7 +672,7 @@ local function Build()
 		crest:SetPoint("BOTTOM", label, "TOP", 0, 2);
 	end
 	root.classes = Panel(root);
-	root.classes:SetHeight(70);
+	root.classes:SetHeight(64);
 	root.classes:SetPoint("BOTTOM", root, "BOTTOM", 0, 28);
 
 	-- step 2: the name at the top, the options on the left

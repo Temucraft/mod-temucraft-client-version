@@ -58,7 +58,7 @@ FRAME_FILES = ["Temucraft\\TemucraftCore.lua", "Temucraft\\TemucraftMissions.lua
 # pictures (not in FrameXML.toc): Interface\\FrameXML\\<file>
 ART_FILES = ["Temucraft\\TemucraftIssueBug.blp"]
 # pictures for the login screens: Interface\\Glues\\<file>
-GLUE_ART_FILES = ["CharacterCreate\\TemucraftRaceRing.blp"]
+GLUE_ART_FILES = []   # (the race ring now uses the stock MiniMap-TrackingBorder)
 # after the client's own glue files (CharacterCreate / CharacterSelect), so they can sit on top of them
 GLUE_FILES = ["TemucraftGlueSafety.lua", "TemucraftVersion.lua", "TemucraftGlueData.lua", "TemucraftCharCreate.lua", "TemucraftCharSelect.lua"]
 # Interface\\<file> (listed as ..\\<file> in GlueXML.toc, like LoginUI.lua): the launcher writes its own loose copy

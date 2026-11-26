@@ -337,7 +337,10 @@ local ok4, err4 = pcall(function() CharacterSelect:Show(); end);
 check("select shows", ok4 or print(err4));
 check("stock list hidden", not CharacterSelectCharacterFrame:IsVisible() and TemucraftCharSelectFrame:IsVisible());
 check("cards", TemucraftSelectCard1:IsShown() and TemucraftSelectCard3:IsShown() and not TemucraftSelectCard4:IsShown());
-local function cardNames() local t = {}; for n = 1, 3 do t[n] = _G["TemucraftSelectCard"..n].name.text; end return table.concat(t, ","); end
+-- card names without the "1. " place in front (grey)
+local function cardName(n) return (string.gsub(_G["TemucraftSelectCard"..n].name.text or "", "^|cff%x%x%x%x%x%x%d+%.|r ", "")); end
+local function cardNames() local t = {}; for n = 1, 3 do t[n] = cardName(n); end return table.concat(t, ","); end
+check("cards show their place first", string.find(TemucraftSelectCard1.name.text, "^|cff9d9d9d1%.|r Jaina") ~= nil);
 check("cards in the saved order, new ones after", cardNames() == "Jaina,Thrall,Lorewalker");
 check("cards keep the client's index", TemucraftSelectCard1.id == 2 and TemucraftSelectCard2.id == 1 and TemucraftSelectCard3.id == 3);
 check("card zone bracket", TemucraftSelectCard1.zone.text == "Dalaran (Wrath of the Lich King)" and TemucraftSelectCard2.zone.text == "Orgrimmar");
@@ -346,11 +349,11 @@ check("long zone cut to one line", string.sub(z, -3) == "..." and string.len(z) 
 check("card crest", TemucraftSelectCard3.crest.shown);
 check("AccountLogin sees only its accounts", GetSavedAccountList() == "tc1:"..tcHide("ryan\t"));
 TemucraftSelectSearch:SetText("horde");
-check("search filters cards", TemucraftSelectCard2:IsShown() and not TemucraftSelectCard3:IsShown() and TemucraftSelectCard1.name.text == "Thrall");
+check("search filters cards", TemucraftSelectCard2:IsShown() and not TemucraftSelectCard3:IsShown() and cardName(1) == "Thrall");
 TemucraftSelectSearch:SetText("");
 TemucraftSelectCard1:Click();
 check("card selects by the client's index", state.selected == 2);
-check("arrows on the selected card only", TemucraftSelectCard1Up:IsShown() and not TemucraftSelectCard2Up:IsShown() and TemucraftSelectCard1Up.enabled == false and TemucraftSelectCard1Down.enabled);
+check("no order arrows (drag instead)", not TemucraftSelectCard1Up:IsShown() and not TemucraftSelectCard2Up:IsShown());
 TemucraftSelectCard1.scripts.OnDoubleClick(TemucraftSelectCard1);
 check("double click enters", state.entered and state.selected == 2);
 state.entered = nil;
@@ -366,7 +369,7 @@ check("saving accounts keeps the order", GetSavedAccountList() == "tc1:"..tcHide
 SetSavedAccountList("");
 check("forgetting every account keeps the order", GetSavedAccountList() == "" and S.GetOrder(savedList, "ryan", "Temucraft"));
 -- drag Lorewalker (card 3) onto Jaina (card 1)
-for n = 1, 9 do local b = _G["TemucraftSelectCard"..n]; b.top = 700 - (n - 1) * 58; b.bottom = b.top - 54; end
+for n = 1, 8 do local b = _G["TemucraftSelectCard"..n]; b.top = 700 - (n - 1) * 68; b.bottom = b.top - 64; end
 state.selected = 1; CharacterSelect.selectedIndex = 1;
 TemucraftSelectCard3.scripts.OnMouseDown(TemucraftSelectCard3);
 TemucraftSelectCard3.scripts.OnDragStart(TemucraftSelectCard3);
@@ -419,8 +422,9 @@ check("zone: short label kept for real duplicates", S.ZoneText("Dalaran (Northre
 check("title: faction and class colours", C.Title("Highmountain Tauren", "Horde", "Paladin", "PALADIN") == "|cffe8352aHighmountain Tauren|r  -  |cfff58cbaPaladin|r");
 local wrapped = C.Wrap(string.rep("word ", 40), 30);
 local longest = 0;
-for line in string.gmatch(wrapped.."|n", "(.-)|n") do longest = math.max(longest, string.len(line)); end
-check("tooltip text wrapped", longest <= 30 and string.find(wrapped, "|n"));
+for line in string.gmatch(wrapped.."\n", "(.-)\n") do longest = math.max(longest, string.len(line)); end
+check("tooltip text wrapped", longest <= 30 and string.find(wrapped, "\n"));
 
+check("wrong realm: PTR client on Live", S.WrongRealm(30, "1 - Lorewalker Cho") and not S.WrongRealm(30, "[PTR] Falric") and not S.WrongRealm(20, "1 - Lorewalker Cho") and not S.WrongRealm(30, ""));
 if ( failed > 0 ) then print(failed.." failed"); os.exit(1); end
 print("all passed");

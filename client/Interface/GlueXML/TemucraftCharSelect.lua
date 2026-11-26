@@ -322,6 +322,11 @@ function Logic.Utf8Len(text)
 	return n;
 end
 
+-- The PTR client (its character create knows 30 races) logged into a realm that isn't a PTR realm
+function Logic.WrongRealm(maxRaces, server)
+	return (tonumber(maxRaces) or 0) >= 30 and server ~= nil and server ~= "" and not string.find(string.upper(server), "PTR", 1, true);
+end
+
 ---------------------------------------------------------------------------------------------------------------------
 -- The screen (only in the client)
 ---------------------------------------------------------------------------------------------------------------------
@@ -329,8 +334,8 @@ if ( not CharacterSelect or not CreateFrame ) then
 	return;
 end
 
-local CARD_HEIGHT, CARD_WIDTH, VISIBLE = 58, 270, 9;
-local ZONE_WIDTH, ZONE_WIDTH_SELECTED = CARD_WIDTH - 58, CARD_WIDTH - 80;   -- the zone line ends before the crest (and the order arrows)
+local CARD_HEIGHT, CARD_WIDTH, VISIBLE = 68, 270, 8;
+local ZONE_WIDTH, ZONE_WIDTH_SELECTED = CARD_WIDTH - 62, CARD_WIDTH - 62;   -- the zone line ends before the crest
 local root, holder, cards, eye, menu = nil, nil, {}, nil, nil;
 local list, shown, offset, lastQuery = {}, {}, 0, nil;
 local hiddenByEye;
@@ -556,15 +561,15 @@ local function MakeCard(n)
 	b:SetBackdropColor(0.05, 0.05, 0.1, 0.85);
 	b:RegisterForClicks("LeftButtonUp");
 	b.name = b:CreateFontString(nil, "OVERLAY", "GlueFontNormal");
-	b.name:SetPoint("TOPLEFT", b, "TOPLEFT", 12, -7);
+	b.name:SetPoint("TOPLEFT", b, "TOPLEFT", 12, -10);
 	b.info = b:CreateFontString(nil, "OVERLAY", "GlueFontHighlightSmall");
-	b.info:SetPoint("TOPLEFT", b.name, "BOTTOMLEFT", 0, -2);
+	b.info:SetPoint("TOPLEFT", b.name, "BOTTOMLEFT", 0, -3);
 	b.zone = b:CreateFontString(nil, "OVERLAY", "GlueFontDisableSmall");
-	b.zone:SetPoint("TOPLEFT", b.info, "BOTTOMLEFT", 0, -2);
+	b.zone:SetPoint("TOPLEFT", b.info, "BOTTOMLEFT", 0, -3);
 	b.zone:SetWidth(ZONE_WIDTH); b.zone:SetJustifyH("LEFT");   -- one line: SetOneLine cuts it to fit
 	b.crest = b:CreateTexture(nil, "ARTWORK");
-	b.crest:SetWidth(36); b.crest:SetHeight(36);
-	b.crest:SetPoint("RIGHT", b, "RIGHT", -6, 0);
+	b.crest:SetWidth(40); b.crest:SetHeight(40);
+	b.crest:SetPoint("RIGHT", b, "RIGHT", -10, 0);
 	-- its place in the list ("3"), shown in the top right corner; the tooltip says "3 of 6"
 	b.order = b:CreateFontString(nil, "OVERLAY", "GlueFontDisableSmall");
 	b.order:SetPoint("TOPRIGHT", b, "TOPRIGHT", -46, -6);
@@ -606,7 +611,7 @@ local function MakeCard(n)
 	end);
 	b:SetScript("OnEnter", function(self)
 		if ( self.place and not dragging ) then
-			Tooltip(self, self.place.." of "..#list..(#list > 1 and "|n|cffaaaaaaDrag to change the order|r" or ""));
+			Tooltip(self, self.place.." of "..#list..(#list > 1 and "\n|cffaaaaaaDrag to change the order|r" or ""));
 		end
 	end);
 	b:SetScript("OnLeave", HideTooltip);
@@ -693,7 +698,9 @@ function Refresh(keepOffset)
 		local c = shown[offset + n];
 		if ( c ) then
 			b.id, b.service = c.id, c.paid;
-			b.name:SetText(c.name);
+			-- "1. Tazdingo": the card's place in the list in front of the name (drag a card to change it)
+			local place = Logic.IndexOf(list, c.id);
+			b.name:SetText((#list > 1 and place) and ("|cff9d9d9d"..place..".|r "..c.name) or c.name);
 			local color = c.classFile and Logic.CLASS_COLORS[c.classFile];
 			local class = color and ("|cff"..color..(c.class or "").."|r") or (c.class or "");
 			local fmt = c.ghost and CHARACTER_SELECT_INFO_GHOST or CHARACTER_SELECT_INFO;
@@ -714,12 +721,9 @@ function Refresh(keepOffset)
 			end
 			if ( c.paid ) then b.paid:Show(); else b.paid:Hide(); end
 			b.place = Logic.IndexOf(list, c.id);
-			b.order:SetText((#list > 1 and b.place and c.id ~= sel) and tostring(b.place) or "");
+			b.order:SetText("");
 			if ( c.id == sel ) then b.selected:Show(); else b.selected:Hide(); end
-			local pos = (c.id == sel and not dragging and #shown > 1) and (offset + n) or nil;
-			if ( pos ) then b.up:Show(); b.down:Show(); else b.up:Hide(); b.down:Hide(); end
-			if ( pos == 1 ) then b.up:Disable(); else b.up:Enable(); end
-			if ( pos == #shown ) then b.down:Disable(); else b.down:Enable(); end
+			b.up:Hide(); b.down:Hide();   -- the order changes by dragging (the arrows stay for the keyboard-free fallback code)
 			b:SetAlpha((dragging and c.id == dragging) and 0.45 or 1);
 			b:Show();
 		else
@@ -738,7 +742,17 @@ function Refresh(keepOffset)
 	if ( connected and CharacterSelect.createIndex and CharacterSelect.createIndex > 0 ) then root.create:Enable(); else root.create:Disable(); end
 	if ( (CharacterSelect.selectedIndex or 0) > 0 and #list > 0 ) then root.delete:Enable(); else root.delete:Disable(); end
 	if ( root.realm ) then
-		root.realm:SetText(GetServerName and GetServerName() or "");
+		local server = GetServerName and GetServerName() or "";
+		root.realm:SetText(server);
+		-- The PTR client (30 races) on a realm that isn't the PTR: the game logged into another realm because the PTR's
+		-- was offline. Playing there would mean Live with the PTR's files, so Enter World is off with a warning.
+		local wrong = Logic.WrongRealm(MAX_RACES, server);
+		if ( root.realmWarning ) then
+			if ( wrong ) then root.realmWarning:Show(); else root.realmWarning:Hide(); end
+		end
+		if ( CharSelectEnterWorldButton ) then
+			if ( wrong ) then CharSelectEnterWorldButton:Disable(); else CharSelectEnterWorldButton:Enable(); end
+		end
 	end
 end
 TemucraftCharSelect_Refresh = Refresh;
@@ -836,6 +850,11 @@ local function Build()
 	if ( not TEMUCRAFT_SHOW_REALMS ) then root.realms:Hide(); end
 	root.realm = root.top:CreateFontString(nil, "OVERLAY", "GlueFontNormal");
 	root.realm:SetPoint("CENTER", root.top, "CENTER", 0, 0);
+	root.realmWarning = root:CreateFontString(nil, "OVERLAY", "GlueFontNormalLarge");
+	root.realmWarning:SetPoint("TOP", root.top, "BOTTOM", 0, -12);
+	root.realmWarning:SetWidth(700);
+	root.realmWarning:SetText("|cffff4040This is the PTR game, but the PTR realm is offline, so the server put you on another realm.|r\nEnter World is off so you don't play there with the PTR's files. Go back and try again when the PTR is up.");
+	root.realmWarning:Hide();
 	BuildMenu();
 
 	-- the cards
@@ -846,8 +865,8 @@ local function Build()
 	root.list:EnableMouseWheel(true);
 	root.list:SetScript("OnMouseWheel", function(_, delta) offset = offset - delta; Clamp(); Refresh(true); end);
 	root.search = CreateFrame("EditBox", "TemucraftSelectSearch", root.list);
-	root.search:SetWidth(CARD_WIDTH - 10); root.search:SetHeight(26);
-	root.search:SetPoint("TOP", root.list, "TOP", 0, -14);
+	root.search:SetWidth(CARD_WIDTH - 34); root.search:SetHeight(26);
+	root.search:SetPoint("TOPLEFT", root.list, "TOPLEFT", 15, -14);
 	root.search:SetFontObject(GlueFontHighlightSmall);
 	root.search:SetAutoFocus(false);
 	root.search:SetTextInsets(8, 8, 0, 0);
@@ -859,7 +878,18 @@ local function Build()
 	root.search:SetScript("OnTextChanged", function() Refresh(); end);
 	root.searchHint = root.search:CreateFontString(nil, "OVERLAY", "GlueFontDisableSmall");
 	root.searchHint:SetPoint("LEFT", root.search, "LEFT", 9, 0);
-	root.searchHint:SetText("Search: name, level, class, race, zone, tank / heal / dps");
+	root.searchHint:SetText(SEARCH or "Search");
+	-- what the box understands: on an (i) button beside it, not in the box
+	local info = CreateFrame("Button", "TemucraftSelectSearchInfo", root.list);
+	info:SetWidth(22); info:SetHeight(22);
+	info:SetPoint("LEFT", root.search, "RIGHT", 4, 0);
+	info.text = info:CreateFontString(nil, "OVERLAY", "GlueFontNormal");
+	info.text:SetPoint("CENTER", info, "CENTER", 0, 0);
+	info.text:SetText("(i)");
+	info:SetScript("OnEnter", function(self)
+		Tooltip(self, "Search by name, level (70, 60-70, 70+), class, race, faction or zone,\nor by role: tank, heal, dps. Every word must match.");
+	end);
+	info:SetScript("OnLeave", HideTooltip);
 	root.search:SetScript("OnEditFocusGained", function() root.searchHint:Hide(); end);
 	root.search:SetScript("OnEditFocusLost", function(self) if ( (self:GetText() or "") == "" ) then root.searchHint:Show(); end end);
 	root.count = root.list:CreateFontString(nil, "OVERLAY", "GlueFontDisableSmall");
