@@ -30,7 +30,9 @@ GlueXML.toc from patch-enUS-C.MPQ). If another patch changes them later, refresh
 import argparse, ctypes, os, sys, tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-FRAME_FILES = ["Temucraft\\TemucraftCore.lua", "Temucraft\\TemucraftMissions.lua", "Temucraft\\TemucraftDisguise.lua",
+FRAME_FILES = ["Temucraft\\TemucraftCore.lua",
+               # the shared window look (TemucraftStyle_Window / _Inset / _Header ...), before every window that uses it
+               "Temucraft\\TemucraftStyle.lua", "Temucraft\\TemucraftMissions.lua", "Temucraft\\TemucraftDisguise.lua",
                "Temucraft\\TemucraftAutoLearn.lua", "Temucraft\\TemucraftHeritage.lua",
                "Temucraft\\TemucraftSpellTabs.lua", "Temucraft\\TemucraftTankRoles.lua",
                "Temucraft\\TemucraftTokenPreview.lua", "Temucraft\\TemucraftCostumes.lua",
@@ -47,7 +49,8 @@ FRAME_FILES = ["Temucraft\\TemucraftCore.lua", "Temucraft\\TemucraftMissions.lua
                "Temucraft\\TemucraftInterface.lua", "Temucraft\\TemucraftGossip.lua", "Temucraft\\TemucraftTooltips.lua",
                "Temucraft\\TemucraftCharacter.lua", "Temucraft\\TemucraftMicroMenu.lua",
                "Temucraft\\TemucraftAddOns.lua", "Temucraft\\TemucraftChangelog.lua",
-               "Temucraft\\TemucraftGameMenu.lua", "Temucraft\\TemucraftTaxi.lua",
+               # the Options window (after TemucraftInterface.lua, its "Classic options menu"; before the game menu)
+               "Temucraft\\TemucraftOptions.lua", "Temucraft\\TemucraftGameMenu.lua", "Temucraft\\TemucraftTaxi.lua",
                # after TemucraftInterface.lua, TemucraftStore.lua and TemucraftMicroMenu.lua (the guild button)
                "Temucraft\\TemucraftGuild.lua", "Temucraft\\TemucraftGuildBank.lua",
                # after TemucraftCharacter.lua (its tabs and ToggleCharacter) and TemucraftInterface.lua

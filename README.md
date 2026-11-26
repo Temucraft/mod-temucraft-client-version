@@ -149,7 +149,7 @@ the "Classic spellbook" checkbox) and `/ttf classic` (the "Classic talents" chec
 ## Player UI (retail look, each with a Classic option)
 Interface Options > Temucraft (or `/tui`) has a "Classic" box for each piece and the tooltip ID option
 ([`TemucraftInterface.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftInterface.lua); per account in the store, keys `ui.classicchar`,
-`ui.classicmicro`, `ui.classicmenu`, `ui.classicguild`, `ui.classicgbank`, `ui.classicrep`, `ui.classiccurrency`,
+`ui.classicmicro`, `ui.classicmenu`, `ui.classicoptions`, `ui.classicguild`, `ui.classicgbank`, `ui.classicrep`, `ui.classiccurrency`,
 `ui.classicgossip`, `ui.tooltipids`, `ui.guildloginchat`). The windows themselves have no Classic checkbox any more (it
 sat on their bottom tabs), except the spellbook and talents.
 
@@ -208,10 +208,45 @@ sat on their bottom tabs), except the spellbook and talents.
   faction's Renown track from mod-temucraft-renown: a ring with the level, "Current Progress: X / Y", the rewards
   1..N (got / next / locked, arrows to page) and the Overview with the "Journey Highlights" cards. Its own window
   until the Adventure Guide.
-- **Game menu** ([`TemucraftGameMenu.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftGameMenu.lua)): the stock GameMenuFrame laid out again:
-  Options (opens System / Sound / Interface / Key Bindings under it), Shop, What's New (`TemucraftChangelog.lua`:
-  add a block with each release), AddOns, Support (the stock help / ticket frame), Macros,
-  Log Out, Exit Game, Return to Game. Edit Mode has a button in the code but no row until it exists. Shop is a placeholder until a shop window defines `TemucraftShop_Show`.
+- **Game menu** ([`TemucraftGameMenu.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftGameMenu.lua)): the stock GameMenuFrame laid out again
+  in retail's order under "Game Menu": Options (the Options window below), Shop, then AddOns, What's New
+  (`TemucraftChangelog.lua`: add a block with each release), Edit Mode (DragonUI's editor; only while DragonUI has it),
+  DragonUI's settings button (while DragonUI runs), Support (the stock help / ticket frame), Macros, then Log Out,
+  Exit Game, Return to Game. With "Classic options menu" Options is Options +/- again, with System / Sound /
+  Interface / Key Bindings (the stock windows) under it. Shop is a placeholder until a shop window defines `TemucraftShop_Show`.
+- **Options** ([`TemucraftOptions.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftOptions.lua), Esc > Options, `/options`, `/settings`):
+  one retail-style window instead of the four stock ones. Tabs **Game | AddOns**, **Search** (every setting's name,
+  and the key bindings), **Close** (settings apply as they change). Game: **Gameplay** (Controls, Interface, Action
+  Bars, Combat, Social, Keybindings, Nameplates), **Accessibility** (General, Colors), **System** (Graphics, Audio,
+  Languages, Network); each page has its title, Defaults, white sub-headers and rows: gold label, then a checkbox,
+  a < value > selector or a < slider > with its value; sub-options indented and greyed while their parent is off.
+  The pages are rebuilt, but each row drives the stock control underneath (`InterfaceOptions*`, `VideoOptions*`,
+  `AudioOptions*`: same CVars, setFuncs, dependent controls, sound restarts), so the stock windows stay in step.
+  Graphics applies at once except what needs a display restart (resolution, refresh rate, multisampling, vsync,
+  triple buffering, hardware cursor, window mode, UI scale on/off): those wait for its **Apply** (the stock
+  `VideoOptionsFrameOkay_OnClick`, with `RestartGx`), and closing with changes waiting asks. Keybindings: Character
+  Specific Keybindings, then collapsible category bars with two key buttons per action (click, press the key or
+  mouse button; Esc cancels, right click unbinds); `SetBinding` / `SaveBindings` at once, never in combat. Also a
+  Pick Up Action Key (`SetModifiedClick("PICKUPACTION")`) under Lock Action Bars. AddOns: every addon page of
+  Interface Options (alphabetical, "+" for its sub-pages), our Temucraft page and a DragonUI link (its settings
+  window and Edit Mode); the addon's own panel is moved into the window and back, gets `refresh` when shown and
+  `okay` on close. `InterfaceOptionsFrame_OpenToCategory` (addons, `/tui`) lands here too. Accessibility > General
+  has **Arachnophobia Mode**, a server setting row (below). Not in 3.3.5, so not here: text scale, cursor size,
+  loss of control alerts, cooldown numbers, "always show nameplates" (V / Shift-V / Ctrl-V are key bindings),
+  block guild invites, advanced combat logging (shown only if the client has the CVar). Battle.net toasts and voice
+  chat are left out (no Battle.net on our realms); they stay in the classic windows.
+- **Server setting rows** (`TemucraftOptions_ServerRow(name, label, tooltip)`): a switch the server keeps per player
+  in [mod-temucraft-player-settings](https://github.com/Temucraft/mod-temucraft-player-settings). The row whispers
+  `.temucraft settings <name> on|off` to yourself (a command, never said aloud) and keeps the choice per account
+  (`ui.server.<name>`). Once a session it sends the stored choice again (with none stored it only asks,
+  `.temucraft settings <name>`); the server's answer is a system line naming the setting with "on" / "off" (kept out
+  of the chat window). "No such command", no rights or no answer in 6 seconds greys the row: "Only on servers with
+  Temucraft player settings". Arachnophobia (`arachnophobia`) is the first.
+- **Window look** ([`TemucraftStyle.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftStyle.lua), loaded early for every window):
+  `TemucraftStyle_Window(frame, title)` (dark stone background, gold dialog border, gold header with the title),
+  `TemucraftStyle_Inset(frame)` (lighter parchment inset, thin gold edge), `TemucraftStyle_Header(fontString)` and
+  `TemucraftStyle_Bar(frame)` (the achievement window's dark category bar), `TemucraftStyle_Highlight(button)` /
+  `TemucraftStyle_Glow(frame)` (its gold highlight), `TemucraftStyle_Line(parent)`. Stock 3.3.5 art only.
 - **AddOns** ([`TemucraftAddOns.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftAddOns.lua), `/addons`): every addon with a checkbox
   (`EnableAddOn` / `DisableAddOn`, on the next UI load), its state, memory, and CPU when the "CPU profiling" box
   (CVar `scriptProfile`) is on; Enable All / Disable All / Reload UI.
@@ -279,7 +314,8 @@ hidden holder and ours sit on top. The "Classic" choice here is `TEMUCRAFT_LOGIN
 
 | Command / key | Opens |
 |---|---|
-| `/tui` | Interface Options > Temucraft (every Classic box, tooltip IDs, guild chat at login) |
+| `/options`, `/settings` [page] | the Options window (page: `controls`, `graphics`, `keybindings` ... or an addon's name) |
+| `/tui` | Options > AddOns > Temucraft (every Classic box, tooltip IDs, guild chat at login) |
 | C, `/tchar [classic\|new]` | character panel |
 | P / N, `/tsb [classic\|new]`, `/ttf [classic\|new]` | spellbook / talents |
 | `/collections`, `/tcol` | collections |
@@ -295,7 +331,7 @@ hidden holder and ours sit on top. The "Classic" choice here is `TEMUCRAFT_LOGIN
 Stub tests (no client; run from the module folder with Lua 5.1) for the grouping, search, paging, collection and
 loadout logic, the player UI, the login screens and the protocols: `lua5.1 client/tests/spellbook_test.lua`,
 `collections_test.lua`, `interface_test.lua`, `taxi_test.lua`, `issues_test.lua`, `guild_test.lua`,
-`reputation_test.lua`, `glue_test.lua`, `loadouts_test.lua` (the server loadouts protocol) and `dragonui_test.lua` (the DragonUI step-aside switch; all in `client/tests/`). Also check every file with `luac5.1 -p`.
+`reputation_test.lua`, `glue_test.lua`, `loadouts_test.lua` (the server loadouts protocol), `dragonui_test.lua` (the DragonUI step-aside switch) and `options_test.lua` (the Options pages, search, sliders, key names, binding groups, the AddOns list, server answers and the Esc menu rows; all in `client/tests/`). Also check every file with `luac5.1 -p`.
 
 ## Also in this module
 

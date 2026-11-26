@@ -2,7 +2,7 @@
 -- game menu) and the tooltip options, kept per account by TemucraftStore.lua (keys "ui.classic<which>", like the
 -- spellbook's "ui.classicbook", and "ui.<option>"). A "Temucraft" page in Interface Options has the checkboxes; /tui
 -- opens it.
---   TemucraftUI_IsClassic(which)            "char", "micro", "menu", "guild", "gbank", "rep", "currency", "gossip" (and "book",
+--   TemucraftUI_IsClassic(which)            "char", "micro", "menu", "options", "guild", "gbank", "rep", "currency", "gossip" (and "book",
 --                                           "talents" of TemucraftPlayerSpells.lua): the saved choice, or DragonUI has
 --                                           that piece (TemucraftDragonUI.lua)
 --   TemucraftUI_IsSavedClassic(which)       the player's own choice only
@@ -74,6 +74,7 @@ local CHECKS = {
 	{ "Classic character panel", function() return TemucraftUI_IsSavedClassic("char"); end, function(on) TemucraftUI_SetClassic("char", on); end, "char" },
 	{ "Classic micro menu", function() return TemucraftUI_IsSavedClassic("micro"); end, function(on) TemucraftUI_SetClassic("micro", on); end, "micro" },
 	{ "Classic game menu (Esc)", function() return TemucraftUI_IsSavedClassic("menu"); end, function(on) TemucraftUI_SetClassic("menu", on); end, "menu" },
+	{ "Classic options menu (the four stock windows)", function() return TemucraftUI_IsSavedClassic("options"); end, function(on) TemucraftUI_SetClassic("options", on); end, "options" },
 	{ "Classic spellbook", function() return TemucraftUI_IsSavedClassic("book"); end, function(on) TemucraftUI_SetClassic("book", on); end, "book" },
 	{ "Classic talent window", function() return TemucraftUI_IsSavedClassic("talents"); end, function(on) TemucraftUI_SetClassic("talents", on); end, "talents" },
 	{ "Classic guild window (J)", function() return TemucraftUI_IsSavedClassic("guild"); end, function(on) TemucraftUI_SetClassic("guild", on); end, "guild" },
@@ -140,6 +141,7 @@ panel.default = function() end;
 if ( InterfaceOptions_AddCategory ) then InterfaceOptions_AddCategory(panel); end
 
 function TemucraftUI_OpenOptions()
+	if ( TemucraftOptions_Open and not TemucraftUI_IsClassic("options") ) then TemucraftOptions_Open(panel); return; end
 	if ( InterfaceOptionsFrame_OpenToCategory ) then
 		InterfaceOptionsFrame_OpenToCategory(panel);
 		InterfaceOptionsFrame_OpenToCategory(panel);   -- the first call only opens the frame when it was closed

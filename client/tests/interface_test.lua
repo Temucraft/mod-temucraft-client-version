@@ -81,11 +81,11 @@ check("no changelog: nil", G.ChangelogText({}, "1.0") == nil);
 local rows = G.Rows(false, false);
 local names = {};
 for _, r in ipairs(rows) do table.insert(names, r[1]); end
-check("menu rows", table.concat(names, ",") == "options,shop,whatsnew,addons,support,GameMenuButtonMacros,GameMenuButtonLogout,GameMenuButtonQuit,GameMenuButtonContinue");
-check("options open adds 4", #G.Rows(true, false) == #rows + 4 and #G.Rows(true, true) == #rows + 5);
+check("menu rows (retail order)", table.concat(names, ",") == "options,shop,addons,whatsnew,support,GameMenuButtonMacros,GameMenuButtonLogout,GameMenuButtonQuit,GameMenuButtonContinue");
+check("classic options adds 4", #G.Rows(true, false, { classicoptions = true }) == #rows + 4 and #G.Rows(true, true, { classicoptions = true }) == #rows + 5);
 names = {};
 for _, r in ipairs(G.Rows(false, false, { editmode = true, dragonui = true })) do table.insert(names, r[1]); end
-check("menu rows with DragonUI", table.concat(names, ",") == "options,shop,whatsnew,editmode,addons,dragonui,support,GameMenuButtonMacros,GameMenuButtonLogout,GameMenuButtonQuit,GameMenuButtonContinue");
+check("menu rows with DragonUI", table.concat(names, ",") == "options,shop,addons,whatsnew,editmode,dragonui,support,GameMenuButtonMacros,GameMenuButtonLogout,GameMenuButtonQuit,GameMenuButtonContinue");
 check("no DragonUI settings button: no row", #G.Rows(false, false, { editmode = true }) == #rows + 1);
 
 -- flyouts

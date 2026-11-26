@@ -1,5 +1,7 @@
--- Temucraft game menu (Esc), retail look: Options (opens System, Sound, Interface and Key Bindings under it), Shop,
--- What's New, AddOns, Support, Macros, then Log Out, Exit Game and Return to Game. It is the stock
+-- Temucraft game menu (Esc), retail look ("Game Menu"): Options (the one Options window, TemucraftOptions.lua), Shop,
+-- then AddOns, What's New, Edit Mode (DragonUI's editor, only while it is there), DragonUI's settings, Support,
+-- Macros, then Log Out, Exit Game and Return to Game. "Classic options menu" (Interface > Temucraft) turns Options
+-- back into Options +/- with the four stock windows (System, Sound, Interface, Key Bindings) under it. It is the stock
 -- GameMenuFrame with its stock buttons (Log Out, Exit Game, Macros ... keep their own code) laid out again and ours
 -- added; "Classic game menu" (Interface Options > Temucraft) puts back the stock layout.
 -- What's New shows TEMUCRAFT_CHANGELOG (TemucraftChangelog.lua).
@@ -21,20 +23,22 @@ function L.ChangelogText(entries, version, max)
 	return table.concat(out, "\n");
 end
 
--- the menu's rows: { name, gapBefore } in order; sub rows only when Options is open. extra (DragonUI is running):
--- editmode = its Edit Mode (moving the bars and frames), dragonui = its settings button
+-- the menu's rows: { name, gapBefore } in order. extra: editmode = DragonUI's Edit Mode (moving the bars and frames),
+-- dragonui = its settings button, classicoptions = the classic Options +/- (sub rows only while it is open)
 function L.Rows(optionsOpen, mac, extra)
 	extra = extra or {};
 	local rows = { { "options" } };
-	if ( optionsOpen ) then
+	if ( optionsOpen and extra.classicoptions ) then
 		for _, s in ipairs({ "GameMenuButtonOptions", "GameMenuButtonSoundOptions", "GameMenuButtonUIOptions", "GameMenuButtonKeybindings" }) do
 			table.insert(rows, { s, nil, true });
 		end
 		if ( mac ) then table.insert(rows, { "GameMenuButtonMacOptions", nil, true }); end
 	end
-	-- "editmode" (its button is below) comes back here once Edit Mode exists: no dead ends in the menu
-	for _, s in ipairs({ "shop", "whatsnew", "editmode", "addons", "dragonui", "support", "GameMenuButtonMacros" }) do
-		if ( (s ~= "editmode" and s ~= "dragonui") or extra[s] ) then table.insert(rows, { s }); end
+	table.insert(rows, { "shop" });
+	-- Edit Mode and DragonUI's settings only while DragonUI has them: no dead ends in the menu
+	local gap = 12;
+	for _, s in ipairs({ "addons", "whatsnew", "editmode", "dragonui", "support", "GameMenuButtonMacros" }) do
+		if ( (s ~= "editmode" and s ~= "dragonui") or extra[s] ) then table.insert(rows, { s, gap }); gap = nil; end
 	end
 	table.insert(rows, { "GameMenuButtonLogout", 12 });
 	table.insert(rows, { "GameMenuButtonQuit" });
@@ -114,7 +118,12 @@ local function Ours(key, text, onClick)
 	ours[key] = b;
 	return b;
 end
-Ours("options", "Options", function() optionsOpen = not optionsOpen; Layout(); end);
+local function ClassicOptions() return TemucraftUI_IsClassic ~= nil and TemucraftUI_IsClassic("options"); end
+Ours("options", "Options", function()
+	if ( ClassicOptions() or not TemucraftOptions_Open ) then optionsOpen = not optionsOpen; Layout(); return; end
+	HideUIPanel(GameMenuFrame);
+	TemucraftOptions_Open(nil, GameMenuFrame);
+end);
 Ours("shop", "Shop", function() HideUIPanel(GameMenuFrame); TemucraftShop_Toggle(); end);
 Ours("whatsnew", "What's New", function() HideUIPanel(GameMenuFrame); news:Show(); end);
 Ours("addons", ADDONS or "AddOns", function() HideUIPanel(GameMenuFrame); TemucraftAddOnList_Toggle(); end);
@@ -173,8 +182,9 @@ local function Watch(b)
 	hooksecurefunc(b, "SetPoint", function() if ( not laying ) then relayout:Show(); end end);
 end
 local function DragonRows()
-	if ( not (TemucraftDragonUI_IsLoaded and TemucraftDragonUI_IsLoaded()) ) then return nil, {}; end
-	local extra, buttons = { editmode = true }, {};
+	if ( not (TemucraftDragonUI_IsLoaded and TemucraftDragonUI_IsLoaded()) ) then return {}, {}; end
+	local dui = _G.DragonUI;
+	local extra, buttons = { editmode = (type(dui) == "table" and dui.EditorMode and dui.EditorMode.Toggle) and true or nil }, {};
 	-- DragonUI hides its settings button when DragonUI_Options is missing or off
 	local reason = GetAddOnInfo and select(6, GetAddOnInfo("DragonUI_Options"));
 	if ( DragonUIGameMenuButton and reason ~= "MISSING" and reason ~= "DISABLED" ) then extra.dragonui = true; buttons.dragonui = DragonUIGameMenuButton; Watch(DragonUIGameMenuButton); end
@@ -184,13 +194,25 @@ local function DragonRows()
 	return extra, buttons;
 end
 
+-- the header says "Game Menu" (retail) in the new layout, the stock text in the classic one
+local headerText;
+for _, region in ipairs({ GameMenuFrame:GetRegions() }) do
+	if ( region:GetObjectType() == "FontString" and region:GetText() == MAIN_MENU ) then headerText = region; end
+end
+local function HeaderText(new)
+	if ( headerText ) then headerText:SetText(new and (MAINMENU_BUTTON or "Game Menu") or MAIN_MENU); end
+end
+
 function Layout()
-	if ( TemucraftUI_IsClassic("menu") ) then Classic(); return; end
+	if ( TemucraftUI_IsClassic("menu") ) then HeaderText(false); Classic(); return; end
 	laying = true;
+	HeaderText(true);
 	GameMenuFrame:SetBackdrop(NEW_BACKDROP);
 	local inRows = {};
 	local last, height = nil, 44;
 	local extra, dragon = DragonRows();
+	extra.classicoptions = ClassicOptions();
+	if ( not extra.classicoptions ) then optionsOpen = false; end
 	for _, row in ipairs(L.Rows(optionsOpen, IsMacClient(), extra)) do
 		local key, gap, sub = row[1], row[2] or 2, row[3];
 		local b = dragon[key] or ours[key] or _G[key];
@@ -205,7 +227,8 @@ function Layout()
 			last = b;
 		end
 	end
-	ours.options:SetText(optionsOpen and "Options  -" or "Options  +");
+	if ( extra.classicoptions ) then ours.options:SetText(optionsOpen and "Options  -" or "Options  +");
+	else ours.options:SetText("Options"); end
 	for _, name in ipairs(STOCK) do
 		local b = _G[name];
 		if ( b and not inRows[b] ) then b:Hide(); end
@@ -219,3 +242,4 @@ end
 -- next frame too: DragonUI makes its buttons in its own OnShow, after this one
 GameMenuFrame:HookScript("OnShow", function() Layout(); relayout:Show(); end);
 TemucraftUI_OnChange("classicmenu", function() Layout(); end);
+TemucraftUI_OnChange("classicoptions", function() if ( GameMenuFrame:IsShown() ) then Layout(); end end);
