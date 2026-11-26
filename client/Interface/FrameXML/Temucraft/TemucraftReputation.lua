@@ -454,6 +454,7 @@ scroll:SetPoint("BOTTOMRIGHT", -28, 6);
 
 local rows = {};
 local lines = {};
+L.listBox, L.rows = listBox, rows;   -- for the tests
 
 local function ShowTooltip(self)
 	local line = self.line;
@@ -640,13 +641,40 @@ local function UpdateDetail(row)
 	end
 end
 
+-- the rows that fit in a list this high (nil: not known yet)
+function L.RowsFor(h)
+	if ( not h or h <= 40 ) then return nil; end
+	return math.max(1, math.min(NUM_ROWS, math.floor((h - 12) / ROW_HEIGHT)));
+end
+
+-- the list's height as drawn (top - bottom once laid out). Not GetHeight() alone: right after the page moves into
+-- DragonUI's smaller window it still gives the 17-row height of our own window (SetHeight), and the rows ran out of
+-- the pane over the window's bottom tabs. Hosted and not laid out yet: the page's height under the filter row.
+local function ListHeight()
+	local top, bottom = listBox:GetTop(), listBox:GetBottom();
+	if ( top and bottom and top > bottom ) then return top - bottom; end
+	if ( compact ) then
+		local fh = frame:GetHeight();
+		return fh and fh > 76 and (fh - 36) or nil;
+	end
+	return listBox:GetHeight();
+end
+L.ListHeight = ListHeight;
+
 local groupsCache;
+local retry = CreateFrame("Frame", nil, frame);
 Update = function()
 	if ( not frame:IsVisible() ) then return; end
 	groupsCache = L.Group(L.ReadRows());
 	lines = L.Flatten(groupsCache, filter, collapsed);
-	local h = listBox:GetHeight();
-	if ( h and h > 40 ) then visibleRows = math.max(1, math.min(NUM_ROWS, math.floor((h - 12) / ROW_HEIGHT))); end
+	local fit = L.RowsFor(ListHeight());
+	if ( fit ) then
+		visibleRows = fit;
+	elseif ( compact ) then
+		-- not laid out yet: a few rows now, the real count a frame later
+		visibleRows = math.min(visibleRows, 8);
+		retry:SetScript("OnUpdate", function(self) self:SetScript("OnUpdate", nil); if ( L.RowsFor(ListHeight()) ) then Update(); end end);
+	end
 	FauxScrollFrame_Update(scroll, #lines, visibleRows, ROW_HEIGHT);
 	local offset = FauxScrollFrame_GetOffset(scroll);
 	local selectedRow;
@@ -723,6 +751,8 @@ end);
 
 frame:SetScript("OnShow", function() Update(); end);
 frame:SetScript("OnSizeChanged", function() if ( frame:IsVisible() ) then Update(); end end);
+-- the list's own size changes when the page moves between our window and DragonUI's (its rows follow)
+listBox:SetScript("OnSizeChanged", function() if ( frame:IsVisible() ) then Update(); end end);
 
 -- the details' close button (hosted: closes the flyout)
 local detailClose = CreateFrame("Button", nil, detail, "UIPanelCloseButton");
