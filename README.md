@@ -341,6 +341,47 @@ enchanting is a tradeskill too (no CraftFrame), so every profession goes through
   window; DragonUI's Professions module wins while it is on (`tradeskill` in `TemucraftDragonUI.lua`). Skillet and
   Advanced Trade Skill Window, when loaded, are left alone too.
 
+## Achievements window
+
+[`TemucraftAchievements.lua`](https://github.com/Temucraft/mod-temucraft-client-version/blob/master/client/Interface/FrameXML/Temucraft/TemucraftAchievements.lua)
+takes the place of the stock AchievementFrame with one retail-style window (like Dragonflight's; 840 x 590, the shared
+look of `TemucraftStyle.lua`, the rows in the stock achievement art: parchment, title bar, icon frame, points shield;
+Esc closes it). Blizzard_AchievementUI still loads (the "achievement earned" alerts and the Classic window come from
+it): its `AchievementFrame_ToggleAchievementFrame`, `AchievementFrame_SelectAchievement` and
+`AchievementFrame_DisplayComparison` open this window instead, so the micro button, Y (and the Statistics key), the
+quest tracker (stock, DragonUI's and Questie's call those), a click on the alert and anything that shows the stock
+frame (`ShowUIPanel(AchievementFrame)`: it is swapped for ours a frame later) all land here.
+
+- **Top**: your points (hover: how many earned), tabs **Achievements** and **Statistics**, the filter (**All /
+  Completed / Incomplete**) and a **search** box: names, descriptions and rewards of every achievement (or every
+  statistic on the Statistics tab), plain text, any case.
+- **Category tree** (left): **Summary**, then the client's categories (`GetCategoryList`; Feats of Strength last),
+  each with a progress bar and "done/total" counting its subcategories (the stock totals, every step of a series).
+  A category with subcategories opens with a click; only one is open at a time (like retail).
+- **Summary**: the five latest achievements (`GetLatestCompletedAchievements`; click: go there), the overall bar and a
+  bar per top category (click: open it).
+- **Achievement rows**: icon, name, description, the points shield (a series shows the points of all its steps), the
+  date, the reward text. A click opens the row: criteria with checks, progress bars (`quantityString`), the
+  achievements a meta asks for (icons; click one to go there) and, for a finished series, its steps. Very long lists
+  stop at 40 lines ("... and n more"). **Shift-click** (or right-click) tracks it in the quest tracker
+  (`AddTrackedAchievement`, up to 10: "You may only track 10 achievements at a time"; a finished one can't be
+  tracked; with Questie's tracker the count is Questie's own), or links it while typing in chat. A tick beside the name
+  and the Track box show what is tracked.
+- **Statistics**: the statistics categories in the same tree; a value per row (`GetStatistic`), a header per
+  subcategory, the stock row stripes.
+- **Comparing** (right-click a player, Compare Achievements: `InspectAchievements`): their name and points on top,
+  "Bob: <date>" or "Incomplete" on every row, their count beside each bar (blue) and their value beside each
+  statistic. "Done" or closing the window stops it (`ClearAchievementComparisonUnit`). While ours compares, the
+  stock comparison frame doesn't hear `INSPECT_ACHIEVEMENT_READY`.
+- **Not here, on purpose**: 3.3.5 has no guild achievements (no Guild tab) and no account-wide ones:
+  `GetAchievementInfo` has no "earned by" or account flag, and mod-temucraft-account-wide doesn't share achievements,
+  so there is no "Earned by" filter and no "Account" mark. Temucraft's own achievements (mod-temucraft-realm-first,
+  60000-60299, Feats of Strength, flag 0x100) show like any other once they are in the client's Achievement.dbc.
+- **Classic**: "Classic achievements window" (Interface > Temucraft, `/tui`, key `ui.classicachievements`) keeps the
+  stock window; Krowi_AchievementFilter or Overachiever, when loaded, are left alone too. DragonUI has no achievement
+  module (its quest tracker shows tracked achievements and opens this window), so nothing to step aside for.
+- `/achievements` (`/tach`), `/achievements stats`.
+
 ## DragonUI
 
 [DragonUI](https://github.com/NeticSoul/DragonUI) (our fork: Temucraft/DragonUI-Temucraft, PTR first) is the base of
@@ -362,7 +403,7 @@ module or DragonUI off) takes a `/reload`, after which our windows are back.
 | AddOns list (`addons`) | `addonmanager` | DragonUI's: our Esc menu's AddOns row and `/addons` open it |
 | Professions window (`tradeskill`) | `professions` | DragonUI's (it dresses the stock TradeSkillFrame) |
 
-Ours stay: reputation and Renown (the Reputation tab and U still open ours), guild, guild bank, collections
+Ours stay: reputation and Renown (the Reputation tab and U still open ours), achievements, guild, guild bank, collections
 (`ToggleCollectionsJournal` is defined, so DragonUI's Pets & Mounts button opens ours), the flight map, the Issue
 Reporter and the Esc menu, which takes DragonUI's settings button and an Edit Mode row (DragonUI's editor) as rows. The
 fixes and defaults that live in DragonUI itself (custom races, in-column talents, route-only flight points, Temucraft
@@ -479,6 +520,7 @@ hidden holder and ours sit on top. The "Classic" choice here is `TEMUCRAFT_LOGIN
 | U (Reputation tab), `/renown [faction]` | reputation, Renown journeys |
 | `/addons` | addon list |
 | `/professions`, `/tprof` | Professions window (the Overview when no profession is open) |
+| Y, `/achievements [stats]`, `/tach` | Achievements window (Statistics tab) |
 | `/ttutorial [reset\|skip\|on\|off]` | the new-player tutorial |
 | `/issue`, `/bug`; F6 (`/issuekey <key>\|none`) | Issue Reporter; the key is a click binding, F6 by default when free |
 | `/wardrobe`, `/vanity`, `/tokenpreview <link>`, `/heritage`, `/disguise`, `/tankrole` | module windows |
@@ -489,7 +531,7 @@ hidden holder and ours sit on top. The "Classic" choice here is `TEMUCRAFT_LOGIN
 Stub tests (no client; run from the module folder with Lua 5.1) for the grouping, search, paging, collection and
 loadout logic, the player UI, the login screens and the protocols: `lua5.1 client/tests/spellbook_test.lua`,
 `collections_test.lua`, `interface_test.lua`, `taxi_test.lua`, `issues_test.lua`, `guild_test.lua`,
-`reputation_test.lua`, `glue_test.lua`, `loadouts_test.lua` (the server loadouts protocol), `dragonui_test.lua` (the DragonUI step-aside switch), `professions_test.lua` (the Professions window's list, filters, favourites, stats and recipe helpers), `tutorial_test.lua` (the new-player tutorial's start rules and step machine, fed fake events) and `options_test.lua` (the Options pages, search, sliders, key names, binding groups, the AddOns list, server answers and the Esc menu rows; all in `client/tests/`). Also check every file with `luac5.1 -p`.
+`reputation_test.lua`, `glue_test.lua`, `loadouts_test.lua` (the server loadouts protocol), `dragonui_test.lua` (the DragonUI step-aside switch), `professions_test.lua` (the Professions window's list, filters, favourites, stats and recipe helpers), `achievements_test.lua` (the Achievements window's category tree, progress, filter and search, tracking cap, series and criteria helpers), `tutorial_test.lua` (the new-player tutorial's start rules and step machine, fed fake events) and `options_test.lua` (the Options pages, search, sliders, key names, binding groups, the AddOns list, server answers and the Esc menu rows; all in `client/tests/`). Also check every file with `luac5.1 -p`.
 
 ## Also in this module
 
