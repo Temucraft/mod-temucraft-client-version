@@ -763,6 +763,23 @@ loadout logic, the player UI, the login screens and the protocols: `lua5.1 clien
 `collections_test.lua`, `interface_test.lua`, `taxi_test.lua`, `issues_test.lua`, `guild_test.lua`,
 `reputation_test.lua`, `glue_test.lua`, `gen_racials_test.py` (python3: the racial tooltip token resolver), `glueoptions_test.lua` (the login screens' Options window), `loadouts_test.lua` (the server loadouts protocol), `dragonui_test.lua` (the DragonUI step-aside switch), `professions_test.lua` (the Professions window's list, filters, favourites, stats and recipe helpers), `achievements_test.lua` (the Achievements window's category tree, progress, filter and search, tracking cap, series and criteria helpers), `groupfinder_test.lua` (the Group Finder and PvP window: key binding and Classic routing, toggles, roles, the Find Group and List buttons, random dungeon choice, list search, queue status, the Raid Browser filter, the Adventure Guide link, battleground order, queues, arena points and /pvp), `adventureguide_test.lua` (the Adventure Guide data's shape and the hand-checked sample instances, tabs, expansion filter, search, level suggestions, loot, the TAG asks and the journal merge), `tutorial_test.lua` (the new-player tutorial's start rules and step machine, fed fake events) and `options_test.lua` (the Options pages, search, sliders, key names, binding groups, the AddOns list, server answers and the Esc menu rows; all in `client/tests/`). Also check every file with `luac5.1 -p`.
 
+Whole-patch tests on a WoW API mock (`client/tests/wowmock.lua` and `wowmock_api.lua`: widgets with anchors, scripts,
+events and tooltips, the client's Lua without `os` / `io`; our own `Temucraft*` names and lower-case names are nil
+until a file defines them, so a local used before its declaration fails like in the game):
+- `load_test.lua`: every file of patch-^ in the order of the generated FrameXML.toc and GlueXML.toc (build_mpq.py's
+  lists), the login events, then every window opened and closed (Options, Esc menu, character window tabs, spellbook
+  and its tabs, talents, Professions, Achievements, Adventure Guide, Group Finder, PvP, Collections, Guild, Issue
+  Reporter, AddOns, starting zone, tutorial, every slash command), again in combat (a secure frame changed then is an
+  error), and once more with DragonUI running (its character window hosting our Reputation and Professions panes);
+  then the login, character select and create screens. Any Lua error fails.
+- `regressions_test.lua`: one check per fixed bug (tooltip lines once per build in a fixed order and one cooldown
+  line, Esc menu rows on the menu's top, the ScrollingEdit boxes' cursorOffset, no tutorial on a level 80
+  character, Options slider layout, Reputation rows inside DragonUI's pane, the Professions sub-tab row and hint,
+  "Stay in ..." first, the name box text, the card number).
+- `race_data_check.py` (python3): races and racials against the DBCs (`_dev/reference/race_info.py`'s logic) and the
+  PTR client's CharBaseInfo.dbc (read from `5) Release/ptr/patches` with StormLib): fails when a race learns only its
+  racial heal, a race x class pair has no CharBaseInfo row, or a racial line has no SkillRaceClassInfo row.
+
 ## Also in this module
 
 These were separate modules; they now live here, each with its own folder under `src/`, its own config file in
